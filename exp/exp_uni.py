@@ -14,7 +14,7 @@ import os
 import time
 import warnings
 import matplotlib.pyplot as plt
-from thop import profile
+
 import json
 from torch.fft import rfft, irfft
 
@@ -39,16 +39,6 @@ class Exp_uni(Exp_Basic):
         """
         data_set, data_loader = data_provider(self.args, flag, buffer=self.data_buffer)
         return data_set, data_loader
-
-    def _get_profile(self, model):
-        """
-        Get the model profile including FLOPs and parameters.
-        """
-        _input = torch.randn(self.args.batch_size, self.args.seq_len, 1).to(self.device)
-        macs, params = profile(model, inputs=(_input).to(self.device))
-        print('FLOPs: ', macs)
-        print('params: ', params)
-        return macs, params
 
     def train(self, setting):
         """
@@ -163,7 +153,7 @@ class Exp_uni(Exp_Basic):
             info_loss=[]
             with torch.inference_mode():
                 with torch.no_grad():
-                    for i, iter in tqdm(enumerate(loader), total=len(loader), desc=f"Validating {info}"):
+                    for i, iter in tqdm(enumerate(loader), total=len(loader), desc=f"Testing {info}"):
                         
                         batch_x = iter[0].float().to(self.device)
                         batch_y = iter[1].float().to(self.device)

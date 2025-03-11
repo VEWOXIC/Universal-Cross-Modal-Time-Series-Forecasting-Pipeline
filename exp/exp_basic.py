@@ -4,6 +4,7 @@ import numpy as np
 import torch.nn as nn
 from torch import optim
 from data_provider.data_helper import data_buffer
+from thop import profile
 
 
 class Exp_Basic(object):
@@ -46,6 +47,17 @@ class Exp_Basic(object):
             return nn.L1Loss()
         elif self.args.loss == 'mse':
             return nn.MSELoss()
+        
+    
+    def _get_profile(self, model):
+        """
+        Get the model profile including FLOPs and parameters.
+        """
+        _input = torch.randn(self.args.batch_size, self.args.seq_len, 1).to(self.device)
+        macs, params = profile(model, inputs=(_input).to(self.device))
+        print('FLOPs: ', macs)
+        print('params: ', params)
+        return macs, params
 
     def _get_data(self):
         pass
