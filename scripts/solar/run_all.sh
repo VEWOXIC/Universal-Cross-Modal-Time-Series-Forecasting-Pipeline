@@ -1,11 +1,12 @@
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=0
+
 # run all the scripts in this folder
 if [ ! -d "./logs" ]; then
     mkdir ./logs
 fi
 
-if [ ! -d "./logs/traffic" ]; then
-    mkdir ./logs/traffic
+if [ ! -d "./logs/solar" ]; then
+    mkdir ./logs/solar
 fi
 
 # Run all scripts recursively in the current directory and subdirectories
