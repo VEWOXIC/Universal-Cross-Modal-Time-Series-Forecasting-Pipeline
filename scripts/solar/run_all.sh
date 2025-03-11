@@ -10,5 +10,5 @@ if [ ! -d "./logs/solar" ]; then
 fi
 
 # Run all scripts recursively in the current directory and subdirectories
-find . -type f -name "*.sh" ! -name "run_all.sh" -exec bash {} \;
+find ./scripts/solar -type f -name "*.sh" ! -name "run_all.sh" -exec bash {} \;
 
