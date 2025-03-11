@@ -1,4 +1,4 @@
-from concurrent.futures import ProcessPoolExecutor, as_completed
+
 from data_provider.data_loader import Universal_Dataset
 from torch.utils.data import DataLoader
 import json, torch, yaml, os
@@ -8,11 +8,12 @@ from .spliter import timestamp_spliter, ratio_spliter
 from tqdm import tqdm
 from multiprocessing import Pool
 import multiprocessing
+from time import time
 
 
 def load_dataset(i, formatter, dataset_config, args, flag, spliter):
     data_path = formatter.format(i=i)
-    dataset = Universal_Dataset(root_path=dataset_config.root_path, data_path=data_path, flag=flag, seq_len=args.input_len, pred_len=args.output_len, spliter=spliter, timestamp_col=dataset_config.timestamp_col, target=dataset_config.target, scale=args.scale)
+    dataset = Universal_Dataset(root_path=dataset_config.root_path, data_path=data_path, flag=flag, seq_len=args.input_len, pred_len=args.output_len, spliter=spliter, timestamp_col=dataset_config.timestamp_col, target=dataset_config.target, scale=args.scale) # keep num_workers to 1 for test set for ordering 
     return i, dataset
 
 def data_provider(args, flag):
@@ -57,13 +58,9 @@ def data_provider(args, flag):
         spliter = partial(ratio_spliter, split=(7,1,2), seq_len=args.input_len)
 
     formatter = dataset_config.get('formatter', 'id_{i}.parquet')
-
-    num_cpus = args.num_workers# multiprocessing.cpu_count()
-    with ProcessPoolExecutor(max_workers=num_cpus) as executor:
-        futures = {executor.submit(load_dataset, i, formatter, dataset_config, args, flag, spliter): i for i in id_list}
-        for future in tqdm(as_completed(futures), total=len(futures)):
-            i, dataset = future.result()
-            datasets[i] = dataset
+    for i in tqdm(id_list, desc="Loading datasets"):
+        _, dataset = load_dataset(i, formatter, dataset_config, args, flag, spliter)
+        datasets[i] = dataset
 
     if flag != 'test':
         
