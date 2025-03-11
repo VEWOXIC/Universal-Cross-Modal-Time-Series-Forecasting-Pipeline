@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import torch.nn as nn
 from torch import optim
+from data_provider.data_helper import data_buffer
 
 
 class Exp_Basic(object):
@@ -10,6 +11,10 @@ class Exp_Basic(object):
         self.args = args
         self.device = self._acquire_device()
         self.model = self._build_model().to(self.device)
+        if args.disable_buffer:
+            self.data_buffer = None
+        else:
+            self.data_buffer = data_buffer()
 
     def _build_model(self):
         raise NotImplementedError

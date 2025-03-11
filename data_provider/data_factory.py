@@ -4,19 +4,14 @@ from torch.utils.data import DataLoader
 import json, torch, yaml, os
 from utils.tools import dotdict
 from functools import partial
-from .spliter import timestamp_spliter, ratio_spliter
+from .data_helper import timestamp_spliter, ratio_spliter
 from tqdm import tqdm
 from multiprocessing import Pool
 import multiprocessing
 from time import time
 
 
-def load_dataset(i, formatter, dataset_config, args, flag, spliter):
-    data_path = formatter.format(i=i)
-    dataset = Universal_Dataset(root_path=dataset_config.root_path, data_path=data_path, flag=flag, seq_len=args.input_len, pred_len=args.output_len, spliter=spliter, timestamp_col=dataset_config.timestamp_col, target=dataset_config.target, scale=args.scale) # keep num_workers to 1 for test set for ordering 
-    return i, dataset
-
-def data_provider(args, flag):
+def data_provider(args, flag, buffer=None):
     # import copy
     # args = copy.deepcopy(args)
     
@@ -59,7 +54,8 @@ def data_provider(args, flag):
 
     formatter = dataset_config.get('formatter', 'id_{i}.parquet')
     for i in tqdm(id_list, desc="Loading datasets"):
-        _, dataset = load_dataset(i, formatter, dataset_config, args, flag, spliter)
+        data_path = formatter.format(i=i)
+        dataset = Universal_Dataset(root_path=dataset_config.root_path, data_path=data_path, flag=flag, seq_len=args.input_len, pred_len=args.output_len, spliter=spliter, timestamp_col=dataset_config.timestamp_col, target=dataset_config.target, scale=args.scale, data_buffer=buffer) # keep num_workers to 1 for test set for ordering 
         datasets[i] = dataset
 
     if flag != 'test':

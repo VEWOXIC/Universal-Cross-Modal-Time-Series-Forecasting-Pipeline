@@ -1,4 +1,5 @@
 from data_provider.data_factory import data_provider
+from data_provider.data_helper import data_buffer
 from exp.exp_basic import Exp_Basic
 from models import model_init
 
@@ -35,7 +36,7 @@ class Exp_uni(Exp_Basic):
         """
         Get the data for training, validation, or testing.
         """
-        data_set, data_loader = data_provider(self.args, flag)
+        data_set, data_loader = data_provider(self.args, flag, buffer=self.data_buffer)
         return data_set, data_loader
 
     def _get_profile(self, model):

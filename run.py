@@ -21,6 +21,7 @@ parser.add_argument('--data', type=str, default='solar', help='data name')
 parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
 parser.add_argument('--data_config', type=str, default='./data_configs/data_profile.yaml', help='data profile')
 parser.add_argument('--scale', type=bool, default=True, help='scale data')
+parser.add_argument('--disable_buffer', default=False, action='store_true', help='disable data buffer')
 
 # forecasting task
 parser.add_argument('--ahead', type=str, default=None, help='day/week/month ahead forecasting')

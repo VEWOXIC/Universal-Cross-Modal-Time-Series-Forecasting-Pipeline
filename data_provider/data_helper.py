@@ -1,6 +1,38 @@
 import pandas as pd
 import os
 
+class data_buffer():
+    def __init__(self):
+        self.buffer = {}
+
+    def __call__(self, file_path, force_reload=False):
+        if force_reload:
+            print(f'Force reloading data from {file_path}')
+            if file_path.endswith('.csv'):
+                df_raw = pd.read_csv(file_path)
+                self.buffer[file_path] = df_raw.copy()
+            elif file_path.endswith('.parquet'):
+                df_raw = pd.read_parquet(file_path)
+                self.buffer[file_path] = df_raw.copy()
+            else:
+                raise NotImplementedError('Only .csv and .parquet data are supported, implement more if needed')
+            return df_raw
+        
+        if file_path in self.buffer.keys():
+            return self.buffer[file_path].copy()
+        else:
+            if file_path.endswith('.csv'):
+                df_raw = pd.read_csv(file_path)
+                self.buffer[file_path] = df_raw.copy()
+            elif file_path.endswith('.parquet'):
+                df_raw = pd.read_parquet(file_path)
+                self.buffer[file_path] = df_raw.copy()
+            else:
+                raise NotImplementedError('Only .csv and .parquet data are supported, implement more if needed')
+            print(f'Add data {file_path} to buffer')
+            return df_raw
+        
+
 def ratio_spliter(split=(7,1,2),seq_len=0, df=None):
     # split mark
     train_split = split[0] / sum(split)

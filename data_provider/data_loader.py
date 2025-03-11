@@ -5,7 +5,7 @@ import os
 from torch.utils.data import Dataset
 from sklearn.preprocessing import StandardScaler
 import warnings
-from .spliter import timestamp_spliter, ratio_spliter
+from .data_helper import timestamp_spliter, ratio_spliter, data_buffer
 import multiprocessing as mp
 from time import time
 
@@ -14,7 +14,7 @@ warnings.filterwarnings('ignore')
 class Universal_Dataset(Dataset):
     def __init__(self, root_path, flag='train', data_path='ETTh1.csv',
                  seq_len=24, pred_len=24, spliter=ratio_spliter, timestamp_col='date',
-                 target='OT', scale=True):
+                 target='OT', scale=True, data_buffer=None):
         # size [seq_len, label_len, pred_len]
         # info
         self.seq_len = seq_len
@@ -25,6 +25,7 @@ class Universal_Dataset(Dataset):
 
         self.target = target
         self.scale = scale
+        self.data_buffer = data_buffer
 
         self.timestamp_col = timestamp_col
 
@@ -35,14 +36,15 @@ class Universal_Dataset(Dataset):
         
     def __read_data__(self):
         self.scaler = StandardScaler()
-        if self.data_path.endswith('.csv'):
-            df_raw = pd.read_csv(os.path.join(self.root_path,
-                                            self.data_path))
-        elif self.data_path.endswith('.parquet'):
-            df_raw = pd.read_parquet(os.path.join(self.root_path,
-                                            self.data_path))
-        else:
-            raise NotImplementedError('Only .csv and .parquet data are supported, implement more if needed')
+        if self.data_buffer is None:
+            if self.data_path.endswith('.csv'):
+                df_raw = pd.read_csv(os.path.join(self.root_path, self.data_path))
+            elif self.data_path.endswith('.parquet'):
+                df_raw = pd.read_parquet(os.path.join(self.root_path, self.data_path))
+            else:
+                raise NotImplementedError('Only .csv and .parquet data are supported, implement more if needed')
+        elif isinstance(self.data_buffer, data_buffer):
+            df_raw = self.data_buffer(os.path.join(self.root_path, self.data_path))
 
         # convert the timestamp to datetime
         df_raw[self.timestamp_col] = pd.to_datetime(df_raw[self.timestamp_col])
