@@ -1,11 +1,3 @@
-if [ ! -d "./logs" ]; then
-    mkdir ./logs
-fi
-
-if [ ! -d "./logs/traffic" ]; then
-    mkdir ./logs/traffic
-fi
-
 python -u run.py \
     --model 'FITS' \
     --model_config 'model_configs/general/FITS.yaml' \

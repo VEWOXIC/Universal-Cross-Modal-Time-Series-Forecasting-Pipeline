@@ -1,4 +1,4 @@
-python run.py \
+python -u run.py \
     --model 'FITS' \
     --model_config 'model_configs/general/FITS.yaml' \
     --data solar \
