@@ -15,10 +15,11 @@ import time
 import warnings
 import matplotlib.pyplot as plt
 from thop import profile
-import tqdm, json
+import json
 from torch.fft import rfft, irfft
 
 from copy import deepcopy
+from tqdm import tqdm
 
 warnings.filterwarnings('ignore')
 
@@ -84,35 +85,31 @@ class Exp_uni(Exp_Basic):
             self.model.train()
             epoch_time = time.time()
 
-            for i, iter in enumerate(train_loader):
-                iter_count += 1
-                model_optim.zero_grad()
-                    
-                batch_x = iter[0].float().to(self.device)
-                batch_y = iter[1].float().to(self.device)
+            with tqdm(total=len(train_loader), desc=f"Epoch {epoch + 1}/{self.args.train_epochs}", unit='batch') as pbar:
+                for i, iter in enumerate(train_loader):
+                    iter_count += 1
+                    model_optim.zero_grad()
+                        
+                    batch_x = iter[0].float().to(self.device)
+                    batch_y = iter[1].float().to(self.device)
 
-                output = self.model(batch_x)
+                    output = self.model(batch_x)
 
-                loss = criterion(output[:, -self.args.output_len:, :], batch_y)
+                    loss = criterion(output[:, -self.args.output_len:, :], batch_y)
 
-                loss.backward()
+                    loss.backward()
 
-                model_optim.step()
+                    model_optim.step()
 
-                # loss = criterion(torch.cat(output, dim=-1), torch.cat(supervision,dim=-1)) 
+                    train_loss.append(loss.item())
 
-                train_loss.append(loss.item())
-
-                if (i + 1) % 100 == 0:
-                    print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i + 1, epoch + 1, loss.item()))
-                    speed = (time.time() - time_now) / iter_count
-                    left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
-                    print('\tspeed: {:.4f}s/iter; left time: {:.4f}s'.format(speed, left_time))
-                    iter_count = 0
-                    time_now = time.time()
-                    # save the self.args as json
-
-
+                    if iter_count % 100 == 0:
+                        speed = (time.time() - time_now) / iter_count
+                        left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
+                        pbar.set_postfix({'loss': f'{loss.item():.7f}', 'speed': f'{speed:.4f}s/iter', 'left time': f'{left_time:.4f}s'})
+                        pbar.update(100)
+                        iter_count = 0
+                        time_now = time.time()
 
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             train_loss = np.average(train_loss)
@@ -142,7 +139,7 @@ class Exp_uni(Exp_Basic):
 
         with torch.inference_mode():
             with torch.no_grad():
-                for i, iter in tqdm.tqdm(enumerate(loader), total=len(loader), desc=f"Validating..."):
+                for i, iter in tqdm(enumerate(loader), total=len(loader), desc=f"Validating..."):
                     
                     batch_x = iter[0].float().to(self.device)
                     batch_y = iter[1].float().to(self.device)
@@ -166,7 +163,7 @@ class Exp_uni(Exp_Basic):
             info_loss=[]
             with torch.inference_mode():
                 with torch.no_grad():
-                    for i, iter in tqdm.tqdm(enumerate(loader), total=len(loader), desc=f"Validating {info}"):
+                    for i, iter in tqdm(enumerate(loader), total=len(loader), desc=f"Validating {info}"):
                         
                         batch_x = iter[0].float().to(self.device)
                         batch_y = iter[1].float().to(self.device)
