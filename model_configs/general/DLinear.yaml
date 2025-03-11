@@ -1,0 +1,4 @@
+model: DLinear
+individual: False
+enc_in: 1
+
