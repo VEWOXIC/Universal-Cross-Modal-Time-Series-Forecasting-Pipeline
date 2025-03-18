@@ -1,4 +1,4 @@
-root_path: /data/Blob_WestJP/v-zhijianxu/Benchmark/traffic/impute_data
+root_path: /data/Blob_WestJP/v-zhijianxu/Benchmark/fulltraffic/impute_data
 spliter: timestamp
 split_info:
   - '2020-01-01'

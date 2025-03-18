@@ -1,4 +1,4 @@
 model: FITS
 individual: False
 enc_in: 1
-H_order: 5
+H_order: 12

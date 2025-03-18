@@ -4,5 +4,5 @@ python -u run.py \
     --data traffic \
     --data_config './data_configs/fulltraffic.yaml' \
     --ahead month \
-    --batch_size 1024 | tee ./logs/traffic/PatchTST_month.log
+    --batch_size 128 | tee ./logs/traffic/PatchTST_month.log
     

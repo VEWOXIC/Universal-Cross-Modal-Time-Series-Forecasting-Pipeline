@@ -1,0 +1,10 @@
+model: iTransformer
+d_model: 128
+d_ff: 128
+output_attention: False
+use_norm: True
+dropout: 0.1
+factor: 1
+n_heads: 8
+activation: gelu
+e_layers: 2

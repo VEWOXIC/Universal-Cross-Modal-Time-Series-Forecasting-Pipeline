@@ -32,7 +32,7 @@ def data_provider(args, flag, buffer=None):
         batch_size = args.batch_size
 
     dataset_config = args.data_config
-    dataset_config = dotdict(dataset_config)
+    # dataset_config = dotdict(dataset_config)
     datasets = {}
     id_info = json.load(open(os.path.join(dataset_config.root_path, dataset_config.id_info)))
 

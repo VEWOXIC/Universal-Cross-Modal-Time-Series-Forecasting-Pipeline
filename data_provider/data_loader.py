@@ -59,6 +59,12 @@ class Universal_Dataset(Dataset):
         elif self.set_type == 'test':
             self.data = test_data
 
+        # convert the self.timestamp_col to yyyymmddHHMMSS int
+        self.data[self.timestamp_col] = self.data[self.timestamp_col].dt.strftime('%Y%m%d%H%M%S')
+        # convert to int
+        self.data[self.timestamp_col] = self.data[self.timestamp_col].astype(int)
+        
+
         self.timestamp = self.data[self.timestamp_col].values
         self.data = self.data[self.target].values
 
@@ -91,8 +97,11 @@ class Universal_Dataset(Dataset):
     def __getitem__(self, index):
         seq_x = self.x_data[index]
         seq_y = self.y_data[index]
+        x_time = self.x_time[index]
+        y_time = self.y_time[index]
 
-        return seq_x, seq_y#, self.x_time[index], self.y_time[index]
+
+        return seq_x, seq_y, x_time, y_time
 
     def __len__(self):
         return len(self.x_data)

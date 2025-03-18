@@ -122,3 +122,5 @@ dmypy.json
 
 /checkpoints
 /logs
+*amlt*
+* copy*
