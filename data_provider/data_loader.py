@@ -8,13 +8,17 @@ import warnings
 from .data_helper import timestamp_spliter, ratio_spliter, data_buffer
 import multiprocessing as mp
 from time import time
+import json
+import datetime
+from functools import partial
+import glob
 
 warnings.filterwarnings('ignore')
 
 class Universal_Dataset(Dataset):
     def __init__(self, root_path, flag='train', data_path='ETTh1.csv',
                  seq_len=24, pred_len=24, spliter=ratio_spliter, timestamp_col='date',
-                 target='OT', scale=True, data_buffer=None):
+                 target='OT', scale=True, data_buffer=None, get_hetero_data=None):
         # size [seq_len, label_len, pred_len]
         # info
         self.seq_len = seq_len
@@ -31,6 +35,8 @@ class Universal_Dataset(Dataset):
 
         self.root_path = root_path
         self.data_path = data_path
+
+        self.get_hetero_data = get_hetero_data
         self.__read_data__()
         self.collect_all_data()
         
@@ -100,6 +106,9 @@ class Universal_Dataset(Dataset):
         x_time = self.x_time[index]
         y_time = self.y_time[index]
 
+        x_time = self.get_hetero_data(x_time)
+        y_time = self.get_hetero_data(y_time)
+
 
         return seq_x, seq_y, x_time, y_time
 
@@ -108,3 +117,125 @@ class Universal_Dataset(Dataset):
 
     def inverse_transform(self, data):
         return self.scaler.inverse_transform(data)
+
+
+
+class Heterogeneous_Dataset(Dataset):
+    def __init__(self, base_path, formatter, id_info, sampling_rate='1day', matching='nearest', output_format='json'):
+        super().__init__()
+        self.base_path = base_path
+        self.formatter = formatter
+        self.sampling_rate = sampling_rate
+        self.id_info = id_info
+        assert matching in ['nearest', 'forward', 'backward', 'single'], "The matching method should be one of ['nearest', 'forward', 'backward', 'single']"
+        self.matching = matching
+        assert output_format in ['dict','json', 'csv', 'embedding'], "The output format should be one of ['dict','json', 'csv', 'embedding']"
+        self.output_format = output_format
+        self.load_data()
+
+    def load_data(self):
+        self.dynamic_data = {}
+        file_paths = glob.glob(os.path.join(self.base_path, self.formatter))
+        for file_path in file_paths:
+            json_data = json.load(open(file_path))
+            self.dynamic_data.update(json_data)
+
+        self.dynamic_data = pd.DataFrame.from_dict(self.dynamic_data, orient='index')
+        # sort the index
+        self.dynamic_data.sort_index(inplace=True)
+        self.dynamic_data['time'] = self.dynamic_data.index.dt.strftime('%Y-%m-%d %H:%M:%S')
+        
+
+        # TODO: static_data = {downtime_prompt: '', general_info: '', channel_info: {114514: '', 1919810: ''}}
+
+        self.static_data = None
+
+    def time_matcher(self, timestamp):
+
+        pos = self.dynamic_data.searchsorted(timestamp)
+        if self.matching == 'nearest':
+            if pos == 0:
+                return self.dynamic_data.index[0]
+            elif pos == len(self.dynamic_data):
+                return self.dynamic_data.index[-1]
+            else:
+                if timestamp - self.dynamic_data.index[pos - 1] < self.dynamic_data.index[pos] - timestamp:
+                    return self.dynamic_data.index[pos - 1]
+                else:
+                    return self.dynamic_data.index[pos]
+        elif self.matching == 'forward':
+            if pos == len(self.dynamic_data):
+                return self.dynamic_data.index[-1]
+            else:
+                return self.dynamic_data.index[pos]
+        elif self.matching == 'backward' or self.matching == 'single':
+            if pos == 0:
+                return self.dynamic_data.index[0]
+            else:
+                return self.dynamic_data.index[pos - 1]
+
+            
+    def downtime_checker(self, timestamp, down_time):
+        for t in down_time:
+            if t[0] <= timestamp <= t[1]:
+                return True
+        return False
+
+    def init_hetero_data(self, id):
+        down_time = self.id_info[id]['sensor_downtime']
+        down_time = [down_time[k]['time'] for k in down_time.keys()]
+        down_time = [[datetime.strptime(t[0]), datetime.strptime(t[1])] for t in down_time]
+
+        general_info = self.static_data['general_info']
+        channel_info = self.static_data['channel_info'][id]
+        downtime_prompt = self.static_data['downtime_prompt']
+
+        return partial(self.get_hetero_data, down_time, general_info, channel_info, downtime_prompt)
+
+
+    def get_hetero_data(self, down_time, general_info, channel_info, downtime_prompt, timestamp):
+        output_dynamic = []
+        matched_times = []
+
+        for t in timestamp:
+            t = datetime.strptime(str(t), '%Y%m%d%H%M%S')
+            matched_time = self.time_matcher(t)
+
+            if self.matching == 'single' and matched_time in matched_times:
+                continue # skip the repeated data in single mode
+
+            matched_times.append(matched_time)
+
+            data = self.dynamic_data.loc[matched_time]
+
+            # check if the data is in the downtime period
+            if self.downtime_checker(t, down_time):
+                data['note'] = downtime_prompt
+            else:
+                data['note'] = ''
+
+
+
+            if self.output_format == 'dict':
+                output_dynamic.append(data.to_dict())
+            elif self.output_format == 'json':
+                output_dynamic.append(data.to_json())
+            elif self.output_format == 'csv':
+                output_dynamic.append(data.to_csv())
+            elif self.output_format == 'embedding':
+                raise NotImplementedError('Embedding output format is not implemented yet')
+            else:
+                raise NotImplementedError('Output format is not implemented yet')
+            
+        return general_info, channel_info, output_dynamic
+            
+        
+
+            
+
+
+
+
+
+    
+

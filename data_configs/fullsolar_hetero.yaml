@@ -1,0 +1,19 @@
+root_path: /data/Blob_WestJP/v-zhijianxu/Benchmark/fullsolar/impute_data
+spliter: timestamp
+split_info:
+  - '2021-01-01'
+  - '2022-01-01'
+timestamp_col: date
+target: 
+  - kWh
+id_info: id_info_imputed.json
+id: all
+formatter: 'id_{i}.parquet'
+sampling_rate: 1h
+base_T: 24
+hetero_info:
+  sampling_rate: 1day
+  root_path: None # same
+  formatter: fast_general_weather_forecast_????.json
+  matching: backward # default backward for 1day sampling
+  input_format: json
