@@ -69,9 +69,11 @@ class Data_Provider(object):
         for i in tqdm(self.id_list, desc=f"Loading {flag} datasets"):
             if self.args.data_config.hetero_info is not None:
                 get_hetero_data = self.hetero_dataset.init_hetero_data(i)
+            else:
+                get_hetero_data = None
 
             data_path = self.formatter.format(i=i)
-            dataset = Universal_Dataset(root_path=self.dataset_config.root_path, data_path=data_path, flag=flag, seq_len=self.args.input_len, pred_len=self.args.output_len, spliter=self.spliter, timestamp_col=self.dataset_config.timestamp_col, target=self.dataset_config.target, scale=self.args.scale, data_buffer=self.data_buffer)
+            dataset = Universal_Dataset(root_path=self.dataset_config.root_path, data_path=data_path, flag=flag, seq_len=self.args.input_len, pred_len=self.args.output_len, spliter=self.spliter, timestamp_col=self.dataset_config.timestamp_col, target=self.dataset_config.target, scale=self.args.scale, data_buffer=self.data_buffer, hetero_data_getter=get_hetero_data) 
             datasets[i] = dataset
 
         if concat:

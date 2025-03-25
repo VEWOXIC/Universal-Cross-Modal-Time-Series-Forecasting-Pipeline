@@ -2,7 +2,8 @@
 import argparse
 import os
 import torch
-from exp.exp_uni import Exp_uni
+# from exp.exp_uni import Exp_uni
+from exp.exp_universal import Experiment
 import random
 import numpy as np
 import time
@@ -91,9 +92,7 @@ print(args)
 
 torch.cuda.empty_cache()
 
-Exp = Exp_uni
-
-exp = Exp(args)  # set experiments
+exp = Experiment(args)  # set experiments
 print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
 exp.train(setting)
 

@@ -67,7 +67,11 @@ class EarlyStopping:
 
 class dotdict(dict):
     def __getattr__(self, name):
-        return self[name]
+        if name in self.keys():
+
+            return self[name]
+        else:
+            return None
     def __setattr__(self, name, value):
         self[name] = value
     def __delattr__(self, name):

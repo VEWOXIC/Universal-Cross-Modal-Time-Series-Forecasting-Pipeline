@@ -18,7 +18,7 @@ warnings.filterwarnings('ignore')
 class Universal_Dataset(Dataset):
     def __init__(self, root_path, flag='train', data_path='ETTh1.csv',
                  seq_len=24, pred_len=24, spliter=ratio_spliter, timestamp_col='date',
-                 target='OT', scale=True, data_buffer=None, get_hetero_data=None):
+                 target='OT', scale=True, data_buffer=None, hetero_data_getter=None):
         # size [seq_len, label_len, pred_len]
         # info
         self.seq_len = seq_len
@@ -36,7 +36,7 @@ class Universal_Dataset(Dataset):
         self.root_path = root_path
         self.data_path = data_path
 
-        self.get_hetero_data = get_hetero_data
+        self.hetero_data_getter = lambda x: x if hetero_data_getter is None else hetero_data_getter # return the timestamp
         self.__read_data__()
         self.collect_all_data()
         
@@ -106,8 +106,8 @@ class Universal_Dataset(Dataset):
         x_time = self.x_time[index]
         y_time = self.y_time[index]
 
-        x_time = self.get_hetero_data(x_time)
-        y_time = self.get_hetero_data(y_time)
+        x_time = self.hetero_data_getter(x_time)
+        y_time = self.hetero_data_getter(y_time)
 
 
         return seq_x, seq_y, x_time, y_time
