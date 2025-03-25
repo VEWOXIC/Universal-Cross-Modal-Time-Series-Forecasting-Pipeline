@@ -6,7 +6,6 @@ from utils.tools import dotdict
 from functools import partial
 from .data_helper import timestamp_spliter, ratio_spliter, data_buffer
 from tqdm import tqdm
-from time import time
 
 class Data_Provider(object):
     def __init__(self, args, buffer=False):
@@ -33,10 +32,11 @@ class Data_Provider(object):
             self.data_buffer = data_buffer()
 
         if args.data_config.hetero_info is not None:
-            if args.data_config.hetero_info['root_path'] is None:
-                args.data_config.hetero_info['root_path'] = args.data_config.root_path
+            hetero_info = dotdict(args.data_config.hetero_info)
+            if hetero_info.root_path is None:
+                hetero_info.root_path = args.data_config.root_path
             
-            self.hetero_dataset = Heterogeneous_Dataset(root_path=args.data_config.hetero_info['root_path'], formatter=args.data_config.hetero_info['formatter'], id_info=self.id_info, sampling_rate=args.data_config.hetero_info['sampling_rate'], matching=args.data_config.hetero_info['matching'], output_format=args.data_config.hetero_info['input_format'])
+            self.hetero_dataset = Heterogeneous_Dataset(root_path=hetero_info.root_path, formatter=hetero_info.formatter, id_info=self.id_info, sampling_rate=hetero_info.sampling_rate, matching=hetero_info.matching, output_format=hetero_info.input_format, static_path=hetero_info.static_path)
 
     def get_spliter(self):
         if self.dataset_config.spliter == 'timestamp':

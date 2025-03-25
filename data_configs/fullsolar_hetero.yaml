@@ -13,7 +13,8 @@ sampling_rate: 1h
 base_T: 24
 hetero_info:
   sampling_rate: 1day
-  root_path: None # same
+  root_path: /data/Blob_EastUS/v-zhijianxu/Benchmark/fullsolar/calgary # None for same
   formatter: fast_general_weather_forecast_????.json
-  matching: backward # default backward for 1day sampling
+  matching: backward #single # default backward for 1day sampling
   input_format: json
+  static_info: static_info.json

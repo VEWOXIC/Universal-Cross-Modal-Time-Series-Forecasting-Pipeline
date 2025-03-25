@@ -9,7 +9,7 @@ from .data_helper import timestamp_spliter, ratio_spliter, data_buffer
 import multiprocessing as mp
 from time import time
 import json
-import datetime
+from datetime import datetime
 from functools import partial
 import glob
 
@@ -36,7 +36,7 @@ class Universal_Dataset(Dataset):
         self.root_path = root_path
         self.data_path = data_path
 
-        self.hetero_data_getter = lambda x: x if hetero_data_getter is None else hetero_data_getter # return the timestamp
+        self.hetero_data_getter = (lambda x: x) if hetero_data_getter is None else hetero_data_getter # return the timestamp
         self.__read_data__()
         self.collect_all_data()
         
@@ -121,12 +121,13 @@ class Universal_Dataset(Dataset):
 
 
 class Heterogeneous_Dataset(Dataset):
-    def __init__(self, base_path, formatter, id_info, sampling_rate='1day', matching='nearest', output_format='json'):
+    def __init__(self, root_path, formatter, id_info, static_path=None,sampling_rate='1day', matching='nearest', output_format='json'):
         super().__init__()
-        self.base_path = base_path
+        self.root_path = root_path
         self.formatter = formatter
         self.sampling_rate = sampling_rate
         self.id_info = id_info
+        self.static_path = static_path
         assert matching in ['nearest', 'forward', 'backward', 'single'], "The matching method should be one of ['nearest', 'forward', 'backward', 'single']"
         self.matching = matching
         assert output_format in ['dict','json', 'csv', 'embedding'], "The output format should be one of ['dict','json', 'csv', 'embedding']"
@@ -135,24 +136,46 @@ class Heterogeneous_Dataset(Dataset):
 
     def load_data(self):
         self.dynamic_data = {}
-        file_paths = glob.glob(os.path.join(self.base_path, self.formatter))
-        for file_path in file_paths:
-            json_data = json.load(open(file_path))
-            self.dynamic_data.update(json_data)
 
-        self.dynamic_data = pd.DataFrame.from_dict(self.dynamic_data, orient='index')
-        # sort the index
-        self.dynamic_data.sort_index(inplace=True)
-        self.dynamic_data['time'] = self.dynamic_data.index.dt.strftime('%Y-%m-%d %H:%M:%S')
+        if self.formatter.endswith('.json'):
+            file_paths = glob.glob(os.path.join(self.root_path, self.formatter))
+            for file_path in file_paths:
+                json_data = json.load(open(file_path))
+                self.dynamic_data.update(json_data)
+
+            self.dynamic_data = pd.DataFrame.from_dict(self.dynamic_data, orient='index')
+            self.dynamic_data.index = pd.to_datetime(self.dynamic_data.index)
+            # sort the index
+            self.dynamic_data.sort_index(inplace=True)
+            self.dynamic_data['time'] = self.dynamic_data.index
+            self.dynamic_data['time'] = self.dynamic_data['time'].dt.strftime('%Y%m%d%H%M%S')
+        elif self.formatter.endswith('.csv'):
+            file_paths = glob.glob(os.path.join(self.root_path, self.formatter))
+            for file_path in file_paths:
+                df = pd.read_csv(file_path)
+                self.dynamic_data[df['time']] = df
+            self.dynamic_data = pd.concat(self.dynamic_data.values())
+            self.dynamic_data['time'] = pd.to_datetime(self.dynamic_data['time'])
+            self.dynamic_data.set_index('time', inplace=True)
+            self.dynamic_data['time'] = self.dynamic_data['time'].dt.strftime('%Y%m%d%H%M%S')
         
-
+        print('[ info ] Successfully load the dynamic data from {}'.format(self.formatter))
         # TODO: static_data = {downtime_prompt: '', general_info: '', channel_info: {114514: '', 1919810: ''}}
 
-        self.static_data = None
+        if self.static_path is None:
+            print('[ Warning ] No static data is provided, use default static data!!!!')
+            self.static_data = {
+                'downtime_prompt': 'The sensor is in downtime',
+                'general_info': 'The general information of the sensor',
+                'channel_info': {k: 'The information of the channel {}'.format(k) for k in self.id_info.keys()}
+            }
+
+        else:
+            self.static_data = json.load(open(os.path.join(self.root_path, self.static_path)))
 
     def time_matcher(self, timestamp):
 
-        pos = self.dynamic_data.searchsorted(timestamp)
+        pos = self.dynamic_data.index.searchsorted(timestamp)
         if self.matching == 'nearest':
             if pos == 0:
                 return self.dynamic_data.index[0]
@@ -184,7 +207,7 @@ class Heterogeneous_Dataset(Dataset):
     def init_hetero_data(self, id):
         down_time = self.id_info[id]['sensor_downtime']
         down_time = [down_time[k]['time'] for k in down_time.keys()]
-        down_time = [[datetime.strptime(t[0]), datetime.strptime(t[1])] for t in down_time]
+        down_time = [[pd.to_datetime(t[0]), pd.to_datetime(t[1])] for t in down_time]
 
         general_info = self.static_data['general_info']
         channel_info = self.static_data['channel_info'][id]
@@ -198,7 +221,7 @@ class Heterogeneous_Dataset(Dataset):
         matched_times = []
 
         for t in timestamp:
-            t = datetime.strptime(str(t), '%Y%m%d%H%M%S')
+            t = pd.to_datetime(str(t))
             matched_time = self.time_matcher(t)
 
             if self.matching == 'single' and matched_time in matched_times:
