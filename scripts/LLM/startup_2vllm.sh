@@ -51,4 +51,19 @@ CUDA_VISIBLE_DEVICES=$GPU_ID python3 -m fastchat.serve.vllm_worker \
     --max-model-len 20480 \
     --disable-log-requests &
 
+GPU_ID=2
+echo "Launching deepseek-ai/DeepSeek-R1-Distill-Qwen-14B worker on GPU $GPU_ID"
+    CUDA_VISIBLE_DEVICES=$GPU_ID python3 -m fastchat.serve.vllm_worker \
+        --model-path deepseek-ai/DeepSeek-R1-Distill-Qwen-14B \
+        --model-name deepseek-ai/DeepSeek-R1-Distill-Qwen-14B \
+        --controller http://localhost:8020 \
+        --worker-address http://localhost:$((24002 + GPU_ID)) \
+        --host 0.0.0.0 \
+        --port $((24002 + GPU_ID)) \
+        --tensor-parallel-size 1 \
+        --gpu-memory-utilization 0.95 \
+        --max-num-seqs 128 \
+        --max-model-len 20480 \
+        --disable-log-requests &
+
 wait
