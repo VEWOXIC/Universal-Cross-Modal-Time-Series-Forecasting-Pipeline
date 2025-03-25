@@ -1,24 +1,18 @@
-from data_provider.data_factory import Data_Provider
-from data_provider.data_helper import data_buffer
 from exp.exp_basic import Exp_Basic
 from models import model_init
 
 from utils.tools import EarlyStopping, adjust_learning_rate
-from utils.metrics import metric
 
 import numpy as np
 import torch
 import torch.nn as nn
-from torch import optim
+
 import os
 import time
 import warnings
-import matplotlib.pyplot as plt
 
 import json
-from torch.fft import rfft, irfft
 
-from copy import deepcopy
 from tqdm import tqdm
 
 warnings.filterwarnings('ignore')
@@ -26,7 +20,6 @@ warnings.filterwarnings('ignore')
 class Experiment(Exp_Basic):
     def __init__(self, args):
         super(Experiment, self).__init__(args)
-        self.data_provider = Data_Provider(args, buffer=(not args.disable_buffer))
 
     def _build_model(self):
         model = model_init(self.args.model, self.args.model_config, self.args)
@@ -39,13 +32,13 @@ class Experiment(Exp_Basic):
         Get the data for training, validation, or testing.
         """
         if flag == 'train':
-            data_set, data_loader = self.data_provider.get_train()
+            data_loader = self.data_provider.get_train(return_type='loader')
         elif flag == 'val':
-            data_set, data_loader = self.data_provider.get_val()
+            data_loader = self.data_provider.get_val(return_type='loader')
         elif flag == 'test':
-            data_set, data_loader = self.data_provider.get_test()
+            data_loader = self.data_provider.get_test(return_type='loader')
 
-        return data_set, data_loader
+        return data_loader
 
     def _forward_step(self, iter):
         """
@@ -66,9 +59,9 @@ class Experiment(Exp_Basic):
         """
         Train the model.
         """
-        train_data, train_loader = self._get_data(flag='train')
-        vali_data, vali_loader = self._get_data(flag='val')
-        test_data, test_loader = self._get_data(flag='test')
+        train_loader = self._get_data(flag='train')
+        vali_loader = self._get_data(flag='val')
+        test_loader = self._get_data(flag='test')
         print(self.model)
         # self._get_profile(self.model)
         # print('Trainable parameters: ', sum(p.numel() for p in self.model.parameters() if p.requires_grad))
@@ -122,8 +115,8 @@ class Experiment(Exp_Basic):
 
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             train_loss = np.average(train_loss)
-            vali_loss = self.vali(vali_data, vali_loader, criterion)
-            test_loss = self.test(test_data, test_loader, criterion)
+            vali_loss = self.vali(vali_loader, criterion)
+            test_loss = self.test(test_loader, criterion)
 
             print("Epoch: {0}, Steps: {1} | Train Loss: {2:.7f} Vali Loss: {3:.7f} Test Loss: {4:.7f}".format(
                 epoch + 1, train_steps, train_loss, vali_loss, test_loss))
@@ -139,7 +132,7 @@ class Experiment(Exp_Basic):
 
         return self.model
 
-    def vali(self, data, loader, criterion):
+    def vali(self, loader, criterion):
         """
         Validate the model on the validation dataset.
         """
@@ -159,7 +152,7 @@ class Experiment(Exp_Basic):
         self.model.train()
         return total_loss
     
-    def test(self, data, loaders, criterion, valinum='full'):
+    def test(self, loaders, criterion, valinum='full'):
         """
         Validate the model on the validation dataset.
         """
