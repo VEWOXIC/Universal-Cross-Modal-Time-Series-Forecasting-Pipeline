@@ -106,11 +106,11 @@ class Universal_Dataset(Dataset):
         x_time = self.x_time[index]
         y_time = self.y_time[index]
 
-        x_time = self.hetero_data_getter(x_time)
-        y_time = self.hetero_data_getter(y_time)
+        x_hetero = self.hetero_data_getter(x_time)
+        y_hetero = self.hetero_data_getter(y_time)
 
 
-        return seq_x, seq_y, x_time, y_time
+        return seq_x, seq_y, x_time, y_time, x_hetero, y_hetero
 
     def __len__(self):
         return len(self.x_data)
@@ -249,8 +249,9 @@ class Heterogeneous_Dataset(Dataset):
                 raise NotImplementedError('Embedding output format is not implemented yet')
             else:
                 raise NotImplementedError('Output format is not implemented yet')
-            
-        return general_info, channel_info, output_dynamic
+        # convert the matched_times to str in yyyymmddHHMMSS
+        matched_times = [t.strftime('%Y%m%d%H%M%S') for t in matched_times]    
+        return matched_times, general_info, channel_info, output_dynamic
             
         
 
