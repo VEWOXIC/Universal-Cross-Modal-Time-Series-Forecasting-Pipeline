@@ -1,0 +1,13 @@
+You have missed the format, please try again.
+Coarse Grained Weather: {coarse_info_day}
+Fine Grained Weather: {fine_info_day}
+format the output as a json string, with format as follows:'''+'''
+```json
+{
+    "daily": <whole day weather forecast message in step 1>,
+    "Early Morning": <6-hour weather forecast message in step 2>,
+    "Morning": <6-hour weather forecast message in step 2>,
+    "Afternoon": <6-hour weather forecast message in step 2>,
+    "Evening": <6-hour weather forecast message in step 2>,
+}
+```
