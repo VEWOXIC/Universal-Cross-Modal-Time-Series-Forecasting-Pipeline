@@ -1,6 +1,6 @@
 model: deepseek-ai/DeepSeek-R1-Distill-Qwen-14B
 system_prompt: prompt_templates/formal_forecast/system.template
-first_prompt: prompt_templates/formal_forecast/firstattempt.template
+prompts: prompt_templates/formal_forecast/firstattempt.template
 retry_prompt: prompt_templates/formal_forecast/retry.template
 merge_system: True
 temp: 0.6
