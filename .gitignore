@@ -125,3 +125,4 @@ dmypy.json
 *amlt*
 * copy*
 lightning_logs
+/llm_results/*

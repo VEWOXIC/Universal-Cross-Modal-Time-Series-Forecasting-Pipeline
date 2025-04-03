@@ -20,23 +20,19 @@ python3 -m fastchat.serve.openai_api_server --host 0.0.0.0 --port 8021 \
 
 # Dynamically get the number of GPUs and launch a vLLM worker for each
 # NUM_GPUS=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
-NUM_GPUS=3
-for GPU_ID in $(seq 0 $((NUM_GPUS - 1)))
-do
-    echo "Launching worker on GPU $GPU_ID"
-    CUDA_VISIBLE_DEVICES=$GPU_ID python3 -m fastchat.serve.vllm_worker \
-        --model-path deepseek-ai/DeepSeek-R1-Distill-Qwen-14B \
-        --model-name deepseek-ai/DeepSeek-R1-Distill-Qwen-14B \
-        --controller http://localhost:8020 \
-        --worker-address http://localhost:$((24002 + GPU_ID)) \
-        --host 0.0.0.0 \
-        --port $((24002 + GPU_ID)) \
-        --tensor-parallel-size 1 \
-        --gpu-memory-utilization 0.95 \
-        --max-num-seqs 128 \
-        --max-model-len 20480 \
-        --disable-log-requests &
 
-done
+CUDA_VISIBLE_DEVICES=0,1 python3 -m fastchat.serve.vllm_worker \
+    --model-path Qwen/QwQ-32B \
+    --model-name Qwen/QwQ-32B \
+    --controller http://localhost:8020 \
+    --worker-address http://localhost:$((24002 + GPU_ID)) \
+    --host 0.0.0.0 \
+    --port $((24002 + GPU_ID)) \
+    --num-gpus 2 \
+    --gpu-memory-utilization 0.95 \
+    --max-num-seqs 128 \
+    --max-model-len 20480 \
+    --disable-log-requests &
+
 
 wait

@@ -3,7 +3,7 @@ import argparse
 import os
 import torch
 # from exp.exp_uni import Exp_uni
-from exp.exp_universal import Experiment
+from exp.exp_llm import Experiment
 import random
 import numpy as np
 import time
@@ -11,21 +11,25 @@ import yaml
 from utils.tools import dotdict
 from utils.task import ahead_task_parser
 
-parser = argparse.ArgumentParser(description='Time Series Forecasting Benchmark')
+######
+
+import openai
+
+parser = argparse.ArgumentParser(description='CWTFormer for Time Series Forecasting')
 
 # model config
-parser.add_argument('--model', type=str, default='FITS', help='model name')
-parser.add_argument('--model_config', type=str, default='model_configs/FITS.yaml', help='model config')
+parser.add_argument('--model', type=str, default='deepseek-ai/DeepSeek-R1-Distill-Qwen-14B', help='model name')
+parser.add_argument('--model_config', type=str, default='./model_configs/LLM/DeepSeek-R1-Distill-Qwen-14B.yaml', help='model config')
 
 # data loader
 parser.add_argument('--data', type=str, default='solar', help='data name')
 parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
-parser.add_argument('--data_config', type=str, default='./data_configs/data_profile.yaml', help='data profile')
-parser.add_argument('--scale', type=bool, default=True, help='scale data')
+parser.add_argument('--data_config', type=str, default='./data_configs/fullsolar_hetero.yaml', help='data profile')
+parser.add_argument('--scale', type=bool, default=False, help='scale data')
 parser.add_argument('--disable_buffer', default=False, action='store_true', help='disable data buffer')
 
 # forecasting task
-parser.add_argument('--ahead', type=str, default=None, help='day/week/month ahead forecasting')
+parser.add_argument('--ahead', type=str, default='day', help='day/week/month ahead forecasting')
 parser.add_argument('--output_len', type=int, default=1000, help='output sequence length or "ntp" for next token prediction')
 parser.add_argument('--input_len', type=int, default=1000, help='output sequence length or "ntp" for next token prediction')
 
@@ -73,27 +77,12 @@ if args.ahead is not None:
 else:
     setting = f'{current_time}_{args.model}_{args.data}_{args.output_len}_{args.input_len}'
 
+# check if the checkpoint path exists
+if not os.path.exists(os.path.join(args.checkpoints,setting)):
+    os.makedirs(os.path.join(args.checkpoints,setting))
+exp = Experiment(args)
+exp.test(savepath=os.path.join(args.checkpoints,setting))
 
-args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False
 
-fix_seed = 2021
-random.seed(fix_seed)
-torch.manual_seed(fix_seed)
-np.random.seed(fix_seed)
 
-if args.use_gpu and args.use_multi_gpu:
-    args.devices = args.devices.replace(' ', '')
-    device_ids = args.devices.split(',')
-    args.device_ids = [int(id_) for id_ in device_ids]
-    args.gpu = args.device_ids[0]
 
-print('Args in experiment:')
-print(args)
-
-torch.cuda.empty_cache()
-
-exp = Experiment(args)  # set experiments
-print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-exp.train(setting)
-
-torch.cuda.empty_cache()

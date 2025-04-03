@@ -1,0 +1,27 @@
+We now have the data from {channel_info}. The historical data is as follows:
+
+{x_table}
+
+The historical weather condition is as follows:
+
+{x_dy_table}
+
+We now have the weather forecasting for the following days:
+
+{y_dy_table}
+
+Please make the prediction for the next 24 hours. Note that there is a note entry in these data, which indicate the working condition of the system that is being forecasted, you should also predict as it says. 
+
+The timestamp for forecasting is as follows:
+
+{y_timestamp}
+
+Please format it in json format in [datastamp, value] pair, as below:
+
+```json
+
+[[<timestamp>, <predicted_value>],
+ [<timestamp>, <predicted_value>],
+ ...]
+
+```

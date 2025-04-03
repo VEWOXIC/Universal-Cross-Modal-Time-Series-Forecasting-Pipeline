@@ -1,11 +1,12 @@
 import importlib
 import yaml
 from utils.tools import dotdict
+from .LLM_socket import LLM_Socket
 
 def model_init(model_name, configs, all_args, is_LLM=False):
 
     if is_LLM:
-        return None
+        return LLM_Socket(configs)
     else:
         configs['seq_len']=all_args.input_len
         configs['pred_len'] = all_args.output_len

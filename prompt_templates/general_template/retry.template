@@ -1,0 +1,9 @@
+You now have a chance to review your prediction results. You can make adjustments to your prediction based on the historical data and weather conditions. Please provide your final prediction in the same format as before, ensuring that it is as accurate as possible and well-structured as follows.
+
+```json
+
+[[<timestamp>, <predicted_value>],
+ [<timestamp>, <predicted_value>],
+ ...]
+
+```
