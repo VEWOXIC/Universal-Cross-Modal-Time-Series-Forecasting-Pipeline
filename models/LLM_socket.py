@@ -93,7 +93,11 @@ class LLM_Socket():
         x_table, x_dy_table, channel_info, dataset_info, y_timestamp, y_dy_table, y_table = self.process_instance(instance)
 
         system_prompt=self.system_prompt.format(dataset_info=dataset_info)
+        y_timestamp = [[y_timestamp[i], f'<your_prediction_value[{i}]>'] for i in range(len(y_timestamp))]
         first_prompt=self.first_prompt.format(channel_info=channel_info, x_table=x_table, x_dy_table=x_dy_table, y_dy_table=y_dy_table, y_timestamp=y_timestamp)
+        retry_prompt=self.retry_prompt.format(y_timestamp=y_timestamp)
+
+
 
         if self.merge_system:
             first_prompt = system_prompt + first_prompt
@@ -114,14 +118,22 @@ class LLM_Socket():
                 try:
                     messages.append({"role": "assistant", "content": result})
                     pred = self.extract_result(result)
+                    if str(pred[0][0]) != str(y_timestamp[0][0]):
+                        print(f"Mismatch: pred[0][0] = {pred[0][0]}, y_timestamp[0] = {y_timestamp[0]}")
+                        raise AssertionError("Mismatch between pred[0][0] and y_timestamp[0]")
                     break
+                except AssertionError:
+                    if len(messages)>4: 
+                        message = message[:4]
+                    else:
+                        messages.append({"role": "user", "content": retry_prompt})
                 except:
                     if retry == 0:
                         pred = [(y_timestamp[i], None) for i in range(len(y_timestamp))]
 
                     else:
                         
-                        messages.append({"role": "user", "content": self.retry_prompt})
+                        messages.append({"role": "user", "content": retry_prompt})
                         retry -= 1
                         continue
 

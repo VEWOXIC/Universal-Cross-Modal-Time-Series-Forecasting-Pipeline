@@ -8,4 +8,4 @@ base_url: http://localhost:8021/v1/
 api_key: EMPTY
 retry: 3
 force_retry: False
-max_parallel: 16
+max_parallel: 32

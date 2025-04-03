@@ -2,8 +2,6 @@ You now have a chance to review your prediction results. You can make adjustment
 
 ```json
 
-[[<timestamp>, <predicted_value>],
- [<timestamp>, <predicted_value>],
- ...]
+{y_timestamp}
 
 ```

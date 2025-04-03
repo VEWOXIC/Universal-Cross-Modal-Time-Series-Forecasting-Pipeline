@@ -12,16 +12,10 @@ We now have the weather forecasting for the following days:
 
 Please make the prediction for the next 24 hours. Note that there is a note entry in these data, which indicate the working condition of the system that is being forecasted, if the sensor is down it means the system is also not working, you can safely predict 0 as it indicates. 
 
-The timestamp to forecast is as follows, make sure your output timestamp follows them:
-
-{y_timestamp}
-
-Please format it in json format in [datastamp, value] pair, as below:
+Please format it in json format in [forecast_timestamp, predicted_value] pair, the timestamps to forecast are prefilled, as below:
 
 ```json
 
-[[<timestamp>, <predicted_value>],
- [<timestamp>, <predicted_value>],
- ...]
+{y_timestamp}
 
 ```

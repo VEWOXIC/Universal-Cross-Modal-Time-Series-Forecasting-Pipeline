@@ -21,7 +21,7 @@ python3 -m fastchat.serve.openai_api_server --host 0.0.0.0 --port 8021 \
 # Dynamically get the number of GPUs and launch a vLLM worker for each
 # NUM_GPUS=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
 NUM_GPUS=3
-for GPU_ID in $(seq 0 $((NUM_GPUS - 1)))
+for GPU_ID in $(seq 1 $((NUM_GPUS)))
 do
     echo "Launching worker on GPU $GPU_ID"
     CUDA_VISIBLE_DEVICES=$GPU_ID python3 -m fastchat.serve.vllm_worker \
@@ -33,8 +33,8 @@ do
         --port $((24002 + GPU_ID)) \
         --tensor-parallel-size 1 \
         --gpu-memory-utilization 0.95 \
-        --max-num-seqs 128 \
-        --max-model-len 20480 \
+        --max-num-seqs 1024 \
+        --max-model-len 40960 \
         --disable-log-requests &
 
 done
