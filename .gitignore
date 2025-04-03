@@ -126,3 +126,4 @@ dmypy.json
 * copy*
 lightning_logs
 /llm_results/*
+.fuse*

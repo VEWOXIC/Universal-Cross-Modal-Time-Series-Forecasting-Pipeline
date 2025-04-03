@@ -62,17 +62,20 @@ class Experiment(Exp_Basic):
             info_result = []
             gts=[]
             preds=[]
+            # make dir if not exist
+            if not os.path.exists(os.path.join(savepath, info)):
+                os.makedirs(os.path.join(savepath, info))
+            info_savepath= os.path.join(savepath, info)
 
 
             indexes = list(range(0, len(data_set), 6))
             with ProcessPoolExecutor(max_workers=self.args.model_config.max_parallel) as executor:
                 results = list(tqdm(executor.map(process_iteration, [data_set]*len(indexes), indexes,[self.args] * len(indexes),
-                        [self.model] * len(indexes)), desc=f"Testing {info}", total=len(indexes)))
+                        [self.model] * len(indexes), [info_savepath]*len(indexes)), desc=f"Testing {info}", total=len(indexes)))
 
             for processed in results:
                 gts.append(processed["gt"])
                 preds.append(processed["pred"])
-                processed["result"]['log'] = processed["log"]
                 info_result.append(processed["result"])
             info_loss = criterion(torch.tensor(preds), torch.tensor(gts))
             total_loss.append(info_loss.item())  # Append the loss for averaging later
@@ -84,7 +87,7 @@ class Experiment(Exp_Basic):
 
         return total_loss
     
-def process_iteration(dataset, index, args, model):
+def process_iteration(dataset, index, args, model, info_savepath):
     """
     Process a single iteration for testing.
     """
@@ -98,10 +101,13 @@ def process_iteration(dataset, index, args, model):
     pred = [p[1] for p in pred]
     pred = np.asarray(pred)  # Convert to numpy array if not already
     pred = pred[-args.output_len:]  # Extract the correct dimensions
+    result['log']=log[2:]
+    date = result['pred'][0][0]
+    with open(os.path.join(info_savepath, f'{date}_result.json'), 'w') as f:
+        json.dump(result, f, indent=4)
 
     return {
         "result": result,
-        "log": log,
         "gt": gt,
         "pred": pred
     }
