@@ -97,9 +97,6 @@ def process_iteration(dataset, index, args, model):
     pred = result['pred']
     pred = [p[1] for p in pred]
     pred = np.asarray(pred)  # Convert to numpy array if not already
-    print(f"pred shape: {pred.shape}")
-    print(f"gt shape: {gt.shape}")
-    print(pred)
     pred = pred[-args.output_len:]  # Extract the correct dimensions
 
     return {

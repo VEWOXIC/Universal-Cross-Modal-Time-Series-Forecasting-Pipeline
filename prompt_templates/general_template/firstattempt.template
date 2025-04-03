@@ -10,7 +10,7 @@ We now have the weather forecasting for the following days:
 
 {y_dy_table}
 
-Please make the prediction for the next 24 hours. Note that there is a note entry in these data, which indicate the working condition of the system that is being forecasted, you should also predict as it says. 
+Please make the prediction for the next 24 hours. Note that there is a note entry in these data, which indicate the working condition of the system that is being forecasted, if the sensor is down it means the system is also not working, you can safely predict 0 as it indicates. 
 
 The timestamp for forecasting is as follows:
 
