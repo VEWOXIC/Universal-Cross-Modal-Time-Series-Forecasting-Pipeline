@@ -1,4 +1,4 @@
-You now have a chance to review your prediction results. You can make adjustments to your prediction based on the historical data and weather conditions. Please provide your final prediction in the same format as before, ensuring that it is as accurate as possible and well-structured as follows.
+You now have a chance to review your prediction results. You can make adjustments to your prediction based on the historical data and weather conditions. Please provide your final prediction in the same format as before, ensuring that it is as accurate as possible and well-structured. Please format it in json format in [forecast_timestamp, predicted_value] pair. **Use the timestamp yyyymmddHHMMSS** instad of Unix timestamp. The predicted value should be a float number with 2 decimal points. The json format is as follows with timestamp prefilled:
 
 ```json
 

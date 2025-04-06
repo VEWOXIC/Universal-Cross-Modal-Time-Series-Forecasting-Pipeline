@@ -32,9 +32,10 @@ do
         --host 0.0.0.0 \
         --port $((24002 + GPU_ID)) \
         --tensor-parallel-size 1 \
-        --gpu-memory-utilization 0.95 \
+        --gpu-memory-utilization 0.98 \
         --max-num-seqs 1024 \
-        --max-model-len 40960 \
+        --max-model-len 55000 \
+        --rope-scaling '{"factor": 4.0,"original_max_position_embeddings": 32768,"rope_type": "yarn"}' \
         --disable-log-requests &
 
 done

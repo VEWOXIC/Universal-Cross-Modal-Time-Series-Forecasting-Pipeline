@@ -1,4 +1,4 @@
-model: deepseek-ai/DeepSeek-R1-Distill-Qwen-14B
+model: Qwen/QwQ-32B
 system_prompt: prompt_templates/general_template/system.template
 first_prompt: prompt_templates/general_template/firstattempt.template
 retry_prompt: prompt_templates/general_template/retry.template

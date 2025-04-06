@@ -15,3 +15,5 @@ pandas
 torch
 transformers
 flash-attn
+openai
+flashinfer-python

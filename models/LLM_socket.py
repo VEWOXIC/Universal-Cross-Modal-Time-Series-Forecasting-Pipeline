@@ -4,13 +4,14 @@ from utils.tools import dotdict
 import pandas as pd
 import numpy as np
 import openai
+from time import sleep
 
 class LLM_Socket():
     def __init__(self, configs):
         self.url = configs.base_url
         self.api_key = configs.api_key
-        openai.api_key = self.api_key
-        openai.base_url = self.url
+        # openai.api_key = self.api_key
+        # openai.base_url = self.url
         self.model = configs.model
         self.temperature = configs.temperature
         self.system_prompt = configs.system_prompt
@@ -20,6 +21,8 @@ class LLM_Socket():
         self.retry = configs.retry
         self.force_retry = configs.force_retry
 
+        self.client = openai.OpenAI(api_key=self.api_key, base_url=self.url)
+
         self.check_url_avaliability()
 
         self.load_templates()
@@ -28,7 +31,7 @@ class LLM_Socket():
         return self
 
     def check_url_avaliability(self):
-        avaliable_models = [model.id for model in openai.models.list().data]
+        avaliable_models = [model.id for model in self.client.models.list().data]
         if self.model in avaliable_models:
             return True
         else:
@@ -50,16 +53,37 @@ class LLM_Socket():
     def extract_result(self, result):
         pattern = r'```json(.*?)```'
         result = re.search(pattern, result, re.DOTALL)
-        pred = json.loads(result.group(1))
+        try:
+            pred = json.loads(result.group(1))
+        except json.decoder.JSONDecodeError as e:
+            print(result.group(1))
+            raise e
+        except Exception as e:
+            print(f"[Error] Unexpected Error: {e}")
+            raise e
+        
 
         return pred
     
     def call_openai(self, messages):
-        response = openai.chat.completions.create(
-                                    model=self.model,
-                                    messages=messages,
-                                    temperature=self.temperature,
-                                ).choices[0].message.content
+        # try:
+        response = self.client.chat.completions.create(
+                                model=self.model,
+                                messages=messages,
+                                temperature=self.temperature,
+                                timeout=1200,
+                                seed=int(np.random.choice([114,514,1919,810])),
+                            ).choices[0].message.content
+        # except openai.APITimeoutError:
+        #     # sleep for a while and retry
+        #     print("API Timeout Error: Retrying...")
+        #     sleep(10)
+            
+        #     response = self.call_openai(messages)
+        # except openai.BadRequestError as e:
+        #     print(f"Bad Request Error: {e}")
+        #     sleep(10)
+        #     response = self.call_openai(messages)
 
         return response
     
@@ -114,28 +138,63 @@ class LLM_Socket():
                 pass
         else:
             while True:
-                result = self.call_openai(messages)
+                
                 try:
+                    result = self.call_openai(messages)
                     messages.append({"role": "assistant", "content": result})
                     pred = self.extract_result(result)
                     if str(pred[0][0]) != str(y_timestamp[0][0]):
-                        print(f"Mismatch: pred[0][0] = {pred[0][0]}, y_timestamp[0] = {y_timestamp[0]}")
+                        print(f"Mismatch: pred[0][0] = {pred[0][0]}, y_timestamp[0][0] = {y_timestamp[0][0]}")
                         raise AssertionError("Mismatch between pred[0][0] and y_timestamp[0]")
                     break
-                except AssertionError:
-                    if len(messages)>4: 
-                        message = message[:4]
-                    else:
-                        messages.append({"role": "user", "content": retry_prompt})
-                except:
+                except openai.APITimeoutError or openai.BadRequestError as e:
                     if retry == 0:
-                        pred = [(y_timestamp[i], None) for i in range(len(y_timestamp))]
-
+                        pred = [(y_timestamp[i], -1) for i in range(len(y_timestamp))]
+                        break
+                    messages = messages[:2]
+                    print(f"[Error] Server Error: {e}")
+                    sleep(10)
+                    retry -= 1
+                    continue
+                except AssertionError as e:
+                    if retry == 0:
+                        pred = [(y_timestamp[i], -1) for i in range(len(y_timestamp))]
+                        break
+                    if len(messages)>4: 
+                        messages = messages[:4]
                     else:
-                        
-                        messages.append({"role": "user", "content": retry_prompt})
-                        retry -= 1
-                        continue
+                        messages.append({"role": "user", "content": retry_prompt + 'Your time stamp is not properly aligned or json format is wrong, FIX IT!'})
+
+                    print(f"[Error] Assertion Error: {e}")
+                    # sleep(10)
+                    retry -= 1
+                    continue
+
+                except json.JSONDecodeError as e:
+                    if retry == 0:
+                        pred = [(y_timestamp[i], -1) for i in range(len(y_timestamp))]
+                        break
+                    if len(messages)>4: 
+                        messages = messages[:4]
+                    else:
+                        messages.append({"role": "user", "content": retry_prompt + 'Check the format of your json output!'})
+                    print(f"[Error] JSON Decode Error: {e}")
+                    # sleep(10)
+                    retry -= 1
+                    continue
+                except Exception as e:
+                    if retry == 0:
+                        pred = [(y_timestamp[i], -1) for i in range(len(y_timestamp))]
+                        break
+                    if len(messages)>4: 
+                        messages = messages[:4]
+                    else:
+                        messages.append({"role": "user", "content": retry_prompt + 'Check your output! make sure your output is a json format!'})
+                    print(f"[Error] Unexpected Error: {e}")
+                    # sleep(10)
+                    retry -= 1
+                    continue
+                
 
         result = {'pred': pred, 
                   'x_table': x_table,

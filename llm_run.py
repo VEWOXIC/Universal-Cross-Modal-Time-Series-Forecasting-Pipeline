@@ -32,6 +32,8 @@ parser.add_argument('--disable_buffer', default=False, action='store_true', help
 parser.add_argument('--ahead', type=str, default='day', help='day/week/month ahead forecasting')
 parser.add_argument('--output_len', type=int, default=1000, help='output sequence length or "ntp" for next token prediction')
 parser.add_argument('--input_len', type=int, default=1000, help='output sequence length or "ntp" for next token prediction')
+parser.add_argument('--sample_step', type=int, default=24, help='sampling step of dataset')
+parser.add_argument('--no_parallel', action='store_true', help='sample rate of dataset', default=False)
 
 # optimization
 parser.add_argument('--num_workers', type=int, default=8, help='data loader num workers')
@@ -49,6 +51,8 @@ parser.add_argument('--use_multi_gpu', action='store_true', help='use multiple g
 parser.add_argument('--devices', type=str, default='0,1,2,3', help='device ids of multiple gpus')
 
 args = parser.parse_args()
+
+print(torch.cuda.device_count())
 
 # preload the yamls
 with open(args.model_config, 'r') as f:

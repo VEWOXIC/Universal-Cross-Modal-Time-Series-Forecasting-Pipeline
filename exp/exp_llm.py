@@ -14,15 +14,22 @@ import warnings
 import json
 
 from tqdm import tqdm
-from concurrent.futures import ProcessPoolExecutor
-from joblib import Parallel, delayed
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
+from data_provider.data_factory import Data_Provider
+from multiprocessing import Pool
+
 
 
 warnings.filterwarnings('ignore')
 
 class Experiment(Exp_Basic):
+    
     def __init__(self, args):
-        super(Experiment, self).__init__(args)
+        self.args= args
+        self.model = self._build_model()
+        self.data_provider = Data_Provider(args, buffer=(not args.disable_buffer))
+        
 
     def _build_model(self):
         model = model_init(self.args.model, self.args.model_config, self.args, is_LLM=True)
@@ -68,15 +75,36 @@ class Experiment(Exp_Basic):
             info_savepath= os.path.join(savepath, info)
 
 
-            indexes = list(range(0, len(data_set), 6))
-            with ProcessPoolExecutor(max_workers=self.args.model_config.max_parallel) as executor:
-                results = list(tqdm(executor.map(process_iteration, [data_set]*len(indexes), indexes,[self.args] * len(indexes),
-                        [self.model] * len(indexes), [info_savepath]*len(indexes)), desc=f"Testing {info}", total=len(indexes)))
+            indexes = list(range(0, len(data_set), self.args.sample_step))
+            my_process_iteration = partial(process_iteration, dataset=data_set, args=self.args, model=self.model, info_savepath=info_savepath)
 
-            for processed in results:
-                gts.append(processed["gt"])
-                preds.append(processed["pred"])
-                info_result.append(processed["result"])
+            print('[DEBUG]', data_set)
+            print('[DEBUG]', self.args)
+            print('[DEBUG]', self.model)
+            print('[DEBUG]', info_savepath)
+            print('[DEBUG]', my_process_iteration)
+
+            if self.args.no_parallel:
+                
+                for index in tqdm(indexes, desc=f"Testing {info}"):
+                    processed = my_process_iteration(index)
+                    gts.append(processed["gt"])
+                    preds.append(processed["pred"])
+                    info_result.append(processed["result"])
+            else:
+                # get the number of gpus
+                num_gpus = torch.cuda.device_count()
+                max_workers = num_gpus * self.args.model_config.queue_len
+                print(f"Number of GPUs: {num_gpus}, Max Workers: {max_workers}")
+
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    results = list(tqdm(executor.map(my_process_iteration, indexes), desc=f"Testing {info}", total=len(indexes)))
+
+                for processed in results:
+                    gts.append(processed["gt"])
+                    preds.append(processed["pred"])
+                    info_result.append(processed["result"])
+
             info_loss = criterion(torch.tensor(preds), torch.tensor(gts))
             total_loss.append(info_loss.item())  # Append the loss for averaging later
             print(f"Test loss for {info}: {np.average(info_loss)}")
@@ -87,7 +115,7 @@ class Experiment(Exp_Basic):
 
         return total_loss
     
-def process_iteration(dataset, index, args, model, info_savepath):
+def process_iteration(index, dataset, args, model, info_savepath):
     """
     Process a single iteration for testing.
     """
