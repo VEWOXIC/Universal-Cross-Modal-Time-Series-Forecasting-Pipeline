@@ -10,7 +10,7 @@ We now have the weather forecasting for the following days:
 
 {y_dy_table}
 
-Please format your forecasting in json format in [forecast_timestamp, predicted_value] pair. **Use the timestamp yyyymmddHHMMSS**. The predicted_value should be non-negtive float, it can be 0 when no power generate or the sensor/system is shutdown, sensor down means the system is down so no power generate. The json format is as follows with timestamp to forecast prefilled:
+Please format your forecasting in json format in [forecast_timestamp, predicted_value] pair. **Use the timestamp yyyymmddHHMMSS**. The predicted_value should be non-negtive float, it can be 0 when no power generate or the sensor/system is shutdown. Forecast 0 if the sensor is down, don't think too much about this. The json format is as follows with timestamp to forecast prefilled:
 
 ```json
 

@@ -36,7 +36,8 @@ do
         --max-num-seqs 1024 \
         --max-model-len 55000 \
         --rope-scaling '{"factor": 4.0,"original_max_position_embeddings": 32768,"rope_type": "yarn"}' \
-        --disable-log-requests &
+        --disable-log-requests \
+        --enable-reasoning --reasoning-parser deepseek_r1&
 
 done
 

@@ -50,7 +50,7 @@ class VLLMWorker(BaseModelWorker):
             limit_worker_concurrency,
             conv_template,
         )
-        # llm_engine.engine = llm_engine #################################
+        # llm_engine.engine = llm_engine #uncomment this line when use vllm == 0.8.3
         logger.info(
             f"Loading the model {self.model_names} on worker {worker_id}, worker type: vLLM worker..."
         )

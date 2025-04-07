@@ -105,9 +105,16 @@ class Experiment(Exp_Basic):
                     results = list(tqdm(executor.map(my_process_iteration, indexes), desc=f"Testing {info}", total=len(indexes)))
 
                 for processed in results:
-                    gts.append(processed["gt"])
-                    preds.append(processed["pred"])
-                    info_result.append(processed["result"])
+                    if processed is not None:
+                        gts.append(processed["gt"])
+                        preds.append(processed["pred"])
+                        info_result.append(processed["result"])
+                
+            if os.path.exists(os.path.join(info_savepath, f'{info}_result.json')):
+                old = json.load(open(os.path.join(info_savepath, f'{info}_result.json')))
+                info_result = old + info_result
+            with open(os.path.join(info_savepath, f'{info}_result.json'), 'w') as f:
+                json.dump(info_result, f, indent=4)
 
         #     info_loss = criterion(torch.tensor(preds), torch.tensor(gts))
         #     total_loss.append(info_loss.item())  # Append the loss for averaging later
@@ -124,6 +131,10 @@ def process_iteration(index, dataset, args, model, info_savepath):
     Process a single iteration for testing.
     """
     iter = dataset[index]
+    date_ = iter[3][1]
+    if os.path.exists(os.path.join(info_savepath, f'{date_}_result.json')):
+        print(f"File {date_}_result.json already exists, skipping...")
+        return None
     result, log = model(iter)
 
     gt = iter[1]

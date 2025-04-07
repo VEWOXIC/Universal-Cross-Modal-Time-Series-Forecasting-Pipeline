@@ -51,6 +51,9 @@ parser.add_argument('--gpu', type=int, default=0, help='gpu')
 parser.add_argument('--use_multi_gpu', action='store_true', help='use multiple gpus', default=False)
 parser.add_argument('--devices', type=str, default='0,1,2,3', help='device ids of multiple gpus')
 
+parser.add_argument('--amlt', default=False, action='store_true', help='if running on amlt')
+
+
 args = parser.parse_args()
 
 print(torch.cuda.device_count())
@@ -67,7 +70,10 @@ data_configs = dotdict(data_configs)
 args.data_config = data_configs
 
 # get current time
-current_time = time.strftime('%m-%d-%H%M', time.localtime(time.time()))
+if args.amlt:
+    current_time = 'amlt'
+else:
+    current_time = time.strftime('%m-%d-%H%M', time.localtime(time.time()))
 # setting record of experiment
 
 if args.ahead is not None:
