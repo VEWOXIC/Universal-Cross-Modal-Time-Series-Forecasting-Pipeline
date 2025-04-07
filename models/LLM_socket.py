@@ -54,9 +54,15 @@ class LLM_Socket():
         pattern = r'```json(.*?)```'
         result = re.search(pattern, result, re.DOTALL)
         try:
-            pred = json.loads(result.group(1))
+            result = result.group(1)
+            if "'" in result:
+                result = result.replace("'", '')
+            if "//" in result:
+                # remove the comment for each line
+                result = re.sub(r'//.*?\n', '\n', result)
+            pred = json.loads(result)
         except json.decoder.JSONDecodeError as e:
-            print(result.group(1))
+            print(result)
             raise e
         except Exception as e:
             print(f"[Error] Unexpected Error: {e}")
