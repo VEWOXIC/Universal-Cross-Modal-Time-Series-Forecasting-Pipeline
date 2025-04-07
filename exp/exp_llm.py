@@ -57,13 +57,17 @@ class Experiment(Exp_Basic):
 
         return output, log
     
-    def test(self, savepath, valinum='full'):
+    def test(self, savepath, valiset='full'):
         """
         Validate the model on the validation dataset.
         """
         criterion = self._select_criterion()
         data_sets = self.data_provider.get_test(return_type='set')
         total_loss = []
+        if valiset == 'full':
+            pass
+        else:
+            data_sets = {i: data_sets[i] for i in valiset.split(',')}
 
         for info, data_set in data_sets.items():
             info_result = []
@@ -105,15 +109,15 @@ class Experiment(Exp_Basic):
                     preds.append(processed["pred"])
                     info_result.append(processed["result"])
 
-            info_loss = criterion(torch.tensor(preds), torch.tensor(gts))
-            total_loss.append(info_loss.item())  # Append the loss for averaging later
-            print(f"Test loss for {info}: {np.average(info_loss)}")
-            # save the info_result as json in ckpt
-            with open(os.path.join(savepath, f'{info}_result.json'), 'w') as f:
-                json.dump(info_result, f, indent=4)
-        total_loss = np.average(total_loss)
+        #     info_loss = criterion(torch.tensor(preds), torch.tensor(gts))
+        #     total_loss.append(info_loss.item())  # Append the loss for averaging later
+        #     print(f"Test loss for {info}: {np.average(info_loss)}")
+        #     # save the info_result as json in ckpt
+        #     with open(os.path.join(savepath, f'{info}_result.json'), 'w') as f:
+        #         json.dump(info_result, f, indent=4)
+        # total_loss = np.average(total_loss)
 
-        return total_loss
+        return None
     
 def process_iteration(index, dataset, args, model, info_savepath):
     """

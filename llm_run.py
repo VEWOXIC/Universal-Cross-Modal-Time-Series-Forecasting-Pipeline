@@ -34,6 +34,7 @@ parser.add_argument('--output_len', type=int, default=1000, help='output sequenc
 parser.add_argument('--input_len', type=int, default=1000, help='output sequence length or "ntp" for next token prediction')
 parser.add_argument('--sample_step', type=int, default=24, help='sampling step of dataset')
 parser.add_argument('--no_parallel', action='store_true', help='sample rate of dataset', default=False)
+parser.add_argument('--valisets', type=str, default='full', help='validation subsets with comma separated')
 
 # optimization
 parser.add_argument('--num_workers', type=int, default=8, help='data loader num workers')
@@ -85,7 +86,7 @@ else:
 if not os.path.exists(os.path.join(args.checkpoints,setting)):
     os.makedirs(os.path.join(args.checkpoints,setting))
 exp = Experiment(args)
-exp.test(savepath=os.path.join(args.checkpoints,setting))
+exp.test(savepath=os.path.join(args.checkpoints,setting), valiset=args.valisets)
 
 
 
