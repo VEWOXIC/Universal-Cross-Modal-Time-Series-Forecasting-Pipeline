@@ -131,7 +131,7 @@ def process_iteration(index, dataset, args, model, info_savepath):
     Process a single iteration for testing.
     """
     iter = dataset[index]
-    date_ = iter[3][1]
+    date_ = iter[3][0]
     if os.path.exists(os.path.join(info_savepath, f'{date_}_result.json')):
         print(f"File {date_}_result.json already exists, skipping...")
         return None
