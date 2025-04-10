@@ -209,39 +209,6 @@ class Heterogeneous_Dataset(Dataset):
         self.dynamic_data.sort_index(inplace=True)
 
         print('[ info ] Successfully load the dynamic data embedding from {}'.format(self.formatter))
-        
-
-
-    # def time_matcher(self, timestamp):
-
-    #     pos = self.dynamic_data.index.searchsorted(timestamp)
-    #     if self.matching == 'nearest':
-    #         if pos == 0:
-    #             return self.dynamic_data.index[0]
-    #         elif pos == len(self.dynamic_data):
-    #             return self.dynamic_data.index[-1]
-    #         else:
-    #             if timestamp - self.dynamic_data.index[pos - 1] < self.dynamic_data.index[pos] - timestamp:
-    #                 return self.dynamic_data.index[pos - 1]
-    #             else:
-    #                 return self.dynamic_data.index[pos]
-    #     elif self.matching == 'forward':
-    #         if pos == len(self.dynamic_data):
-    #             return self.dynamic_data.index[-1]
-    #         else:
-    #             return self.dynamic_data.index[pos]
-    #     elif self.matching == 'backward' or self.matching == 'single':
-    #         if pos == 0:
-    #             return self.dynamic_data.index[0]
-    #         else:
-    #             return self.dynamic_data.index[pos - 1]
-
-            
-    # def downtime_checker(self, timestamp, down_time):
-    #     for t in down_time:
-    #         if t[0] <= timestamp <= t[1]:
-    #             return True
-    #     return False
 
     def init_hetero_data(self, id):
         down_time = self.id_info[id]['sensor_downtime']
@@ -253,55 +220,6 @@ class Heterogeneous_Dataset(Dataset):
         downtime_prompt = self.static_data['downtime_prompt']
 
         return partial(self.get_hetero_data, down_time, general_info, channel_info, downtime_prompt)
-
-
-    # def get_hetero_data(self, down_time, general_info, channel_info, downtime_prompt, timestamp):
-    #     output_dynamic = []
-    #     matched_times = []
-
-    #     for t in timestamp:
-    #         t = pd.to_datetime(str(t))
-    #         matched_time = self.time_matcher(t)
-
-    #         if self.matching == 'single' and matched_time in matched_times:
-    #             continue # skip the repeated data in single mode
-
-    #         matched_times.append(matched_time)
-    #         if self.output_format == 'embedding':
-    #             matched_time = self.dynamic_data.loc[matched_time]['time']
-    #             data = self.embeddings[matched_time]
-    #             if self.downtime_checker(t, down_time):
-    #                 data = np.concatenate((data, np.array(downtime_prompt)), axis=0)
-    #             else:
-    #                 data = np.concatenate((data, np.zeros((1, data.shape[1]))), axis=0)
-    #         else:
-    #             data = self.dynamic_data.loc[matched_time]
-
-    #             # check if the data is in the downtime period
-    #             if self.downtime_checker(t, down_time):
-    #                 data['note'] = downtime_prompt
-    #             else:
-    #                 data['note'] = ''
-
-
-
-    #         if self.output_format == 'dict':
-    #             output_dynamic.append(data.to_dict())
-    #         elif self.output_format == 'json':
-    #             output_dynamic.append(data.to_json())
-    #         elif self.output_format == 'csv':
-    #             output_dynamic.append(data.to_csv())
-    #         elif self.output_format == 'embedding':
-    #             output_dynamic.append(data)
-    #         else:
-    #             raise NotImplementedError('Output format is not implemented yet')
-    #     # convert the matched_times to str in yyyymmddHHMMSS
-    #     if self.output_format == 'embedding':
-    #         matched_times = [t.strftime('%Y%m%d%H%M%S') for t in matched_times]    
-    #         return matched_times, general_info, channel_info, np.stack(output_dynamic)
-    #     else:
-    #         matched_times = [t.strftime('%Y%m%d%H%M%S') for t in matched_times]
-    #         return matched_times, general_info, channel_info, output_dynamic
             
 
     def time_matcher(self, timestamps):
@@ -342,7 +260,6 @@ class Heterogeneous_Dataset(Dataset):
         return is_downtime
 
     def get_hetero_data(self, down_time, general_info, channel_info, downtime_prompt, timestamp):
-        start_time = time()
 
         # Match times
         matched_times, timestamps = self.time_matcher(timestamp)
@@ -370,7 +287,6 @@ class Heterogeneous_Dataset(Dataset):
                 raise NotImplementedError('Output format is not implemented yet')
 
         matched_times = matched_times.strftime('%Y%m%d%H%M%S').tolist()
-        print(f"Time taken for matching: {time() - start_time} seconds")
         return matched_times, general_info, channel_info, output_dynamic
 
             
