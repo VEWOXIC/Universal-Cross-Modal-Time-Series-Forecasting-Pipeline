@@ -12,6 +12,7 @@ import json
 from datetime import datetime
 from functools import partial
 import glob
+import joblib
 
 warnings.filterwarnings('ignore')
 
@@ -121,7 +122,7 @@ class Universal_Dataset(Dataset):
 
 
 class Heterogeneous_Dataset(Dataset):
-    def __init__(self, root_path, formatter, id_info, static_path=None,sampling_rate='1day', matching='nearest', output_format='json'):
+    def __init__(self, root_path, formatter, id_info, static_path=None,sampling_rate='1day', matching='nearest', output_format='json', embedding_formatter=None):
         super().__init__()
         self.root_path = root_path
         self.formatter = formatter
@@ -132,7 +133,13 @@ class Heterogeneous_Dataset(Dataset):
         self.matching = matching
         assert output_format in ['dict','json', 'csv', 'embedding'], "The output format should be one of ['dict','json', 'csv', 'embedding']"
         self.output_format = output_format
-        self.load_data()
+        
+        if self.output_format == 'embedding':
+            self.embedding_formatter = embedding_formatter
+            assert self.embedding_formatter is not None, "The embedding formatter should be provided if the output format is embedding"
+            self.load_embedding()
+        else:
+            self.load_data()
 
     def load_data(self):
         self.dynamic_data = {}
@@ -165,13 +172,38 @@ class Heterogeneous_Dataset(Dataset):
         if self.static_path is None:
             print('[ Warning ] No static data is provided, use default static data!!!!')
             self.static_data = {
-                'downtime_prompt': 'The sensor is in downtime',
+                'downtime_prompt': 'The sensor is down for unknown reasons.',
                 'general_info': 'The general information of the sensor',
                 'channel_info': {k: 'The information of the channel {}'.format(k) for k in self.id_info.keys()}
             }
 
         else:
             self.static_data = json.load(open(os.path.join(self.root_path, self.static_path)))
+    def load_embedding(self):
+        self.embeddings = {}
+        # if self.embedding_formatter.endswith('.npz'):
+        #     file_paths = glob.glob(os.path.join(self.root_path, self.embedding_formatter))
+        #     for file_path in file_paths:
+        #         npz_data = np.load(file_path)
+        #         self.embeddings.update(npz_data)
+        #     self.static_data = np.load(os.path.join(self.root_path, self.static_path))
+        if self.embedding_formatter.endswith('.pkl'):
+            file_paths = glob.glob(os.path.join(self.root_path, self.embedding_formatter))
+            for file_path in file_paths:
+                pkl_data = joblib.load(file_path)
+                self.embeddings.update(pkl_data)
+            self.static_data = joblib.load(os.path.join(self.root_path, self.static_path))
+        else:
+            raise NotImplementedError('Only .pkl data are supported, implement more if needed')
+        # fake dynamic data just for timestamp matching
+        self.dynamic_data = pd.DataFrame.from_dict({k: 0 for k in self.embeddings.keys()}, orient='index')
+        self.dynamic_data.index = pd.to_datetime(self.dynamic_data.index)
+        # sort the index
+        self.dynamic_data.sort_index(inplace=True)
+        self.dynamic_data['time'] = self.dynamic_data.index
+        self.dynamic_data['time'] = self.dynamic_data['time'].dt.strftime('%Y%m%d%H%M%S')
+        
+
 
     def time_matcher(self, timestamp):
 
@@ -228,14 +260,20 @@ class Heterogeneous_Dataset(Dataset):
                 continue # skip the repeated data in single mode
 
             matched_times.append(matched_time)
-
-            data = self.dynamic_data.loc[matched_time]
-
-            # check if the data is in the downtime period
-            if self.downtime_checker(t, down_time):
-                data['note'] = downtime_prompt
+            if self.output_format == 'embedding':
+                data = self.embeddings[matched_time]
+                if self.downtime_checker(t, down_time):
+                    data = np.concatenate((data, np.array([downtime_prompt])), axis=0)
+                else:
+                    data = np.concatenate((data, np.zeros(1, data.shape[1])), axis=0)
             else:
-                data['note'] = ''
+                data = self.dynamic_data.loc[matched_time]
+
+                # check if the data is in the downtime period
+                if self.downtime_checker(t, down_time):
+                    data['note'] = downtime_prompt
+                else:
+                    data['note'] = ''
 
 
 
@@ -246,7 +284,7 @@ class Heterogeneous_Dataset(Dataset):
             elif self.output_format == 'csv':
                 output_dynamic.append(data.to_csv())
             elif self.output_format == 'embedding':
-                raise NotImplementedError('Embedding output format is not implemented yet')
+                output_dynamic.append(data)
             else:
                 raise NotImplementedError('Output format is not implemented yet')
         # convert the matched_times to str in yyyymmddHHMMSS

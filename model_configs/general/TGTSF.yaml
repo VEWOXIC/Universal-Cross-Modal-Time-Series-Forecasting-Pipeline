@@ -1,0 +1,14 @@
+model: TGTSF
+individual: False
+enc_in: 1
+e_layers: 3
+cross_layers: 3
+self_layers: 3
+mixer_self_layers: 3
+n_heads: 4
+d_model: 16
+text_dim: 256
+dropout: 0.3
+patch_len: 16
+stride: 8
+revin: True
