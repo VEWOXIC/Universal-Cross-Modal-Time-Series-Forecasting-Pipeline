@@ -36,7 +36,7 @@ class Data_Provider(object):
             if hetero_info.root_path is None:
                 hetero_info.root_path = args.data_config.root_path
             
-            self.hetero_dataset = Heterogeneous_Dataset(root_path=hetero_info.root_path, formatter=hetero_info.formatter, id_info=self.id_info, sampling_rate=hetero_info.sampling_rate, matching=hetero_info.matching, output_format=hetero_info.input_format, static_path=hetero_info.static_path)
+            self.hetero_dataset = Heterogeneous_Dataset(root_path=hetero_info.root_path, formatter=hetero_info.formatter, id_info=self.id_info, matching=hetero_info.matching, output_format=hetero_info.input_format, static_path=hetero_info.static_path)
 
     def get_spliter(self):
         if self.dataset_config.spliter == 'timestamp':

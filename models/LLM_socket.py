@@ -94,24 +94,24 @@ class LLM_Socket():
         return response
     
     def process_instance(self, instance):
-        # instance: ts_x, ts_y, tm_x, tm_y, (dy_tm_x, general, channel, [dy_x]), (dy_tm_y, general, channel, [dy_y])
+        # instance: seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
         x_ts = instance[0].squeeze().tolist()
         x_timestamp = instance[2].tolist()
         x_table = [(x_timestamp[i], x_ts[i]) for i in range(len(x_ts))]
 
-        x_dy = instance[4][-1]
-        x_dy_timestamp = instance[4][0]
+        x_dy = instance[4]
+        x_dy_timestamp = instance[6]
         x_dy_table = [(x_dy_timestamp[i], x_dy[i]) for i in range(len(x_dy))]
 
-        channel_info = instance[4][2]
-        dataset_info = instance[4][1]
+        channel_info = instance[-1]
+        dataset_info = instance[-2]
 
         y_timestamp = instance[3].tolist()
         y_ts = instance[1].squeeze().tolist()
         y_table = [(y_timestamp[i], y_ts[i]) for i in range(len(y_ts))]
 
-        y_dy = instance[5][-1]
-        y_dy_timestamp = instance[5][0]
+        y_dy = instance[5]
+        y_dy_timestamp = instance[7]
         y_dy_table = [(y_dy_timestamp[i], y_dy[i]) for i in range(len(y_dy))]
 
         return x_table, x_dy_table, channel_info, dataset_info, y_timestamp, y_dy_table, y_table

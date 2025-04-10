@@ -44,10 +44,19 @@ class Experiment(Exp_Basic):
         """
         Forward step for the model.
         """
+        # iteration: seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
         batch_x = iter[0].float().to(self.device)
         batch_y = iter[1].float().to(self.device)
+        timestamp_x = iter[2]
+        timestamp_y = iter[3]
+        batch_x_hetero = iter[4]
+        batch_y_hetero = iter[5]
+        hetero_x_time = iter[6]
+        hetero_y_time = iter[7]
+        hetero_general = iter[8]
+        hetero_channel = iter[9]
 
-        output = self.model(batch_x)
+        output = self.model(x=batch_x, historical_events =batch_x_hetero, news = batch_y_hetero, dataset_description=hetero_general, channel_description=hetero_channel)
 
         output = output[:, -self.args.output_len:, :]
         gt = batch_y

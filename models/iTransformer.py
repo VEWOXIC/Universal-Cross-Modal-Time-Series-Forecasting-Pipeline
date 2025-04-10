@@ -69,6 +69,6 @@ class Model(nn.Module):
         return dec_out
 
 
-    def forward(self, x_enc):
-        dec_out = self.forecast(x_enc)
+    def forward(self, x, **kwargs):
+        dec_out = self.forecast(x)
         return dec_out[:, -self.pred_len:, :]  # [B, L, D]

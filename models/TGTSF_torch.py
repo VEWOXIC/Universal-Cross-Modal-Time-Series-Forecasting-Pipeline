@@ -66,8 +66,14 @@ class Model(nn.Module):
         self.head = nn.Linear(d_model, self.patch_len)
     
     
-    def forward(self, x, news, description, news_mask):           # x: [Batch, Input length, Channel] news: [Batch, l, news_num, text_dim] description: [b, l, c, d]
+    def forward(self, x, news, channel_description, **kwargs):           # x: [Batch, Input length, Channel] news: [Batch, l, news_num, text_dim] description: [b, 1, c, d]
+
+        # convert description to [bs, l, nvars, d_model]
+        description = channel_description.repeat(1, news.shape[1], 1, 1) # [bs, l, nvars, d_model]
         
+        news_mask = news.sum(dim=0) == 0
+        news_mask = news_mask.float()
+
         if self.revin:
             x_mean = torch.mean(x, dim=1, keepdim=True)
             x = x - x_mean

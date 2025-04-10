@@ -110,8 +110,15 @@ class Universal_Dataset(Dataset):
         x_hetero = self.hetero_data_getter(x_time)
         y_hetero = self.hetero_data_getter(y_time)
 
+        hetero_general = x_hetero[1]
+        hetero_channel = x_hetero[2]
+        hetero_x_time = x_hetero[0]
+        hetero_y_time = y_hetero[0]
+        x_hetero = x_hetero[3]
+        y_hetero = y_hetero[3]
 
-        return seq_x, seq_y, x_time, y_time, x_hetero, y_hetero
+
+        return seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
 
     def __len__(self):
         return len(self.x_data)
@@ -122,11 +129,11 @@ class Universal_Dataset(Dataset):
 
 
 class Heterogeneous_Dataset(Dataset):
-    def __init__(self, root_path, formatter, id_info, static_path=None,sampling_rate='1day', matching='nearest', output_format='json', embedding_formatter=None):
+    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json'):
         super().__init__()
         self.root_path = root_path
         self.formatter = formatter
-        self.sampling_rate = sampling_rate
+
         self.id_info = id_info
         self.static_path = static_path
         assert matching in ['nearest', 'forward', 'backward', 'single'], "The matching method should be one of ['nearest', 'forward', 'backward', 'single']"
@@ -135,8 +142,7 @@ class Heterogeneous_Dataset(Dataset):
         self.output_format = output_format
         
         if self.output_format == 'embedding':
-            self.embedding_formatter = embedding_formatter
-            assert self.embedding_formatter is not None, "The embedding formatter should be provided if the output format is embedding"
+            assert self.formatter is not None, "The embedding formatter should be provided if the output format is embedding"
             self.load_embedding()
         else:
             self.load_data()
@@ -181,14 +187,14 @@ class Heterogeneous_Dataset(Dataset):
             self.static_data = json.load(open(os.path.join(self.root_path, self.static_path)))
     def load_embedding(self):
         self.embeddings = {}
-        # if self.embedding_formatter.endswith('.npz'):
-        #     file_paths = glob.glob(os.path.join(self.root_path, self.embedding_formatter))
+        # if self.formatter.endswith('.npz'):
+        #     file_paths = glob.glob(os.path.join(self.root_path, self.formatter))
         #     for file_path in file_paths:
         #         npz_data = np.load(file_path)
         #         self.embeddings.update(npz_data)
         #     self.static_data = np.load(os.path.join(self.root_path, self.static_path))
-        if self.embedding_formatter.endswith('.pkl'):
-            file_paths = glob.glob(os.path.join(self.root_path, self.embedding_formatter))
+        if self.formatter.endswith('.pkl'):
+            file_paths = glob.glob(os.path.join(self.root_path, self.formatter))
             for file_path in file_paths:
                 pkl_data = joblib.load(file_path)
                 self.embeddings.update(pkl_data)
@@ -197,44 +203,45 @@ class Heterogeneous_Dataset(Dataset):
             raise NotImplementedError('Only .pkl data are supported, implement more if needed')
         # fake dynamic data just for timestamp matching
         self.dynamic_data = pd.DataFrame.from_dict({k: 0 for k in self.embeddings.keys()}, orient='index')
+        self.dynamic_data['time'] = self.dynamic_data.index
         self.dynamic_data.index = pd.to_datetime(self.dynamic_data.index)
         # sort the index
         self.dynamic_data.sort_index(inplace=True)
-        self.dynamic_data['time'] = self.dynamic_data.index
-        self.dynamic_data['time'] = self.dynamic_data['time'].dt.strftime('%Y%m%d%H%M%S')
+
+        print('[ info ] Successfully load the dynamic data embedding from {}'.format(self.formatter))
         
 
 
-    def time_matcher(self, timestamp):
+    # def time_matcher(self, timestamp):
 
-        pos = self.dynamic_data.index.searchsorted(timestamp)
-        if self.matching == 'nearest':
-            if pos == 0:
-                return self.dynamic_data.index[0]
-            elif pos == len(self.dynamic_data):
-                return self.dynamic_data.index[-1]
-            else:
-                if timestamp - self.dynamic_data.index[pos - 1] < self.dynamic_data.index[pos] - timestamp:
-                    return self.dynamic_data.index[pos - 1]
-                else:
-                    return self.dynamic_data.index[pos]
-        elif self.matching == 'forward':
-            if pos == len(self.dynamic_data):
-                return self.dynamic_data.index[-1]
-            else:
-                return self.dynamic_data.index[pos]
-        elif self.matching == 'backward' or self.matching == 'single':
-            if pos == 0:
-                return self.dynamic_data.index[0]
-            else:
-                return self.dynamic_data.index[pos - 1]
+    #     pos = self.dynamic_data.index.searchsorted(timestamp)
+    #     if self.matching == 'nearest':
+    #         if pos == 0:
+    #             return self.dynamic_data.index[0]
+    #         elif pos == len(self.dynamic_data):
+    #             return self.dynamic_data.index[-1]
+    #         else:
+    #             if timestamp - self.dynamic_data.index[pos - 1] < self.dynamic_data.index[pos] - timestamp:
+    #                 return self.dynamic_data.index[pos - 1]
+    #             else:
+    #                 return self.dynamic_data.index[pos]
+    #     elif self.matching == 'forward':
+    #         if pos == len(self.dynamic_data):
+    #             return self.dynamic_data.index[-1]
+    #         else:
+    #             return self.dynamic_data.index[pos]
+    #     elif self.matching == 'backward' or self.matching == 'single':
+    #         if pos == 0:
+    #             return self.dynamic_data.index[0]
+    #         else:
+    #             return self.dynamic_data.index[pos - 1]
 
             
-    def downtime_checker(self, timestamp, down_time):
-        for t in down_time:
-            if t[0] <= timestamp <= t[1]:
-                return True
-        return False
+    # def downtime_checker(self, timestamp, down_time):
+    #     for t in down_time:
+    #         if t[0] <= timestamp <= t[1]:
+    #             return True
+    #     return False
 
     def init_hetero_data(self, id):
         down_time = self.id_info[id]['sensor_downtime']
@@ -248,50 +255,123 @@ class Heterogeneous_Dataset(Dataset):
         return partial(self.get_hetero_data, down_time, general_info, channel_info, downtime_prompt)
 
 
+    # def get_hetero_data(self, down_time, general_info, channel_info, downtime_prompt, timestamp):
+    #     output_dynamic = []
+    #     matched_times = []
+
+    #     for t in timestamp:
+    #         t = pd.to_datetime(str(t))
+    #         matched_time = self.time_matcher(t)
+
+    #         if self.matching == 'single' and matched_time in matched_times:
+    #             continue # skip the repeated data in single mode
+
+    #         matched_times.append(matched_time)
+    #         if self.output_format == 'embedding':
+    #             matched_time = self.dynamic_data.loc[matched_time]['time']
+    #             data = self.embeddings[matched_time]
+    #             if self.downtime_checker(t, down_time):
+    #                 data = np.concatenate((data, np.array(downtime_prompt)), axis=0)
+    #             else:
+    #                 data = np.concatenate((data, np.zeros((1, data.shape[1]))), axis=0)
+    #         else:
+    #             data = self.dynamic_data.loc[matched_time]
+
+    #             # check if the data is in the downtime period
+    #             if self.downtime_checker(t, down_time):
+    #                 data['note'] = downtime_prompt
+    #             else:
+    #                 data['note'] = ''
+
+
+
+    #         if self.output_format == 'dict':
+    #             output_dynamic.append(data.to_dict())
+    #         elif self.output_format == 'json':
+    #             output_dynamic.append(data.to_json())
+    #         elif self.output_format == 'csv':
+    #             output_dynamic.append(data.to_csv())
+    #         elif self.output_format == 'embedding':
+    #             output_dynamic.append(data)
+    #         else:
+    #             raise NotImplementedError('Output format is not implemented yet')
+    #     # convert the matched_times to str in yyyymmddHHMMSS
+    #     if self.output_format == 'embedding':
+    #         matched_times = [t.strftime('%Y%m%d%H%M%S') for t in matched_times]    
+    #         return matched_times, general_info, channel_info, np.stack(output_dynamic)
+    #     else:
+    #         matched_times = [t.strftime('%Y%m%d%H%M%S') for t in matched_times]
+    #         return matched_times, general_info, channel_info, output_dynamic
+            
+
+    def time_matcher(self, timestamps):
+        # Convert timestamps to datetime
+        timestamps = pd.to_datetime(timestamps.astype(str))
+
+        # Match times using vectorized operations
+        matched_indices = self.dynamic_data.index.searchsorted(timestamps)
+        if self.matching == 'nearest':
+            prev_indices = np.maximum(matched_indices - 1, 0)
+            next_indices = np.minimum(matched_indices, len(self.dynamic_data.index) - 1)
+            prev_deltas = (timestamps - self.dynamic_data.index[prev_indices]).total_seconds()
+            next_deltas = (self.dynamic_data.index[next_indices] - timestamps).total_seconds()
+            matched_indices = np.where(prev_deltas <= next_deltas, prev_indices, next_indices)
+        elif self.matching == 'forward':
+            matched_indices = np.minimum(matched_indices, len(self.dynamic_data.index) - 1)
+        elif self.matching in ['backward', 'single']:
+            matched_indices = np.maximum(matched_indices - 1, 0)
+
+        matched_times = self.dynamic_data.index[matched_indices]
+
+        # Handle single mode to skip repeated data
+        if self.matching == 'single':
+            _, unique_indices = np.unique(matched_times, return_index=True)
+            matched_times = matched_times[unique_indices]
+            timestamps = timestamps[unique_indices]
+
+        return matched_times, timestamps
+
+    def downtime_checker(self, timestamps, down_time):
+        # Convert downtime ranges to IntervalIndex
+        down_time = [tuple(t) for t in down_time]
+        downtime_ranges = pd.IntervalIndex.from_tuples(down_time)
+
+        # Check downtime using vectorized operations
+        is_downtime = np.array([any(downtime_ranges.contains(ts)) for ts in timestamps])
+
+        return is_downtime
+
     def get_hetero_data(self, down_time, general_info, channel_info, downtime_prompt, timestamp):
-        output_dynamic = []
-        matched_times = []
+        start_time = time()
 
-        for t in timestamp:
-            t = pd.to_datetime(str(t))
-            matched_time = self.time_matcher(t)
+        # Match times
+        matched_times, timestamps = self.time_matcher(timestamp)
 
-            if self.matching == 'single' and matched_time in matched_times:
-                continue # skip the repeated data in single mode
+        # Check downtime
+        is_downtime = self.downtime_checker(matched_times, down_time)
 
-            matched_times.append(matched_time)
-            if self.output_format == 'embedding':
-                data = self.embeddings[matched_time]
-                if self.downtime_checker(t, down_time):
-                    data = np.concatenate((data, np.array([downtime_prompt])), axis=0)
-                else:
-                    data = np.concatenate((data, np.zeros(1, data.shape[1])), axis=0)
-            else:
-                data = self.dynamic_data.loc[matched_time]
-
-                # check if the data is in the downtime period
-                if self.downtime_checker(t, down_time):
-                    data['note'] = downtime_prompt
-                else:
-                    data['note'] = ''
-
-
+        if self.output_format == 'embedding':
+            matched_dynamic = self.dynamic_data.loc[matched_times]['time'].values
+            output_dynamic = np.array([self.embeddings[time] for time in matched_dynamic])
+            downtime_data = np.array([downtime_prompt if is_down else np.zeros((1, downtime_prompt.shape[-1])) 
+                                       for is_down in is_downtime])
+            output_dynamic = np.concatenate([output_dynamic, downtime_data], axis=1)
+        else:
+            matched_dynamic = self.dynamic_data.loc[matched_times].copy()
+            matched_dynamic['note'] = np.where(is_downtime, downtime_prompt, '')
 
             if self.output_format == 'dict':
-                output_dynamic.append(data.to_dict())
+                output_dynamic = matched_dynamic.to_dict(orient='records')
             elif self.output_format == 'json':
-                output_dynamic.append(data.to_json())
+                output_dynamic = matched_dynamic.to_json(orient='records')
             elif self.output_format == 'csv':
-                output_dynamic.append(data.to_csv())
-            elif self.output_format == 'embedding':
-                output_dynamic.append(data)
+                output_dynamic = matched_dynamic.to_csv(index=False)
             else:
                 raise NotImplementedError('Output format is not implemented yet')
-        # convert the matched_times to str in yyyymmddHHMMSS
-        matched_times = [t.strftime('%Y%m%d%H%M%S') for t in matched_times]    
+
+        matched_times = matched_times.strftime('%Y%m%d%H%M%S').tolist()
+        print(f"Time taken for matching: {time() - start_time} seconds")
         return matched_times, general_info, channel_info, output_dynamic
-            
-        
 
             
 
