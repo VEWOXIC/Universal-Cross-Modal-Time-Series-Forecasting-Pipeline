@@ -247,7 +247,7 @@ class Heterogeneous_Dataset(Dataset):
             matched_times = matched_times[unique_indices]
             timestamps = timestamps[unique_indices]
 
-        return matched_times, timestamps
+        return matched_times
 
     def downtime_checker(self, timestamps, down_time):
         # Convert downtime ranges to IntervalIndex
@@ -262,7 +262,7 @@ class Heterogeneous_Dataset(Dataset):
     def get_hetero_data(self, down_time, general_info, channel_info, downtime_prompt, timestamp):
 
         # Match times
-        matched_times, timestamps = self.time_matcher(timestamp)
+        matched_times = self.time_matcher(timestamp)
 
         # Check downtime
         is_downtime = self.downtime_checker(matched_times, down_time)
