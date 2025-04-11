@@ -97,7 +97,8 @@ class Data_Provider(object):
                                     batch_size=self.batch_size,
                                     shuffle=shuffle,
                                     drop_last=drop_last,
-                                    num_workers=self.args.num_workers)
+                                    num_workers=self.args.num_workers,
+                                    persistent_workers=True)
             return data_loader
         else:
             data_loader = {}
@@ -106,7 +107,8 @@ class Data_Provider(object):
                                     batch_size=self.batch_size,
                                     shuffle=shuffle,
                                     drop_last=drop_last,
-                                    num_workers=self.args.num_workers
+                                    num_workers=self.args.num_workers,
+                                    persistent_workers=True
                                     )
 
             return data_loader

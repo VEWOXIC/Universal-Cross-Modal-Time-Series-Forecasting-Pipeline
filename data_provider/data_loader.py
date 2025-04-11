@@ -39,7 +39,6 @@ class Universal_Dataset(Dataset):
 
         self.hetero_data_getter = (lambda x: x) if hetero_data_getter is None else hetero_data_getter # return the timestamp
         self.__read_data__()
-        self.collect_all_data()
         
     def __read_data__(self):
         self.scaler = StandardScaler()
@@ -79,13 +78,7 @@ class Universal_Dataset(Dataset):
             self.scaler.fit(train_data[self.target].values)
             self.data = self.scaler.transform(self.data)
 
-
-    def collect_all_data(self):
-        self.x_data = []
-        self.y_data = []
-        self.x_time = []
-        self.y_time = []
-
+    def __getitem__(self, index):
         def process_data(i):
             s_begin = i
             s_end = s_begin + self.seq_len
@@ -94,18 +87,7 @@ class Universal_Dataset(Dataset):
             return (self.data[s_begin:s_end], self.data[r_begin:r_end], 
             self.timestamp[s_begin:s_end], self.timestamp[r_begin:r_end])
         
-        for i in range(len(self.data) - self.seq_len - self.pred_len + 1):
-            x_data, y_data, x_time, y_time = process_data(i)
-            self.x_data.append(x_data)
-            self.y_data.append(y_data)
-            self.x_time.append(x_time)
-            self.y_time.append(y_time)
-
-    def __getitem__(self, index):
-        seq_x = self.x_data[index]
-        seq_y = self.y_data[index]
-        x_time = self.x_time[index]
-        y_time = self.y_time[index]
+        seq_x, seq_y, x_time, y_time = process_data(index)
 
         x_hetero = self.hetero_data_getter(x_time)
         y_hetero = self.hetero_data_getter(y_time)
@@ -121,7 +103,7 @@ class Universal_Dataset(Dataset):
         return seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
 
     def __len__(self):
-        return len(self.x_data)
+        return len(self.data) - self.seq_len - self.pred_len + 1
 
     def inverse_transform(self, data):
         return self.scaler.inverse_transform(data)
