@@ -69,10 +69,11 @@ class Model(nn.Module):
     def forward(self, x, news, channel_description, **kwargs):           # x: [Batch, Input length, Channel] news: [Batch, l, news_num, text_dim] description: [b, 1, c, d]
 
         # convert description to [bs, l, nvars, d_model]
+
+        channel_description = channel_description.unsqueeze(1) # [bs, 1, nvars, d_model]
         description = channel_description.repeat(1, news.shape[1], 1, 1) # [bs, l, nvars, d_model]
         
-        news_mask = news.sum(dim=0) == 0
-        news_mask = news_mask.float()
+        
 
         if self.revin:
             x_mean = torch.mean(x, dim=1, keepdim=True)
@@ -83,7 +84,7 @@ class Model(nn.Module):
 
         x = self.TS_encoder(x)    # x: [bs x nvars x d_model x patch_num]
 
-        t = self.text_encoder(news, description, news_mask) # t: [bs, l, nvars, d_model] # 添加positional embedding!
+        t = self.text_encoder(news, description) # t: [bs, l, nvars, d_model] # 添加positional embedding!
 
         x, mix_weights = self.mixer(t, x) # x: [bs, patch_num, nvars, d_model]
 

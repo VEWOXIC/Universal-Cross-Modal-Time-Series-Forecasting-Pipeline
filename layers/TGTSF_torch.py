@@ -119,7 +119,8 @@ class text_temp_cross_block(nn.Module):
 class text_encoder(nn.Module):
     def __init__(self, cross_layer=2, self_layer=3, embedding_dim=384, num_heads=8, dropout=0.0, pred_len=96, stride=24):
         super(text_encoder, self).__init__()
-        
+        self.pred_len = pred_len
+        self.stride = stride
         cross_encoder_layer = nn.TransformerDecoderLayer(d_model=embedding_dim,
                                                     nhead=num_heads,
                                                     dropout=dropout,
@@ -150,19 +151,25 @@ class text_encoder(nn.Module):
                 nn.init.xavier_uniform_(p)
 
 
-    def forward(self, news_emb, description_emb, news_mask):
+    def forward(self, news_emb, description_emb):
         # news_emb:        [b, l, n, d]    As the key and value, the embedding of news on the segment, each day may have different number of news pad it to the same length n (in the dataloader)
         # description_emb: [b, l, c, d]    As the query, the embedding of description of each channels
         # N and C are order invariant, no positional embedding needed
 
         # cross layers
+        
+
+        description_emb=description_emb[:, ::self.stride, :, :] # [b, l, c, d] -> [b, l//stride, c, d]
+        news_emb=news_emb[:, ::self.stride, :, :] # [b, l, n, d] -> [b, l//stride, n, d]
+
         B, L, C, D = description_emb.shape
 
         # print(news_emb.shape, news_mask.shape)
 
         # reshape the news_emb
         news_emb=news_emb.view(B*L, news_emb.shape[2], D) # [b*l, n, d]
-        news_mask=news_mask.view(B*L, news_mask.shape[2]) # [b*l, n]
+        news_mask = news_emb.sum(dim=-1) == 0
+        news_mask = news_mask.float()
 
         # reshape the description_emb
         description_emb=description_emb.view(B*L, description_emb.shape[2], D) # [b*l, c, d]
@@ -176,7 +183,6 @@ class text_encoder(nn.Module):
 
         # add positional encoding
         x = rearrange(text_emb, 'b l c d -> (b c) l d', b=B, c=C)
-        # print(x.shape, self.W_pos.permute(1, 0, 2).shape)
         x = x + self.W_pos.permute(1, 0, 2)
 
         x = self.dropout_layer(x)

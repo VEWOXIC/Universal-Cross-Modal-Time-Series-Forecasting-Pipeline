@@ -49,12 +49,12 @@ class Experiment(Exp_Basic):
         batch_y = iter[1].float().to(self.device)
         timestamp_x = iter[2]
         timestamp_y = iter[3]
-        batch_x_hetero = iter[4]
-        batch_y_hetero = iter[5]
+        batch_x_hetero = iter[4].float().to(self.device)
+        batch_y_hetero = iter[5].float().to(self.device)
         hetero_x_time = iter[6]
         hetero_y_time = iter[7]
-        hetero_general = iter[8]
-        hetero_channel = iter[9]
+        hetero_general = iter[8].float().to(self.device)
+        hetero_channel = iter[9].float().to(self.device)
 
         output = self.model(x=batch_x, historical_events =batch_x_hetero, news = batch_y_hetero, dataset_description=hetero_general, channel_description=hetero_channel)
 
@@ -114,11 +114,11 @@ class Experiment(Exp_Basic):
 
                     train_loss.append(loss.item())
 
-                    if iter_count % 100 == 0:
+                    if iter_count % 20 == 0:
                         speed = (time.time() - time_now) / iter_count
                         left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
                         pbar.set_postfix({'loss': f'{loss.item():.7f}', 'speed': f'{speed:.4f}s/iter', 'left time': f'{left_time:.4f}s'})
-                        pbar.update(100)
+                        pbar.update(20)
                         iter_count = 0
                         time_now = time.time()
 
