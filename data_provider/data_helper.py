@@ -31,6 +31,9 @@ class data_buffer():
                 raise NotImplementedError('Only .csv and .parquet data are supported, implement more if needed')
             print(f'Add data {file_path} to buffer')
             return df_raw
+    def clear(self):
+        self.buffer = {}
+        print('Buffer cleared')
         
 
 def ratio_spliter(split=(7,1,2),seq_len=0, df=None):
