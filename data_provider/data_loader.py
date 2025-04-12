@@ -39,7 +39,8 @@ class Universal_Dataset(Dataset):
 
         self.hetero_data_getter = (lambda x: x) if hetero_data_getter is None else hetero_data_getter # return the timestamp
         self.__read_data__()
-        
+
+    # @profile
     def __read_data__(self):
         self.scaler = StandardScaler()
         if self.data_buffer is None:
@@ -72,12 +73,13 @@ class Universal_Dataset(Dataset):
         
 
         self.timestamp = self.data[self.timestamp_col].values
-        self.data = self.data[self.target].values
+        self.data = self.data[self.target].values.astype(np.float32)
 
         if self.scale:
             self.scaler.fit(train_data[self.target].values)
-            self.data = self.scaler.transform(self.data)
+            self.data = self.scaler.transform(self.data).astype(np.float32)
 
+    # @profile
     def __getitem__(self, index):
         def process_data(i):
             s_begin = i
@@ -241,6 +243,7 @@ class Heterogeneous_Dataset(Dataset):
 
         return is_downtime
 
+    # @profile
     def get_hetero_data(self, down_time, general_info, channel_info, downtime_prompt, timestamp):
 
         # Match times
@@ -251,10 +254,14 @@ class Heterogeneous_Dataset(Dataset):
 
         if self.output_format == 'embedding':
             matched_dynamic = self.dynamic_data.loc[matched_times]['time'].values
-            output_dynamic = np.array([self.embeddings[time] for time in matched_dynamic])
-            downtime_data = np.array([downtime_prompt if is_down else np.zeros((1, downtime_prompt.shape[-1])) 
-                                       for is_down in is_downtime])
-            output_dynamic = np.concatenate([output_dynamic, downtime_data], axis=1)
+            output_dynamic_ = np.array([self.embeddings[time] for time in matched_dynamic], dtype=np.float32)
+            downtime_data_ = np.array([downtime_prompt if is_down else np.zeros((1, downtime_prompt.shape[-1])) 
+                                       for is_down in is_downtime], dtype=np.float32)
+            # output_dynamic = np.concatenate([output_dynamic_, downtime_data_], axis=1)
+            output_dynamic = np.empty((len(matched_dynamic), output_dynamic_.shape[1] + downtime_data_.shape[1], downtime_prompt.shape[-1]), dtype=np.float32)
+            output_dynamic[:, :output_dynamic_.shape[1],:] = output_dynamic_
+            output_dynamic[:, output_dynamic_.shape[1]:,:] = downtime_data_
+
         else:
             matched_dynamic = self.dynamic_data.loc[matched_times].copy()
             matched_dynamic['note'] = np.where(is_downtime, downtime_prompt, '')

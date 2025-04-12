@@ -88,3 +88,11 @@ class StandardScaler():
 
     def inverse_transform(self, data):
         return (data * self.std) + self.mean
+
+import psutil, os
+
+def log_memory_usage():
+    process = psutil.Process(os.getpid())
+    print(f"Memory usage {os.getpid()}: {process.memory_info().rss / 1024 ** 2:.2f} MB")
+
+
