@@ -26,7 +26,7 @@ class Model(nn.Module):
                 self.freq_upsampler.append(nn.Linear(self.dominance_freq, int(self.dominance_freq * self.length_ratio)).to(torch.cfloat))
         else:
             self.freq_upsampler = nn.Linear(self.dominance_freq, int(self.dominance_freq * self.length_ratio)).to(torch.cfloat) # complex layer for frequency upsampling
-
+    
     def forward(self, x, **kwargs):
         # RIN
         x_mean = torch.mean(x, dim=1, keepdim=True)

@@ -64,7 +64,15 @@ class Model(nn.Module):
 
         # assert stride == patch_len, 'stride should be equal to patch_len for token_decoder head'
         self.head = nn.Linear(d_model, self.patch_len)
-    
+
+    def move_to_device(self, seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel, device):
+        # move data to device
+        seq_x = seq_x.float().to(device)
+        seq_y = seq_y.float().to(device)
+        hetero_channel = hetero_channel.float().to(device)
+        y_hetero = y_hetero.float().to(device)
+
+        return seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
     
     def forward(self, x, news, channel_description, **kwargs):           # x: [Batch, Input length, Channel] news: [Batch, l, news_num, text_dim] description: [b, 1, c, d]
 

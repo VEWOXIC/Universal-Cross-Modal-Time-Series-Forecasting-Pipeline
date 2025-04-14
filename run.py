@@ -48,9 +48,9 @@ args = parser.parse_args()
 
 # preload the yamls
 with open(args.model_config, 'r') as f:
-    model_configs = yaml.safe_load(f)
-model_configs = dotdict(model_configs)
-args.model_config = model_configs
+    model_config = yaml.safe_load(f)
+model_config = dotdict(model_config)
+args.model_config = model_config
 
 with open(args.data_config, 'r') as f:
     data_configs = yaml.safe_load(f)

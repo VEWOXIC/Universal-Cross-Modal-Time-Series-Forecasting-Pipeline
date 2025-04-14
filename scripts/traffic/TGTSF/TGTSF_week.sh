@@ -5,5 +5,5 @@ python -u run.py \
     --data_config './data_configs/fulltraffic_hetero_emb.yaml' \
     --ahead week \
     --batch_size 256 \
-    --num_workers 8 | tee ./logs/traffic/TGTSF_week.log
+    --num_workers 16 | tee ./logs/traffic/TGTSF_week.log
     

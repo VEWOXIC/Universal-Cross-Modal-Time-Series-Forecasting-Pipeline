@@ -96,3 +96,11 @@ def log_memory_usage():
     print(f"Memory usage {os.getpid()}: {process.memory_info().rss / 1024 ** 2:.2f} MB")
 
 
+def general_move_to_device(batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel, device):
+    """
+    Move data to device
+    """
+    batch_x = batch_x.float().to(device)
+    batch_y = batch_y.float().to(device)
+
+    return batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel

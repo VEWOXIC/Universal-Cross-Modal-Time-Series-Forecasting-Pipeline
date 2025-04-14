@@ -36,7 +36,7 @@ class Model(nn.Module):
             norm_layer=torch.nn.LayerNorm(configs.d_model)
         )
         self.projector = nn.Linear(configs.d_model, configs.pred_len, bias=True)
-
+    
     def forecast(self, x_enc, x_mark_enc=None):
         if self.use_norm:
             # Normalization from Non-stationary Transformer

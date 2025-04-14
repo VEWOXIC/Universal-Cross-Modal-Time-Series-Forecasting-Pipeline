@@ -158,10 +158,6 @@ class text_encoder(nn.Module):
 
         # cross layers
         
-
-        description_emb=description_emb[:, ::self.stride, :, :] # [b, l, c, d] -> [b, l//stride, c, d]
-        news_emb=news_emb[:, ::self.stride, :, :] # [b, l, n, d] -> [b, l//stride, n, d]
-
         B, L, C, D = description_emb.shape
 
         # print(news_emb.shape, news_mask.shape)

@@ -38,6 +38,7 @@ class Universal_Dataset(Dataset):
         self.data_path = data_path
 
         self.hetero_data_getter = (lambda x: x) if hetero_data_getter is None else hetero_data_getter # return the timestamp
+
         self.__read_data__()
 
     # @profile
@@ -113,10 +114,11 @@ class Universal_Dataset(Dataset):
 
 
 class Heterogeneous_Dataset(Dataset):
-    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json'):
+    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json', hetero_stride=None):
         super().__init__()
         self.root_path = root_path
         self.formatter = formatter
+        self.hetero_stride = hetero_stride
 
         self.id_info = id_info
         self.static_path = static_path
@@ -249,6 +251,10 @@ class Heterogeneous_Dataset(Dataset):
 
     # @profile
     def get_hetero_data(self, downtime_ranges, general_info, channel_info, downtime_prompt, timestamp):
+
+        if self.hetero_stride is not None:
+
+            timestamp = timestamp[::self.hetero_stride]
 
         # Match times
         matched_times = self.time_matcher(timestamp)

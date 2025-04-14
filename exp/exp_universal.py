@@ -1,7 +1,7 @@
 from exp.exp_basic import Exp_Basic
 from models import model_init
 
-from utils.tools import EarlyStopping, adjust_learning_rate
+from utils.tools import EarlyStopping, adjust_learning_rate, general_move_to_device
 
 import numpy as np
 import torch
@@ -45,16 +45,14 @@ class Experiment(Exp_Basic):
         Forward step for the model.
         """
         # iteration: seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
-        batch_x = iter[0].float().to(self.device)
-        batch_y = iter[1].float().to(self.device)
-        timestamp_x = iter[2]
-        timestamp_y = iter[3]
-        batch_x_hetero = iter[4].float().to(self.device)
-        batch_y_hetero = iter[5].float().to(self.device)
-        hetero_x_time = iter[6]
-        hetero_y_time = iter[7]
-        hetero_general = iter[8].float().to(self.device)
-        hetero_channel = iter[9].float().to(self.device)
+
+        batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel = iter
+
+        if hasattr(self.model, 'move_to_device'):
+            batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel = self.model.move_to_device(batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel, self.device) # move only the ones needed to device according to model's definition to save VRAM
+        else:
+            # only move batch_x, batch_y to device for TSF models
+            batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel = general_move_to_device(batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel, self.device)
 
         output = self.model(x=batch_x, historical_events =batch_x_hetero, news = batch_y_hetero, dataset_description=hetero_general, channel_description=hetero_channel)
 
@@ -122,7 +120,6 @@ class Experiment(Exp_Basic):
                         pbar.update(10)
                         iter_count = 0
                         time_now = time.time()
-
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             train_loss = np.average(train_loss)
             vali_loss = self.vali(vali_loader, criterion)

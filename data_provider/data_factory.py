@@ -36,7 +36,7 @@ class Data_Provider(object):
             if hetero_info.root_path is None:
                 hetero_info.root_path = args.data_config.root_path
             
-            self.hetero_dataset = Heterogeneous_Dataset(root_path=hetero_info.root_path, formatter=hetero_info.formatter, id_info=self.id_info, matching=hetero_info.matching, output_format=hetero_info.input_format, static_path=hetero_info.static_path)
+            self.hetero_dataset = Heterogeneous_Dataset(root_path=hetero_info.root_path, formatter=hetero_info.formatter, id_info=self.id_info, matching=hetero_info.matching, output_format=hetero_info.input_format, static_path=hetero_info.static_path, hetero_stride=self.args.model_config.stride if self.args.model_config.hetero_align_stride else None)
 
     def get_spliter(self):
         if self.dataset_config.spliter == 'timestamp':
@@ -99,7 +99,9 @@ class Data_Provider(object):
                                     drop_last=drop_last,
                                     num_workers=self.args.num_workers,
                                     persistent_workers=False,
-                                    prefetch_factor=1)
+                                    prefetch_factor=2,
+                                    pin_memory=True
+                                    )
             return data_loader
         else:
             data_loader = {}
@@ -110,7 +112,8 @@ class Data_Provider(object):
                                     drop_last=drop_last,
                                     num_workers=self.args.num_workers,
                                     persistent_workers=False,
-                                    prefetch_factor=1
+                                    prefetch_factor=2,
+                                    pin_memory=True
                                     )
 
             return data_loader
