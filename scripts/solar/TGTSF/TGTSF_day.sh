@@ -5,5 +5,5 @@ python -u run.py \
     --data_config './data_configs/fullsolar_hetero_emb.yaml' \
     --ahead day \
     --batch_size 256 \
-    --num_workers 64 #64 #| tee ./logs/solar/TGTSF_day.log
+    --num_workers 64 | tee ./logs/solar/TGTSF_day.log
     

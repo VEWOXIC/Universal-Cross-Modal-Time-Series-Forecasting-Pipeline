@@ -202,8 +202,11 @@ class Heterogeneous_Dataset(Dataset):
         general_info = self.static_data['general_info']
         channel_info = self.static_data['channel_info'][id]
         downtime_prompt = self.static_data['downtime_prompt']
+        # Convert downtime ranges to IntervalIndex
+        down_time = [tuple(t) for t in down_time]
+        downtime_ranges = pd.IntervalIndex.from_tuples(down_time)
 
-        return partial(self.get_hetero_data, down_time, general_info, channel_info, downtime_prompt)
+        return partial(self.get_hetero_data, downtime_ranges, general_info, channel_info, downtime_prompt)
             
 
     def time_matcher(self, timestamps):
@@ -233,24 +236,28 @@ class Heterogeneous_Dataset(Dataset):
 
         return matched_times
 
-    def downtime_checker(self, timestamps, down_time):
-        # Convert downtime ranges to IntervalIndex
-        down_time = [tuple(t) for t in down_time]
-        downtime_ranges = pd.IntervalIndex.from_tuples(down_time)
+    def downtime_checker(self, timestamps, downtime_ranges):
+        # try:
+            
 
-        # Check downtime using vectorized operations
+            # Check downtime using vectorized operations
         is_downtime = np.array([any(downtime_ranges.contains(ts)) for ts in timestamps])
+        # except TypeError:
+        #     print(timestamps, type(timestamps), downtime_ranges, type(downtime_ranges))
 
         return is_downtime
 
     # @profile
-    def get_hetero_data(self, down_time, general_info, channel_info, downtime_prompt, timestamp):
+    def get_hetero_data(self, downtime_ranges, general_info, channel_info, downtime_prompt, timestamp):
 
         # Match times
         matched_times = self.time_matcher(timestamp)
 
         # Check downtime
-        is_downtime = self.downtime_checker(matched_times, down_time)
+        if len(downtime_ranges) == 0:
+            is_downtime = np.zeros(len(matched_times), dtype=bool)
+        else:  
+            is_downtime = self.downtime_checker(matched_times, downtime_ranges)
 
         if self.output_format == 'embedding':
             matched_dynamic = self.dynamic_data.loc[matched_times]['time'].values
@@ -279,10 +286,3 @@ class Heterogeneous_Dataset(Dataset):
         return matched_times, general_info, channel_info, output_dynamic
 
             
-
-
-
-
-
-    
-

@@ -11,6 +11,6 @@ def ahead_task_parser(ahead, sampling_rate):
     elif ahead == 'week':
         return pd.to_timedelta('7d') // T, pd.to_timedelta('30d') // T
     elif ahead == 'month':
-        return pd.to_timedelta('30d') // T, pd.to_timedelta('120d') // T
+        return pd.to_timedelta('30d') // T, pd.to_timedelta('60d') // T
     else:
         raise ValueError('Invalid ahead task.')

@@ -98,7 +98,8 @@ class Data_Provider(object):
                                     shuffle=shuffle,
                                     drop_last=drop_last,
                                     num_workers=self.args.num_workers,
-                                    persistent_workers=True)
+                                    persistent_workers=False,
+                                    prefetch_factor=1)
             return data_loader
         else:
             data_loader = {}
@@ -108,7 +109,8 @@ class Data_Provider(object):
                                     shuffle=shuffle,
                                     drop_last=drop_last,
                                     num_workers=self.args.num_workers,
-                                    persistent_workers=True
+                                    persistent_workers=False,
+                                    prefetch_factor=1
                                     )
 
             return data_loader

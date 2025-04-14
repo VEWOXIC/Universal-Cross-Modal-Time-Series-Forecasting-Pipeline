@@ -1,9 +1,9 @@
 python -u run.py \
     --model 'TGTSF' \
     --model_config 'model_configs/general/TGTSF.yaml' \
-    --data solar \
-    --data_config './data_configs/fullsolar_hetero_emb.yaml' \
+    --data traffic \
+    --data_config './data_configs/fulltraffic_hetero_emb.yaml' \
     --ahead week \
     --batch_size 256 \
-    --num_workers 32 | tee ./logs/solar/TGTSF_week.log
+    --num_workers 8 | tee ./logs/traffic/TGTSF_week.log
     
