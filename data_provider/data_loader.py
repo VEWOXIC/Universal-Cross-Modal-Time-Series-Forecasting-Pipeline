@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 class Universal_Dataset(Dataset):
     def __init__(self, root_path, flag='train', data_path='ETTh1.csv',
                  seq_len=24, pred_len=24, spliter=ratio_spliter, timestamp_col='date',
-                 target='OT', scale=True, data_buffer=None, hetero_data_getter=None):
+                 target='OT', scale=True, data_buffer=None, hetero_data_getter=None, preload_hetero=False, hetero_stride=1):
         # size [seq_len, label_len, pred_len]
         # info
         self.seq_len = seq_len
@@ -40,6 +40,13 @@ class Universal_Dataset(Dataset):
         self.hetero_data_getter = (lambda x: x) if hetero_data_getter is None else hetero_data_getter # return the timestamp
 
         self.__read_data__()
+        self.preload_hetero = preload_hetero
+        self.hetero_stride = hetero_stride
+
+        if self.preload_hetero:
+            self.__preload_hetero__()
+
+
 
     # @profile
     def __read_data__(self):
@@ -73,34 +80,50 @@ class Universal_Dataset(Dataset):
         self.data[self.timestamp_col] = self.data[self.timestamp_col].astype(int)
         
 
-        self.timestamp = self.data[self.timestamp_col].values
-        self.data = self.data[self.target].values.astype(np.float32)
+        self.timestamp = self.data[self.timestamp_col].values.copy()
+        self.data = self.data[self.target].values.astype(np.float32).copy()
 
         if self.scale:
             self.scaler.fit(train_data[self.target].values)
-            self.data = self.scaler.transform(self.data).astype(np.float32)
+            self.data = self.scaler.transform(self.data).astype(np.float32).copy()
 
+    def __preload_hetero__(self):
+        if self.preload_hetero:
+            print('[ info ] Preloading the full heterogeneous data')
+            _ = time()
+            self.hetero_time, self.hetero_general, self.hetero_channel, self.full_hetero = self.hetero_data_getter(self.timestamp)
+            print('[ info ] Preload the full heterogeneous data successfully, cost time: {:.2f}s'.format(time() - _))
+            del self.hetero_data_getter
     # @profile
     def __getitem__(self, index):
-        def process_data(i):
-            s_begin = i
-            s_end = s_begin + self.seq_len
-            r_begin = s_end
-            r_end = r_begin + self.pred_len
-            return (self.data[s_begin:s_end], self.data[r_begin:r_end], 
-            self.timestamp[s_begin:s_end], self.timestamp[r_begin:r_end])
         
-        seq_x, seq_y, x_time, y_time = process_data(index)
+        s_begin = index
+        s_end = s_begin + self.seq_len
+        r_begin = s_end
+        r_end = r_begin + self.pred_len
+        seq_x = self.data[s_begin:s_end]
+        seq_y = self.data[r_begin:r_end]
+        x_time = self.timestamp[s_begin:s_end]
+        y_time = self.timestamp[r_begin:r_end]
+        if self.preload_hetero:
+            
+            hetero_x_time = self.hetero_time[s_begin:s_end:self.hetero_stride]
+            hetero_y_time = self.hetero_time[r_begin:r_end:self.hetero_stride]
+            x_hetero = self.full_hetero[s_begin:s_end:self.hetero_stride]
+            y_hetero = self.full_hetero[r_begin:r_end:self.hetero_stride]
+            hetero_general = self.hetero_general
+            hetero_channel = self.hetero_channel
+            
+        else:
+            x_hetero = self.hetero_data_getter(x_time[::self.hetero_stride])
+            y_hetero = self.hetero_data_getter(y_time[::self.hetero_stride])
 
-        x_hetero = self.hetero_data_getter(x_time)
-        y_hetero = self.hetero_data_getter(y_time)
-
-        hetero_general = x_hetero[1]
-        hetero_channel = x_hetero[2]
-        hetero_x_time = x_hetero[0]
-        hetero_y_time = y_hetero[0]
-        x_hetero = x_hetero[3]
-        y_hetero = y_hetero[3]
+            hetero_general = x_hetero[1]
+            hetero_channel = x_hetero[2]
+            hetero_x_time = x_hetero[0]
+            hetero_y_time = y_hetero[0]
+            x_hetero = x_hetero[3]
+            y_hetero = y_hetero[3]
 
 
         return seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
@@ -114,11 +137,10 @@ class Universal_Dataset(Dataset):
 
 
 class Heterogeneous_Dataset(Dataset):
-    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json', hetero_stride=None):
+    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json'):
         super().__init__()
         self.root_path = root_path
         self.formatter = formatter
-        self.hetero_stride = hetero_stride
 
         self.id_info = id_info
         self.static_path = static_path
@@ -251,10 +273,6 @@ class Heterogeneous_Dataset(Dataset):
 
     # @profile
     def get_hetero_data(self, downtime_ranges, general_info, channel_info, downtime_prompt, timestamp):
-
-        if self.hetero_stride is not None:
-
-            timestamp = timestamp[::self.hetero_stride]
 
         # Match times
         matched_times = self.time_matcher(timestamp)

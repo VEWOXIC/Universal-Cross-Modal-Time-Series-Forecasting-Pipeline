@@ -30,13 +30,15 @@ class Data_Provider(object):
 
         if buffer:
             self.data_buffer = data_buffer()
+        else:
+            self.data_buffer = None
 
         if args.data_config.hetero_info is not None:
             hetero_info = dotdict(args.data_config.hetero_info)
             if hetero_info.root_path is None:
                 hetero_info.root_path = args.data_config.root_path
             
-            self.hetero_dataset = Heterogeneous_Dataset(root_path=hetero_info.root_path, formatter=hetero_info.formatter, id_info=self.id_info, matching=hetero_info.matching, output_format=hetero_info.input_format, static_path=hetero_info.static_path, hetero_stride=self.args.model_config.stride if self.args.model_config.hetero_align_stride else None)
+            self.hetero_dataset = Heterogeneous_Dataset(root_path=hetero_info.root_path, formatter=hetero_info.formatter, id_info=self.id_info, matching=hetero_info.matching, output_format=hetero_info.input_format, static_path=hetero_info.static_path)
 
     def get_spliter(self):
         if self.dataset_config.spliter == 'timestamp':
@@ -86,7 +88,12 @@ class Data_Provider(object):
                 get_hetero_data = None
 
             data_path = self.formatter.format(i=i)
-            dataset = Universal_Dataset(root_path=self.dataset_config.root_path, data_path=data_path, flag=flag, seq_len=self.args.input_len, pred_len=self.args.output_len, spliter=self.spliter, timestamp_col=self.dataset_config.timestamp_col, target=self.dataset_config.target, scale=self.args.scale, data_buffer=self.data_buffer, hetero_data_getter=get_hetero_data) 
+            dataset = Universal_Dataset(root_path=self.dataset_config.root_path, data_path=data_path, 
+                                        flag=flag, seq_len=self.args.input_len, pred_len=self.args.output_len, 
+                                        spliter=self.spliter, timestamp_col=self.dataset_config.timestamp_col, 
+                                        target=self.dataset_config.target, scale=self.args.scale, 
+                                        data_buffer=self.data_buffer, hetero_data_getter=get_hetero_data, preload_hetero=self.args.preload_hetero, 
+                                        hetero_stride=self.args.model_config.stride if self.args.model_config.hetero_align_stride else 1)
             datasets[i] = dataset
         return datasets
 
@@ -98,9 +105,9 @@ class Data_Provider(object):
                                     shuffle=shuffle,
                                     drop_last=drop_last,
                                     num_workers=self.args.num_workers,
-                                    persistent_workers=False,
-                                    prefetch_factor=2,
-                                    pin_memory=True
+                                    persistent_workers=(self.args.num_workers > 1),
+                                    pin_memory=True,
+                                    prefetch_factor=self.args.prefetch_factor if self.args.num_workers > 1 else None,
                                     )
             return data_loader
         else:
@@ -111,9 +118,9 @@ class Data_Provider(object):
                                     shuffle=shuffle,
                                     drop_last=drop_last,
                                     num_workers=self.args.num_workers,
-                                    persistent_workers=False,
-                                    prefetch_factor=2,
-                                    pin_memory=True
+                                    persistent_workers=(self.args.num_workers > 1),
+                                    pin_memory=True,
+                                    prefetch_factor=self.args.prefetch_factor if self.args.num_workers > 1 else None,
                                     )
 
             return data_loader
