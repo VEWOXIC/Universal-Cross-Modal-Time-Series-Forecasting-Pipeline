@@ -93,7 +93,8 @@ class Data_Provider(object):
                                         spliter=self.spliter, timestamp_col=self.dataset_config.timestamp_col, 
                                         target=self.dataset_config.target, scale=self.args.scale, 
                                         data_buffer=self.data_buffer, hetero_data_getter=get_hetero_data, preload_hetero=self.args.preload_hetero, 
-                                        hetero_stride=self.args.model_config.stride if self.args.model_config.hetero_align_stride else 1)
+                                        hetero_stride=self.args.model_config.stride if self.args.model_config.hetero_align_stride else 1,
+                                        task=self.args.model_config.task, custom_input=self.args.model_config.custom_input)
             datasets[i] = dataset
         return datasets
 

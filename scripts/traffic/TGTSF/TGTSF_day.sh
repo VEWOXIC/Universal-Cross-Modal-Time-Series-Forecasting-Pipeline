@@ -4,7 +4,7 @@ python -u run.py \
     --data traffic \
     --data_config './data_configs/fulltraffic_hetero_emb.yaml' \
     --ahead day \
-    --batch_size 1024 \
-    --num_workers 4 \
-    --preload_hetero #| tee ./logs/traffic/TGTSF_day.log
+    --batch_size 512 \
+    --num_workers 4  | tee ./logs/traffic/TGTSF_day.log
+    # --preload_hetero | tee ./logs/traffic/TGTSF_day.log
     

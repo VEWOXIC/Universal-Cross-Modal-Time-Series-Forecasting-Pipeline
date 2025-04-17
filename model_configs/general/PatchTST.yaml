@@ -18,3 +18,5 @@ subtract_last: False
 decomposition: False
 kernel_size: 25
 notrans: False
+
+task: TSF

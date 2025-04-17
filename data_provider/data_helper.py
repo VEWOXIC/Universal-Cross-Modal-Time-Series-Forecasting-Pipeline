@@ -74,32 +74,3 @@ def timestamp_spliter(split = ['2020-01-01', '2020-02-01'], seq_len=0, df=None, 
     
     return train_data, val_data, test_data
 
-def instance_variable_filter(seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel, filter):
-    """
-    Filter the item based on the filter
-    Args:
-        item: dict
-        filter: dict
-    Returns:
-        item: dict
-    """
-    if filter == 'all':
-        return seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
-    if filter == 'TSF':
-        return seq_x, seq_y
-    if filter == 'TGTSF':
-        return seq_x, seq_y, y_hetero, hetero_channel
-    if isinstance(filter, list):
-        # assert all the item in the list is in the [seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel]
-        assert all([x in ['seq_x', 'seq_y', 'x_time', 'y_time', 'x_hetero', 'y_hetero', 'hetero_x_time', 'hetero_y_time', 'hetero_general', 'hetero_channel'] for x in filter]), "The filter should be a list of the item you want to keep, including [seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel]"
-
-        return [eval(x) for x in filter]
-    
-def dict_collate_fn(batch):
-    keys = batch[0].keys()
-    batch = {key: [d[key] for d in batch] for key in keys}
-    # convert to tensor
-    batch = {key: default_collate(value) for key, value in batch.items()}
-
-    
-    return batch

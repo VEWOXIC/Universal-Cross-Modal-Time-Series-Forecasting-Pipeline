@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 class Universal_Dataset(Dataset):
     def __init__(self, root_path, flag='train', data_path='ETTh1.csv',
                  seq_len=24, pred_len=24, spliter=ratio_spliter, timestamp_col='date',
-                 target='OT', scale=True, data_buffer=None, hetero_data_getter=None, preload_hetero=False, hetero_stride=1):
+                 target='OT', scale=True, data_buffer=None, hetero_data_getter=None, preload_hetero=False, hetero_stride=1, task=None, custom_input=None):
         # size [seq_len, label_len, pred_len]
         # info
         self.seq_len = seq_len
@@ -46,7 +46,29 @@ class Universal_Dataset(Dataset):
         if self.preload_hetero:
             self.__preload_hetero__()
 
+        self.task = task
+        self.custom_input = custom_input
+        self.__input_format_parser__()
 
+    def __input_format_parser__(self):
+        if self.custom_input is not None:
+            print('[ warning ] Custom input set, overriding task defined input as: {}'.format(self.custom_input))
+            self.custom_input = self.custom_input.strip().split(',')
+            # assert all the input is in the list of ['seq_x', 'seq_y', 'x_time', 'y_time', 'hetero_x_time', 'x_hetero', 'hetero_y_time', 'y_hetero', 'hetero_general', 'hetero_channel']
+            assert all([i in ['seq_x', 'seq_y', 'x_time', 'y_time', 'hetero_x_time', 'x_hetero', 'hetero_y_time', 'y_hetero', 'hetero_general', 'hetero_channel'] for i in self.custom_input]), "Custom input should be a comma split string of ['seq_x', 'seq_y', 'x_time', 'y_time', 'hetero_x_time', 'x_hetero', 'hetero_y_time', 'y_hetero', 'hetero_general', 'hetero_channel']"
+        else:
+            if self.task is None:
+                print('[ warning ] No task defined, using default all input')
+                self.custom_input = ['seq_x', 'seq_y', 'x_time', 'y_time', 'hetero_x_time', 'x_hetero', 'hetero_y_time', 'y_hetero', 'hetero_general', 'hetero_channel']
+            elif self.task == 'TSF':
+                self.custom_input = ['seq_x', 'seq_y', 'x_time', 'y_time']
+            elif self.task == 'TGTSF':
+                self.custom_input = ['seq_x', 'seq_y', 'x_time', 'y_time', 'hetero_y_time', 'y_hetero', 'hetero_channel']
+            elif self.task == 'Reasoning' or 'all':
+                self.custom_input = ['seq_x', 'seq_y', 'x_time', 'y_time', 'hetero_x_time', 'x_hetero', 'hetero_y_time', 'y_hetero', 'hetero_general', 'hetero_channel']
+            else:
+                raise NotImplementedError('Task not supported, please use custom input to override')
+            
 
     # @profile
     def __read_data__(self):
@@ -105,27 +127,41 @@ class Universal_Dataset(Dataset):
         seq_y = self.data[r_begin:r_end]
         x_time = self.timestamp[s_begin:s_end]
         y_time = self.timestamp[r_begin:r_end]
+
+        x_hetero = np.zeros((1), dtype=np.float32)
+        y_hetero = np.zeros((1), dtype=np.float32)
+        hetero_x_time = np.zeros((1), dtype=np.float32)
+        hetero_y_time = np.zeros((1), dtype=np.float32)
+        hetero_general = np.zeros((1), dtype=np.float32)
+        hetero_channel = np.zeros((1), dtype=np.float32)
+
         if self.preload_hetero:
-            
-            hetero_x_time = self.hetero_time[s_begin:s_end:self.hetero_stride]
-            hetero_y_time = self.hetero_time[r_begin:r_end:self.hetero_stride]
-            x_hetero = self.full_hetero[s_begin:s_end:self.hetero_stride]
-            y_hetero = self.full_hetero[r_begin:r_end:self.hetero_stride]
             hetero_general = self.hetero_general
             hetero_channel = self.hetero_channel
+
+            # dynamically load hetero to reduce preprocess time
+            if 'x_hetero' in self.custom_input:
+                hetero_x_time = self.hetero_time[s_begin:s_end:self.hetero_stride]
+                x_hetero = self.full_hetero[s_begin:s_end:self.hetero_stride]
+            if 'y_hetero' in self.custom_input:
+                hetero_y_time = self.hetero_time[r_begin:r_end:self.hetero_stride]
+                y_hetero = self.full_hetero[r_begin:r_end:self.hetero_stride]
+
             
         else:
-            x_hetero = self.hetero_data_getter(x_time[::self.hetero_stride])
-            y_hetero = self.hetero_data_getter(y_time[::self.hetero_stride])
-
-            hetero_general = x_hetero[1]
-            hetero_channel = x_hetero[2]
-            hetero_x_time = x_hetero[0]
-            hetero_y_time = y_hetero[0]
-            x_hetero = x_hetero[3]
-            y_hetero = y_hetero[3]
-
-
+            if 'x_hetero' in self.custom_input:
+                x_hetero = self.hetero_data_getter(x_time[::self.hetero_stride])
+                hetero_x_time = x_hetero[0]
+                x_hetero = x_hetero[3]
+                hetero_general = x_hetero[1]
+                hetero_channel = x_hetero[2]
+            if 'y_hetero' in self.custom_input:
+                y_hetero = self.hetero_data_getter(y_time[::self.hetero_stride])
+                hetero_y_time = y_hetero[0]
+                y_hetero = y_hetero[3]
+                hetero_general = y_hetero[1]
+                hetero_channel = y_hetero[2]
+        # still return everything for compatibility, but unwanted set as 0 for efficiency
         return seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
 
     def __len__(self):

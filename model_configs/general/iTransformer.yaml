@@ -8,3 +8,4 @@ factor: 1
 n_heads: 8
 activation: gelu
 e_layers: 2
+task: TSF

@@ -8,8 +8,8 @@ target:
   - SPEED
 id_info: id_info_imputed.json
 id: 
-  - '416'
-  - '451' #all
+- '213'
+- '399' #all
 formatter: 'id_{i}.parquet'
 sampling_rate: 5min
 base_T: 288
