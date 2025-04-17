@@ -9,6 +9,7 @@ A comprehensive and flexible framework for time series forecasting with support 
   - [Architecture Overview](#architecture-overview)
   - [Installation](#installation)
   - [Quick Start](#quick-start)
+    - [Start with a predefined task:](#start-with-a-predefined-task)
     - [Training a model with PyTorch:](#training-a-model-with-pytorch)
     - [Training a model with PyTorch Lightning:](#training-a-model-with-pytorch-lightning)
     - [Using multi-GPU training:](#using-multi-gpu-training)
@@ -25,6 +26,7 @@ A comprehensive and flexible framework for time series forecasting with support 
       - [GPU Arguments](#gpu-arguments)
       - [Data Loading Arguments](#data-loading-arguments)
       - [Lightning-Specific Arguments](#lightning-specific-arguments)
+    - [Ahead task definition](#ahead-task-definition)
   - [Heterogeneous Data Support](#heterogeneous-data-support)
     - [Overview](#overview)
     - [Data Preparation](#data-preparation)
@@ -68,17 +70,19 @@ The framework consists of several key components:
 
 2. Install the required packages:
    
-   For standard PyTorch:
+
    ```bash
    pip install -r requirements.txt
    ```
-   
-   For PyTorch Lightning:
-   ```bash
-   pip install -r lightning_requirements.txt
-   ```
 
 ## Quick Start
+
+
+### Start with a predefined task:
+
+```bash
+bash scripts/solar/DLinear/DLinear_day.sh
+```
 
 ### Training a model with PyTorch:
 
@@ -97,6 +101,7 @@ python run_lightning.py --model DLinear --data_config data_configs/fullsolar.yam
 ```bash
 python run_lightning.py --model DLinear --data_config data_configs/fullsolar.yaml --model_config model_configs/general/DLinear.yaml --input_len 96 --output_len 96 --use_multi_gpu --devices 0,1,2,3
 ```
+
 
 ## Pipeline Components
 
@@ -140,7 +145,7 @@ The framework provides two training pipelines:
 
 ### Model Configuration
 
-Model configurations are specified in YAML files in the `model_configs/` directory. Here's an example for DLinear:
+Model configurations are specified in YAML files in the `model_configs/` directory. These are passed to the model's `__init__` method, some of them are also used to initialize the dataset. Here's an example for DLinear:
 
 ```yaml
 model: DLinear
@@ -153,7 +158,9 @@ Common model configuration parameters:
 - `model`: Model name (must match a model file in `models/`)
 - `individual`: Whether to use individual parameters for each time series
 - `enc_in`: Number of input channels
-- `task`: Task type (TSF = Time Series Forecasting, TGTSF = Text-Guided Time Series Forecasting)
+- `task`: Task type (TSF = Time Series Forecasting, TGTSF = Text-Guided Time Series Forecasting), Reasoning = LLM Reasoning task. This is to indicate the type of task the model is used and help dataloader to determine the type of data included in a batch. Or use a comma split string of ['seq_x', 'seq_y', 'x_time', 'y_time', 'hetero_x_time', 'x_hetero', 'hetero_y_time', 'y_hetero', 'hetero_general', 'hetero_channel'] to override as custom input. Customize tasktype in `data_provider/data_loader.py Universal_Dataset.__input_format_parser__` if needed.
+- `hetero_align_stride`: if this is set to True, the dataloader will align the stride of the heterogeneous data with the time series patching for less memory usage
+- Define any other parameters in the model's `__init__` method.
 
 More complex models like TGTSF have additional parameters:
 
@@ -171,9 +178,9 @@ text_dim: 256
 dropout: 0.3
 patch_len: 16
 stride: 8
-hetero_align_stride: True 
+hetero_align_stride: True # if this is set to True, the dataloader will align the stride of the heterogeneous data with the time series patching for less memory usage
 revin: True
-task: TGTSF
+task: TGTSF # 
 ```
 
 ### Data Configuration
@@ -223,14 +230,14 @@ hetero_info:
 
 Common data configuration parameters:
 - `root_path`: Path to the data directory
-- `spliter`: Data splitting method (`timestamp` or `ratio`)
+- `spliter`: Data splitting method (`timestamp` or `ratio`) or define your own spliter in `data_provider/data_helper.py`
 - `split_info`: Split points for train/validation/test
 - `timestamp_col`: Column name for timestamps
 - `target`: Target column(s) for forecasting
 - `id_info`: JSON file containing metadata
 - `id`: IDs to use for training (or `all`)
-- `formatter`: Format string for data files
-- `sampling_rate`: Data sampling rate
+- `formatter`: Format string for data file names
+- `sampling_rate`: Time series sampling rate
 - `base_T`: Base periodicity for time series
 
 ### Command-line Arguments
@@ -272,6 +279,22 @@ Common data configuration parameters:
 
 - `--precision`: Training precision ('32', '16', or 'bf16')
 - `--gradient_clip_val`: Gradient clipping value
+
+### Ahead task definition
+
+The framework supports ahead task definition, which is a shorthand for the prediction horizon. The ahead task is automatically aligns with the sampling rate of the dataset. E.g. if the ahead is 1 day, the prediction horizon is 24 for hourly data and 24*60=1440 for minutely sampled data.
+
+```bash
+python run.py --model DLinear --data_config data_configs/fullsolar.yaml --model_config model_configs/general/DLinear.yaml --ahead day
+```
+
+You can add your own ahead task definition in the `utils/task.py` file. The predefined ahead task is as below:
+
+| Ahead Task | Prediction Horizon | Lookback Window |
+| ---------- | ------------------ | --------------- |
+| day        | 1 day              | 7 day           |
+| week       | 7 day              | 30 day          |
+| month      | 30 day             | 60 day          |
 
 ## Heterogeneous Data Support
 
