@@ -113,11 +113,11 @@ class Experiment(Exp_Basic):
 
                     train_loss.append(loss.item())
 
-                    if iter_count % 1 == 0:
+                    if iter_count % 20 == 0:
                         speed = (time.time() - time_now) / iter_count
                         left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
                         pbar.set_postfix({'loss': f'{loss.item():.7f}', 'speed': f'{speed:.4f}s/iter', 'left time': f'{left_time:.4f}s'})
-                        pbar.update(1)
+                        pbar.update(20)
                         iter_count = 0
                         time_now = time.time()
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
