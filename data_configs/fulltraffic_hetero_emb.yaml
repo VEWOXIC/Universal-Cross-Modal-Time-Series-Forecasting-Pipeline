@@ -7,9 +7,7 @@ timestamp_col: DATA_AS_OF
 target: 
   - SPEED
 id_info: id_info_imputed.json
-id: 
-- '213'
-- '399' #all
+id: all
 formatter: 'id_{i}.parquet'
 sampling_rate: 5min
 base_T: 288

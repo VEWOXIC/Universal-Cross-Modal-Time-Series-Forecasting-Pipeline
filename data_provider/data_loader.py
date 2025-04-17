@@ -152,15 +152,16 @@ class Universal_Dataset(Dataset):
             if 'x_hetero' in self.custom_input:
                 x_hetero = self.hetero_data_getter(x_time[::self.hetero_stride])
                 hetero_x_time = x_hetero[0]
-                x_hetero = x_hetero[3]
                 hetero_general = x_hetero[1]
                 hetero_channel = x_hetero[2]
+                x_hetero = x_hetero[3]
+
             if 'y_hetero' in self.custom_input:
                 y_hetero = self.hetero_data_getter(y_time[::self.hetero_stride])
                 hetero_y_time = y_hetero[0]
-                y_hetero = y_hetero[3]
                 hetero_general = y_hetero[1]
                 hetero_channel = y_hetero[2]
+                y_hetero = y_hetero[3]
         # still return everything for compatibility, but unwanted set as 0 for efficiency
         return seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
 
