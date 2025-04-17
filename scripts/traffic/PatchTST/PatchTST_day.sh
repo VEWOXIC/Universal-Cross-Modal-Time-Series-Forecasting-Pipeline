@@ -4,5 +4,5 @@ python -u run.py \
     --data traffic \
     --data_config './data_configs/fulltraffic.yaml' \
     --ahead day \
-    --batch_size 1024 | tee ./logs/traffic/PatchTST_day.log
+    --batch_size 1024 #| tee ./logs/traffic/PatchTST_day.log
     

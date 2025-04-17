@@ -1,4 +1,541 @@
-# Universal Time Series Forecasting Pipeline
+# Time Series Forecasting Framework
 
-This repository provides a comprehensive framework for time series forecasting, designed to be flexible and adaptable to various datasets and forecasting tasks. The pipeline is built using Python and leverages popular libraries such as `pandas`, `numpy`, `scikit-learn`, and `statsmodels`. It includes data preprocessing, feature engineering, model training, evaluation, and visualization components.
+A comprehensive and flexible framework for time series forecasting with support for both PyTorch and PyTorch Lightning. This framework supports various traditional time series models as well as language model-based forecasting approaches.
+
+## Table of Contents
+
+- [Time Series Forecasting Framework](#time-series-forecasting-framework)
+  - [Table of Contents](#table-of-contents)
+  - [Architecture Overview](#architecture-overview)
+  - [Installation](#installation)
+  - [Quick Start](#quick-start)
+    - [Training a model with PyTorch:](#training-a-model-with-pytorch)
+    - [Training a model with PyTorch Lightning:](#training-a-model-with-pytorch-lightning)
+    - [Using multi-GPU training:](#using-multi-gpu-training)
+  - [Pipeline Components](#pipeline-components)
+    - [Data Flow](#data-flow)
+    - [Training Process](#training-process)
+    - [PyTorch vs Lightning](#pytorch-vs-lightning)
+  - [Configuration](#configuration)
+    - [Model Configuration](#model-configuration)
+    - [Data Configuration](#data-configuration)
+    - [Command-line Arguments](#command-line-arguments)
+      - [Common Arguments](#common-arguments)
+      - [Training Arguments](#training-arguments)
+      - [GPU Arguments](#gpu-arguments)
+      - [Data Loading Arguments](#data-loading-arguments)
+      - [Lightning-Specific Arguments](#lightning-specific-arguments)
+  - [Heterogeneous Data Support](#heterogeneous-data-support)
+    - [Overview](#overview)
+    - [Data Preparation](#data-preparation)
+    - [Heterogeneous Data Configuration](#heterogeneous-data-configuration)
+    - [Time Alignment Methods](#time-alignment-methods)
+    - [Input Formats](#input-formats)
+    - [Memory Efficiency](#memory-efficiency)
+    - [Usage in Models](#usage-in-models)
+  - [Extending the Framework](#extending-the-framework)
+    - [Adding a New Model](#adding-a-new-model)
+    - [Adding a New Dataset](#adding-a-new-dataset)
+  - [Advanced Usage](#advanced-usage)
+    - [Heterogeneous Data Handling](#heterogeneous-data-handling)
+    - [Multi-GPU Training](#multi-gpu-training)
+    - [Checkpoint Management](#checkpoint-management)
+
+## Architecture Overview
+
+The framework consists of several key components:
+
+```
+.
+├── data_provider/         # Data loading and preparation
+├── models/                # Model definitions
+├── exp/                   # Experiment handling
+├── utils/                 # Utility functions
+├── layers/                # Model building blocks
+├── data_configs/          # Dataset configurations 
+├── model_configs/         # Model configurations
+├── run.py                 # Traditional PyTorch training entry point
+└── run_lightning.py       # PyTorch Lightning training entry point
+```
+
+## Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd time-series-forecasting
+   ```
+
+2. Install the required packages:
+   
+   For standard PyTorch:
+   ```bash
+   pip install -r requirements.txt
+   ```
+   
+   For PyTorch Lightning:
+   ```bash
+   pip install -r lightning_requirements.txt
+   ```
+
+## Quick Start
+
+### Training a model with PyTorch:
+
+```bash
+python run.py --model DLinear --data_config data_configs/fullsolar.yaml --model_config model_configs/general/DLinear.yaml --input_len 96 --output_len 96
+```
+
+### Training a model with PyTorch Lightning:
+
+```bash
+python run_lightning.py --model DLinear --data_config data_configs/fullsolar.yaml --model_config model_configs/general/DLinear.yaml --input_len 96 --output_len 96
+```
+
+### Using multi-GPU training:
+
+```bash
+python run_lightning.py --model DLinear --data_config data_configs/fullsolar.yaml --model_config model_configs/general/DLinear.yaml --input_len 96 --output_len 96 --use_multi_gpu --devices 0,1,2,3
+```
+
+## Pipeline Components
+
+### Data Flow
+
+1. **Data Configuration**: Specified in YAML files in `data_configs/`.
+2. **Data Provider**: `data_provider/data_factory.py` creates datasets and dataloaders.
+3. **Dataset Class**: `data_provider/data_loader.py` contains the dataset classes.
+4. **DataModule**: For Lightning, `data_provider/lightning_data_module.py` manages data.
+
+The data flow follows this path:
+1. Data configuration is loaded from YAML.
+2. `Data_Provider` class initializes datasets based on the config.
+3. Datasets load data from files specified in the configuration.
+4. DataLoaders prepare batches for model training.
+
+### Training Process
+
+1. **Experiment Class**: `exp/exp_universal.py` (PyTorch) or `exp/exp_lightning.py` (Lightning).
+2. **Model Initialization**: Models are initialized from the `models/` directory.
+3. **Training Loop**: Handled by the experiment class or Lightning Trainer.
+4. **Checkpoint Management**: Saves model checkpoints and metrics.
+
+### PyTorch vs Lightning
+
+The framework provides two training pipelines:
+
+1. **PyTorch Pipeline**:
+   - Manually implemented training loop in `exp/exp_universal.py`
+   - Provides granular control over training details
+   - Entry point: `run.py`
+
+2. **PyTorch Lightning Pipeline**:
+   - Uses Lightning's structured approach in `exp/exp_lightning.py`
+   - Simplified multi-GPU training
+   - Better experiment tracking
+   - More efficient code organization
+   - Entry point: `run_lightning.py`
+
+## Configuration
+
+### Model Configuration
+
+Model configurations are specified in YAML files in the `model_configs/` directory. Here's an example for DLinear:
+
+```yaml
+model: DLinear
+individual: False
+enc_in: 1
+task: TSF
+```
+
+Common model configuration parameters:
+- `model`: Model name (must match a model file in `models/`)
+- `individual`: Whether to use individual parameters for each time series
+- `enc_in`: Number of input channels
+- `task`: Task type (TSF = Time Series Forecasting, TGTSF = Text-Guided Time Series Forecasting)
+
+More complex models like TGTSF have additional parameters:
+
+```yaml
+model: TGTSF
+individual: False
+enc_in: 1
+e_layers: 3
+cross_layers: 3
+self_layers: 3
+mixer_self_layers: 3
+n_heads: 4
+d_model: 256
+text_dim: 256
+dropout: 0.3
+patch_len: 16
+stride: 8
+hetero_align_stride: True 
+revin: True
+task: TGTSF
+```
+
+### Data Configuration
+
+Data configurations are specified in YAML files in the `data_configs/` directory:
+
+Basic configuration (without heterogeneous data):
+```yaml
+root_path: /path/to/data
+spliter: timestamp
+split_info:
+  - '2021-01-01'
+  - '2022-01-01'
+timestamp_col: date
+target: 
+  - kWh
+id_info: id_info.json
+id: all
+formatter: 'id_{i}.parquet'
+sampling_rate: 1h
+base_T: 24
+```
+
+Configuration with heterogeneous data:
+```yaml
+root_path: /path/to/data
+spliter: timestamp
+split_info:
+  - '2021-01-01'
+  - '2022-01-01'
+timestamp_col: date
+target: 
+  - kWh
+id_info: id_info.json
+id: all
+formatter: 'id_{i}.parquet'
+sampling_rate: 1h
+base_T: 24
+hetero_info:
+  sampling_rate: 1day
+  root_path: /path/to/hetero/data
+  formatter: weather_forecast_????.json
+  matching: single
+  input_format: json
+  static_path: static_info.json
+```
+
+Common data configuration parameters:
+- `root_path`: Path to the data directory
+- `spliter`: Data splitting method (`timestamp` or `ratio`)
+- `split_info`: Split points for train/validation/test
+- `timestamp_col`: Column name for timestamps
+- `target`: Target column(s) for forecasting
+- `id_info`: JSON file containing metadata
+- `id`: IDs to use for training (or `all`)
+- `formatter`: Format string for data files
+- `sampling_rate`: Data sampling rate
+- `base_T`: Base periodicity for time series
+
+### Command-line Arguments
+
+#### Common Arguments
+
+- `--model`: Model name (e.g., DLinear, TGTSF)
+- `--model_config`: Path to model configuration file
+- `--data_config`: Path to data configuration file
+- `--input_len`: Input sequence length
+- `--output_len`: Output sequence length (prediction horizon)
+- `--ahead`: Shorthand for day/week/month ahead forecasting
+- `--batch_size`: Batch size for training
+
+#### Training Arguments
+
+- `--train_epochs`: Number of training epochs
+- `--learning_rate`: Initial learning rate
+- `--loss`: Loss function (mse, l1)
+- `--lradj`: Learning rate adjustment strategy
+- `--patience`: Early stopping patience
+
+#### GPU Arguments
+
+- `--use_gpu`: Whether to use GPU
+- `--gpu`: GPU device ID
+- `--use_multi_gpu`: Whether to use multiple GPUs
+- `--devices`: GPU device IDs for multi-GPU training
+
+#### Data Loading Arguments
+
+- `--scale`: Whether to scale the data
+- `--disable_buffer`: Disable data buffer for memory efficiency
+- `--preload_hetero`: Preload heterogeneous data
+- `--num_workers`: Number of dataloader workers
+- `--prefetch_factor`: Prefetch factor for dataloader
+
+#### Lightning-Specific Arguments
+
+- `--precision`: Training precision ('32', '16', or 'bf16')
+- `--gradient_clip_val`: Gradient clipping value
+
+## Heterogeneous Data Support
+
+### Overview
+
+The framework provides robust support for heterogeneous data integration, allowing you to enrich time series forecasting with additional contextual information (e.g., weather forecasts, textual data, or any other external information). This is particularly valuable for models that can leverage multi-modal data, such as text-guided time series forecasting.
+
+The heterogeneous data integration works by:
+1. Loading heterogeneous data through a dedicated loader (`Heterogeneous_Dataset`)
+2. Creating partial functions that link time series timestamps to corresponding heterogeneous data
+3. Passing these functions to the main dataset class (`Universal_Dataset`)
+4. Dynamically fetching heterogeneous data based on timestamps during training
+
+### Data Preparation
+
+Heterogeneous data should be organized with the following components:
+
+1. **Dynamic data**: Time-varying heterogeneous information (e.g., weather forecasts)
+   - Supported formats: JSON, CSV, pre-computed embeddings (PKL)
+   - Files should be named according to a pattern (e.g., `weather_forecast_20210101.json`)
+   - Each file should contain timestamps as keys and data as values
+
+2. **Static data**: Information that remains constant (e.g., metadata)
+   - Stored in a single JSON file (e.g., `static_info.json`)
+   - Contains three main components:
+     - `general_info`: General description of the dataset
+     - `downtime_prompt`: Information about sensor downtime periods
+     - `channel_info`: Information about specific channels/stations
+
+3. **Downtime information**: Periods when sensors were not working
+   - Stored in the `id_info.json` file
+   - Contains time ranges for each station/channel when data was not collected
+
+Example JSON structure for dynamic data:
+```json
+{
+  "20210101120000": {
+    "temperature": 25.5,
+    "humidity": 60.2,
+    "precipitation": 0.0
+  },
+  "20210101130000": {
+    "temperature": 26.1,
+    "humidity": 58.7,
+    "precipitation": 0.0
+  }
+}
+```
+
+Example static information:
+```json
+{
+  "general_info": "This dataset contains solar generation data with weather forecasts.",
+  "downtime_prompt": "The sensor was down for maintenance.",
+  "channel_info": {
+    "station1": "Solar panel on building A, south-facing orientation.",
+    "station2": "Solar panel on building B, west-facing orientation."
+  }
+}
+```
+
+### Heterogeneous Data Configuration
+
+To enable heterogeneous data, add a `hetero_info` section to your data config file:
+
+```yaml
+hetero_info:
+  sampling_rate: 1day           # Sampling rate of heterogeneous data
+  root_path: /path/to/hetero    # Path to heterogeneous data (None to use main data path)
+  formatter: weather_????.json   # Filename pattern for heterogeneous data files
+  matching: single              # Time alignment method (nearest, forward, backward, single)
+  input_format: json            # Format of heterogeneous data (json, dict, csv, embedding)
+  static_path: static_info.json # Path to static information file
+```
+
+### Time Alignment Methods
+
+The framework supports several methods for aligning time series timestamps with heterogeneous data:
+
+- **nearest**: Find the closest timestamp in heterogeneous data
+- **forward**: Use the next available timestamp in heterogeneous data
+- **backward**: Use the previous available timestamp in heterogeneous data
+- **single**: Use the last matching timestamp and deduplicate (most memory-efficient) recommended for LLM tasks
+
+This alignment is handled by the `time_matcher` method in the `Heterogeneous_Dataset` class.
+
+### Input Formats
+
+Heterogeneous data can be provided in several formats:
+
+- **json**: Data is loaded from JSON files and returned as a JSON string
+- **dict**: Data is loaded and returned as Python dictionaries
+- **csv**: Data is loaded and returned as CSV strings
+- **embedding**: Pre-computed embeddings are loaded from pickle files (for efficiency)
+
+The embedding format is particularly useful for large-scale deployments where computing embeddings on-the-fly would be expensive.
+
+### Memory Efficiency
+
+For large heterogeneous datasets, the framework provides several options to manage memory usage:
+
+1. **Lazy loading**: By default, heterogeneous data is fetched on-demand during training
+2. **Preloading**: Set `--preload_hetero` to load all heterogeneous data into memory for faster access
+3. **Stride alignment**: Set `hetero_align_stride: True` in the model config to match model stride with heterogeneous data
+4. **Single matching**: Use `matching: single` to deduplicate heterogeneous data
+
+The framework's implementation ensures efficient retrieval via:
+- Vectorized timestamp matching operations
+- Interval-based downtime checking
+- Partial functions to avoid redundant computations
+
+### Usage in Models
+
+Models can access heterogeneous data through additional parameters in the forward method:
+
+```python
+def forward(self, x, historical_events=None, news=None, dataset_description=None, channel_description=None):
+    # x: Time series data [Batch, Input length, Channel]
+    # historical_events: Historical heterogeneous data
+    # news: Future heterogeneous data (prediction period)
+    # dataset_description: General dataset information
+    # channel_description: Channel-specific information
+    
+    # Model logic using both time series and heterogeneous data
+    ...
+```
+
+The experiment will automatically detect which parameters the model accepts and provide the corresponding data.
+
+## Extending the Framework
+
+### Adding a New Model
+
+1. **Create a model file** in the `models/` directory (e.g., `models/NewModel.py`):
+
+```python
+import torch
+import torch.nn as nn
+
+class Model(nn.Module):
+    def __init__(self, configs):
+        super(Model, self).__init__()
+        # Extract configuration parameters
+        self.seq_len = configs.seq_len
+        self.pred_len = configs.pred_len
+        self.individual = configs.individual
+        self.channels = configs.enc_in
+        
+        # Define your model architecture here
+        self.layers = nn.Sequential(
+            nn.Linear(self.seq_len, self.pred_len),
+            # Add more layers as needed
+        )
+    
+    def forward(self, x, **kwargs):
+        """
+        x: Input data [Batch, Input length, Channel]
+        Returns: Output prediction [Batch, Output length, Channel]
+        """
+        # Implement the forward pass
+        
+        # Example implementation:
+        batch_size, seq_len, channels = x.shape
+        x = x.permute(0, 2, 1)  # [Batch, Channel, Input length]
+        output = self.layers(x)  # [Batch, Channel, Output length]
+        output = output.permute(0, 2, 1)  # [Batch, Output length, Channel]
+        
+        return output
+    
+    # Optional: implement move_to_device method for models that require 
+    # specific device handling (especially with heterogeneous data)
+    def move_to_device(self, seq_x, seq_y, x_time, y_time, 
+                    x_hetero, y_hetero, hetero_x_time, hetero_y_time, 
+                    hetero_general, hetero_channel, device):
+        # Move necessary tensors to device
+        seq_x = seq_x.float().to(device)
+        seq_y = seq_y.float().to(device)
+        
+        # For models that use heterogeneous data:
+        # hetero_channel = hetero_channel.float().to(device)
+        # y_hetero = y_hetero.float().to(device)
+        
+        return seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
+```
+
+2. **Create a model configuration file** in `model_configs/` (e.g., `model_configs/general/NewModel.yaml`):
+
+```yaml
+model: NewModel
+individual: False
+enc_in: 1
+# Add any additional parameters your model needs
+task: TSF  # or TGTSF if it uses heterogeneous data
+```
+
+3. **Update models/__init__.py** if needed (usually not necessary as models are loaded dynamically)
+
+### Adding a New Dataset
+
+1. **Prepare your dataset files** in the format expected by the data loader (typically CSV or Parquet).
+
+2. **Create a data configuration file** in `data_configs/` (e.g., `data_configs/new_dataset.yaml`):
+
+```yaml
+root_path: /path/to/data
+spliter: timestamp  # or ratio
+split_info:
+  - '2022-01-01'
+  - '2022-07-01'
+timestamp_col: timestamp
+target: 
+  - value
+id_info: id_info.json
+id: all
+formatter: 'id_{i}.parquet'
+sampling_rate: 1h
+base_T: 24
+```
+
+3. **Create an id_info.json file** that describes the dataset:
+
+```json
+{
+  "station1": {
+    "description": "Description of station 1",
+    "sensor_downtime": {...}
+  },
+  "station2": {
+    "description": "Description of station 2",
+    "sensor_downtime": {...}
+  }
+}
+```
+
+4. **For heterogeneous data**, prepare additional data files and update the configuration.
+
+## Advanced Usage
+
+### Heterogeneous Data Handling
+
+The framework supports heterogeneous data integration (e.g., text data, auxiliary information) through the `hetero_info` configuration in data config files.
+
+When dealing with large heterogeneous data, consider:
+- Set `--disable_buffer` to avoid loading all data into memory
+- Adjust `--prefetch_factor` and `--num_workers` for efficient data loading
+
+### Multi-GPU Training
+
+Use Lightning for efficient multi-GPU training:
+
+```bash
+python run_lightning.py --model DLinear --data_config data_configs/fullsolar.yaml --model_config model_configs/general/DLinear.yaml --use_multi_gpu --devices 0,1,2,3
+```
+
+For PyTorch, multi-GPU is also supported but less optimized:
+
+```bash
+python run.py --model DLinear --data_config data_configs/fullsolar.yaml --model_config model_configs/general/DLinear.yaml --use_multi_gpu --devices 0,1,2,3
+```
+
+### Checkpoint Management
+
+Checkpoints are saved in `./checkpoints/{setting_name}/`, including:
+- `checkpoint.pth`: Best model based on validation loss
+- `args.json`: Command-line arguments used for training
+- TensorBoard logs (for Lightning): `./checkpoints/tb_logs/{setting_name}/`
 

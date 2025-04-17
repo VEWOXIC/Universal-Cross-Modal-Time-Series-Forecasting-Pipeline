@@ -1,8 +1,7 @@
 import argparse
 import os
 import torch
-# from exp.exp_uni import Exp_uni
-from exp.exp_universal import Experiment
+from exp.exp_lightning import train_lightning_model
 import random
 import numpy as np
 import time
@@ -10,7 +9,7 @@ import yaml
 from utils.tools import dotdict
 from utils.task import ahead_task_parser
 
-parser = argparse.ArgumentParser(description='Time Series Forecasting Benchmark - A flexible framework supporting various forecasting models and datasets.')
+parser = argparse.ArgumentParser(description='Time Series Forecasting with PyTorch Lightning - A flexible framework supporting various forecasting models and datasets.')
 
 # model config
 parser.add_argument('--model', type=str, default='FITS', help='Model name (DLinear, FITS, PatchTST, TGTSF, iTransformer, etc.) - Must correspond to a model file in models/ directory')
@@ -18,7 +17,7 @@ parser.add_argument('--model_config', type=str, default='model_configs/FITS.yaml
 
 # data loader
 parser.add_argument('--data', type=str, default='solar', help='Dataset name for reference (actual data location is specified in data_config)')
-parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='Directory to save model checkpoints and training artifacts')
+parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='Directory to save model checkpoints, TensorBoard logs, and training artifacts')
 parser.add_argument('--data_config', type=str, default='./data_configs/data_profile.yaml', help='Path to data configuration YAML file specifying dataset location, format, and preprocessing')
 parser.add_argument('--scale', type=bool, default=True, help='Whether to standardize the data (zero mean, unit variance)')
 parser.add_argument('--disable_buffer', default=False, action='store_true', help='Disable data buffer to reduce memory usage (may slow down training)')
@@ -42,8 +41,12 @@ parser.add_argument('--lradj', type=str, default='type3', help='Learning rate ad
 # GPU
 parser.add_argument('--use_gpu', type=bool, default=True, help='Whether to use GPU for training (if available)')
 parser.add_argument('--gpu', type=int, default=0, help='GPU device ID to use when not using multi-GPU')
-parser.add_argument('--use_multi_gpu', action='store_true', help='Use multiple GPUs for distributed training', default=False)
+parser.add_argument('--use_multi_gpu', action='store_true', help='Use multiple GPUs for distributed training with DDP', default=False)
 parser.add_argument('--devices', type=str, default='0,1,2,3', help='Comma-separated list of GPU device IDs to use for multi-GPU training')
+
+# PyTorch Lightning specific
+parser.add_argument('--precision', type=str, default='32', help='Numerical precision for training: "32" (float32), "16" (float16/half), or "bf16" (bfloat16)')
+parser.add_argument('--gradient_clip_val', type=float, default=0.0, help='Gradient clipping value to prevent exploding gradients (0 to disable)')
 
 args = parser.parse_args()
 
@@ -60,20 +63,19 @@ args.data_config = data_configs
 
 # get current time
 current_time = time.strftime('%m-%d-%H%M', time.localtime(time.time()))
-# setting record of experiment
 
+# setting record of experiment
 if args.ahead is not None:
     assert args.ahead in ['day', 'week', 'month'], 'ahead task not supported, or add your own parser'
 
     try:
         args.output_len, args.input_len = ahead_task_parser(args.ahead, data_configs.sampling_rate)
-        setting = f'{current_time}_{args.model}_{args.data}_{args.ahead}_ahead'
+        setting = f'{current_time}_{args.model}_{args.data}_{args.ahead}_ahead_pl'  # Added _pl suffix to identify Lightning runs
     except:
-        setting = f'{current_time}_{args.model}_{args.data}_{args.output_len}_{args.input_len}'
+        setting = f'{current_time}_{args.model}_{args.data}_{args.output_len}_{args.input_len}_pl'
         raise ValueError('sampling rate not found in data config, fall back to default, input output length')
 else:
-    setting = f'{current_time}_{args.model}_{args.data}_{args.output_len}_{args.input_len}'
-
+    setting = f'{current_time}_{args.model}_{args.data}_{args.output_len}_{args.input_len}_pl'
 
 args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False
 
@@ -96,9 +98,9 @@ print(args)
 # Clear CUDA cache
 torch.cuda.empty_cache()
 
-exp = Experiment(args)  # set experiments
-print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(setting))
-exp.train(setting)
+# Train model
+model = train_lightning_model(args, setting)
+print(f'>>>>>>>training completed : {setting}>>>>>>>>>>>>>>>>>>>>>>>>>>>')
 
 # Final cleanup
-torch.cuda.empty_cache()
+torch.cuda.empty_cache() 

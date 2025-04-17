@@ -18,3 +18,7 @@ flash-attn
 openai
 flashinfer-python
 nvitop
+pytorch_lightning>=2.0.0
+torch>=1.13.0
+pyyaml>=6.0
+tensorboard>=2.8.0 
