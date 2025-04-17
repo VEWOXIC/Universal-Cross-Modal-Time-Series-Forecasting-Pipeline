@@ -1,10 +1,10 @@
-# Time Series Forecasting Framework
+# Universal Cross-Modal Time Series Forecasting Pipeline
 
-A comprehensive and flexible framework for time series forecasting with support for both PyTorch and PyTorch Lightning. This framework supports various traditional time series models as well as language model-based forecasting approaches.
+A comprehensive and flexible framework for time series forecasting with support for both PyTorch and PyTorch Lightning. This framework supports various traditional time series models, text-embedding based cross-modal forecasting as well as language model-based reasoning approaches.
 
 ## Table of Contents
 
-- [Time Series Forecasting Framework](#time-series-forecasting-framework)
+- [Universal Cross-Modal Time Series Forecasting Pipeline](#universal-cross-modal-time-series-forecasting-pipeline)
   - [Table of Contents](#table-of-contents)
   - [Architecture Overview](#architecture-overview)
   - [Installation](#installation)
