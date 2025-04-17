@@ -9,7 +9,7 @@ target:
 id_info: id_info_imputed.json
 id: 
  - '385'
- - '390' #all
+#  - '390' #all
 formatter: 'id_{i}.parquet'
 sampling_rate: 5min
 base_T: 288

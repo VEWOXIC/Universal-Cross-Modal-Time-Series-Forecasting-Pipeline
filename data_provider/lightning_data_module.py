@@ -25,6 +25,7 @@ class TimeSeriesDataModule(pl.LightningDataModule):
         if stage == 'fit' or stage is None:
             self.train_dataset = self.data_provider.get_train(return_type='set')
             self.val_dataset = self.data_provider.get_val(return_type='set')
+            self.test_dataset = self.data_provider.get_test(return_type='set')
         
         if stage == 'test' or stage is None:
             self.test_dataset = self.data_provider.get_test(return_type='set')

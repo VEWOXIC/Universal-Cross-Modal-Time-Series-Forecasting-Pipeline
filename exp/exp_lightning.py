@@ -35,7 +35,7 @@ class TimeSeriesLightningModel(pl.LightningModule):
         # Track metrics
         self.training_step_outputs = []
         self.validation_step_outputs = []
-        self.test_step_outputs = []
+        self.test_step_outputs = {}  # Dictionary to track per-dataset metrics
         
     def _select_criterion(self):
         """Select the loss function."""
@@ -102,22 +102,114 @@ class TimeSeriesLightningModel(pl.LightningModule):
         
         return loss
     
+    def on_validation_epoch_end(self):
+        """After validation completes, run test on all subsets."""
+        # Only run test during training, not during sanity check
+        if self.trainer.sanity_checking:
+            return
+        
+        # Manually run test on all subsets
+        self._run_epoch_test()
+        
+    def _run_epoch_test(self):
+        """Run test on all subsets and print results."""
+        # Skip if we don't have access to datamodule or if test dataset isn't set up yet
+        if not hasattr(self.trainer, 'datamodule') or not hasattr(self.trainer.datamodule, 'test_dataset'):
+            return
+        
+        print("\n\n------- Testing on Epoch {} -------".format(self.current_epoch + 1))
+        
+        # Save current state
+        self.model.eval()
+        test_loaders = self.trainer.datamodule.test_dataloader()
+        
+        # Track losses
+        subset_losses = {}
+        all_losses = []
+        
+        with torch.no_grad():
+            for subset_id, loader in test_loaders.items():
+                subset_batch_losses = []
+                
+                # Process each batch
+                for i, batch in tqdm(enumerate(loader), total=len(loader), desc=f"Testing {info}"):
+                    output, gt = self.forward(batch)
+                    loss = self.criterion(output, gt)
+                    subset_batch_losses.append(loss.item())
+                
+                # Calculate average for this subset
+                if subset_batch_losses:
+                    avg_loss = np.mean(subset_batch_losses)
+                    subset_losses[subset_id] = avg_loss
+                    all_losses.extend(subset_batch_losses)
+                    print(f"Test loss for {subset_id}: {avg_loss:.7f}")
+        
+        # Calculate overall average
+        if all_losses:
+            overall_avg = np.mean(all_losses)
+            print(f"Overall test loss: {overall_avg:.7f}")
+            
+            # Log to tensorboard
+            self.log('epoch_test_loss', overall_avg, on_epoch=True)
+            
+            # Log each subset
+            for subset_id, loss in subset_losses.items():
+                self.log(f'epoch_test_loss_{subset_id}', loss, on_epoch=True)
+        
+        print("---------------------------------------\n")
+        
+        # Restore model state
+        self.model.train()
+    
     def test_step(self, batch, batch_idx, dataloader_idx=0):
         """Test step."""
         output, gt = self.forward(batch)
         loss = self.criterion(output, gt)
         
-        # If we're testing with multiple dataloaders (one per test dataset)
-        # Keep track of which one we're using
-        self.log(f'test_loss_{dataloader_idx}', loss, on_epoch=True)
+        # Get dataset identifier for the current dataloader
+        dataset_ids = list(self.trainer.datamodule.test_dataset.keys())
+        if dataloader_idx < len(dataset_ids):
+            dataset_id = dataset_ids[dataloader_idx]
+        else:
+            dataset_id = f"unknown_{dataloader_idx}"
         
-        return loss
+        # Initialize list for this dataset if it doesn't exist
+        if dataset_id not in self.test_step_outputs:
+            self.test_step_outputs[dataset_id] = []
+        
+        # Store the loss for this batch in the corresponding dataset
+        self.test_step_outputs[dataset_id].append(loss.item())
+        
+        # Log individual test losses
+        self.log(f'test_loss_{dataset_id}', loss, on_epoch=True)
+        
+        return {"loss": loss, "dataset_id": dataset_id}
     
     def on_test_epoch_end(self):
-        """Compute and log the average test loss across all dataloaders."""
-        # This will be called after all test batches have been processed
-        # We can calculate and log average metrics here if needed
-        pass
+        """
+        Compute and log the average test loss across all datasets.
+        This mimics the behavior of the PyTorch implementation where 
+        each dataset's average loss is reported separately.
+        """
+        # Calculate average loss for each dataset
+        all_losses = []
+        
+        for dataset_id, losses in self.test_step_outputs.items():
+            avg_loss = torch.tensor(losses).mean().item()
+            all_losses.extend(losses)  # Collect all losses for overall average
+            
+            # Log average loss for this dataset
+            self.log(f'test_avg_loss_{dataset_id}', avg_loss)
+            print(f"Test loss for {dataset_id}: {avg_loss:.7f}")
+        
+        # Calculate overall average loss
+        if all_losses:
+            overall_avg_loss = torch.tensor(all_losses).mean().item()
+            self.log('test_avg_loss', overall_avg_loss)
+            print(f"Overall test loss: {overall_avg_loss:.7f}")
+        
+        # Clear the outputs
+        self.test_step_outputs = {}
     
     def configure_optimizers(self):
         """Configure optimizers and LR schedulers."""
@@ -135,6 +227,15 @@ class TimeSeriesLightningModel(pl.LightningModule):
         }
         
         return [optimizer], [lr_scheduler]
+
+
+class TestAfterEpochCallback(pl.Callback):
+    """
+    Callback to run test after each epoch and display per-subset results.
+    """
+    def on_validation_epoch_end(self, trainer, pl_module):
+        """Run test after validation epoch ends."""
+        pass  # The testing is now handled directly in the model's on_validation_epoch_end
 
 
 def train_lightning_model(args, setting):
@@ -182,6 +283,9 @@ def train_lightning_model(args, setting):
         save_last=True
     )
     
+    # Add test-after-epoch callback
+    test_callback = TestAfterEpochCallback()
+    
     # Configure logger
     logger = TensorBoardLogger(
         save_dir=os.path.join(args.checkpoints, 'tb_logs'),
@@ -194,7 +298,7 @@ def train_lightning_model(args, setting):
         accelerator='gpu' if args.use_gpu else 'cpu',
         devices=args.device_ids if args.use_multi_gpu else [args.gpu] if args.use_gpu else None,
         strategy='ddp' if args.use_multi_gpu else None,
-        callbacks=[early_stopping, checkpoint_callback],
+        callbacks=[early_stopping, checkpoint_callback, test_callback],  # Added test callback
         logger=logger,
         deterministic=True,
         precision=args.precision,
@@ -205,8 +309,8 @@ def train_lightning_model(args, setting):
     print(f'>>>>>>>start training : {setting}>>>>>>>>>>>>>>>>>>>>>>>>>>>')
     trainer.fit(model, data_module)
     
-    # Test model
-    print(f'>>>>>>>testing : {setting}>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+    # Final test
+    print(f'>>>>>>>final testing : {setting}>>>>>>>>>>>>>>>>>>>>>>>>>>>')
     trainer.test(model, data_module)
     
     # Load best model and return
