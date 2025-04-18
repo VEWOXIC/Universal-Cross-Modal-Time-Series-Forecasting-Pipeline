@@ -47,6 +47,7 @@ parser.add_argument('--devices', type=str, default='0,1,2,3', help='Comma-separa
 # PyTorch Lightning specific
 parser.add_argument('--precision', type=str, default='32', help='Numerical precision for training: "32" (float32), "16" (float16/half), or "bf16" (bfloat16)')
 parser.add_argument('--gradient_clip_val', type=float, default=0.0, help='Gradient clipping value to prevent exploding gradients (0 to disable)')
+parser.add_argument('--test_after_epoch', action='store_true', help='Test after each epoch')
 
 args = parser.parse_args()
 

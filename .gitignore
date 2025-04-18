@@ -128,3 +128,4 @@ lightning_logs
 /llm_results/*
 .fuse*
 *.log.*
+.vscode

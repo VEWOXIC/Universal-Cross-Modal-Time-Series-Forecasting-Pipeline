@@ -20,7 +20,8 @@ class TimeSeriesDataModule(pl.LightningDataModule):
         Called on every process when using DDP.
         """
         # Create data provider, reusing the existing implementation
-        self.data_provider = Data_Provider(self.args, buffer=(not self.args.disable_buffer))
+        if not hasattr(self, 'data_provider'):
+            self.data_provider = Data_Provider(self.args, buffer=(not self.args.disable_buffer))
         
         if stage == 'fit' or stage is None:
             self.train_dataset = self.data_provider.get_train(return_type='set')
@@ -28,7 +29,13 @@ class TimeSeriesDataModule(pl.LightningDataModule):
             self.test_dataset = self.data_provider.get_test(return_type='set')
         
         if stage == 'test' or stage is None:
-            self.test_dataset = self.data_provider.get_test(return_type='set')
+            # check if test dataset is already loaded
+            if not hasattr(self, 'test_dataset'):
+                self.test_dataset = self.data_provider.get_test(return_type='set')
+            else:
+                # If test dataset is already loaded, skip loading again
+                print("Test dataset already loaded, skipping reloading.")
+
         
         # Release buffer after setup to free memory
         self.data_provider.data_buffer.clear()
