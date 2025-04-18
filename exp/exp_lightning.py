@@ -132,7 +132,7 @@ class TimeSeriesLightningModel(pl.LightningModule):
                 subset_batch_losses = []
                 
                 # Process each batch
-                for i, batch in tqdm(enumerate(loader), total=len(loader), desc=f"Testing {info}"):
+                for i, batch in tqdm(enumerate(loader), total=len(loader), desc=f"Testing {subset_id}"):
                     output, gt = self.forward(batch)
                     loss = self.criterion(output, gt)
                     subset_batch_losses.append(loss.item())

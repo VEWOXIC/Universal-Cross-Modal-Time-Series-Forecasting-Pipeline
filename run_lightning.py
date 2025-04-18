@@ -50,6 +50,11 @@ parser.add_argument('--gradient_clip_val', type=float, default=0.0, help='Gradie
 
 args = parser.parse_args()
 
+# make training faster
+torch.backends.cudnn.benchmark = True
+torch.set_float32_matmul_precision('medium')
+
+
 # preload the yamls
 with open(args.model_config, 'r') as f:
     model_config = yaml.safe_load(f)
