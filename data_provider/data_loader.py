@@ -19,7 +19,7 @@ warnings.filterwarnings('ignore')
 class Universal_Dataset(Dataset):
     def __init__(self, root_path, flag='train', data_path='ETTh1.csv',
                  seq_len=24, pred_len=24, spliter=ratio_spliter, timestamp_col='date',
-                 target='OT', scale=True, data_buffer=None, hetero_data_getter=None, preload_hetero=False, hetero_stride=1, task=None, custom_input=None):
+                 target='OT', scale=True, data_buffer=None, hetero_data_getter=None, preload_hetero=False, hetero_stride=1, task=None, custom_input=None, timezone=None):
         # size [seq_len, label_len, pred_len]
         # info
         self.seq_len = seq_len
@@ -38,7 +38,7 @@ class Universal_Dataset(Dataset):
         self.data_path = data_path
 
         self.hetero_data_getter = (lambda x: x) if hetero_data_getter is None else hetero_data_getter # return the timestamp
-
+        self.timezone = timezone
         self.__read_data__()
         self.preload_hetero = preload_hetero
         self.hetero_stride = hetero_stride
@@ -48,6 +48,7 @@ class Universal_Dataset(Dataset):
 
         self.task = task
         self.custom_input = custom_input
+
         self.__input_format_parser__()
 
     def __input_format_parser__(self):
@@ -85,6 +86,15 @@ class Universal_Dataset(Dataset):
 
         # convert the timestamp to datetime
         df_raw[self.timestamp_col] = pd.to_datetime(df_raw[self.timestamp_col])
+
+        # Check if timestamp_col has timezone
+        if df_raw[self.timestamp_col][0].tz is not None:
+            if self.timezone is not None:
+                print('[ info ] The timestamp column has timezone, converting to {}'.format(self.timezone))
+                df_raw[self.timestamp_col] = pd.to_datetime(df_raw[self.timestamp_col], utc=True).dt.tz_convert(self.timezone).dt.tz_localize(None)
+            else:
+                print('[ info ] The timestamp column has timezone, forcing UTC')
+                df_raw[self.timestamp_col] = pd.to_datetime(df_raw[self.timestamp_col], utc=True).dt.tz_convert('UTC').dt.tz_localize(None)
 
         # apply the spliter
         train_data, val_data, test_data = self.spliter(df=df_raw)
@@ -174,7 +184,7 @@ class Universal_Dataset(Dataset):
 
 
 class Heterogeneous_Dataset(Dataset):
-    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json'):
+    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json', timezone=None):
         super().__init__()
         self.root_path = root_path
         self.formatter = formatter
@@ -185,6 +195,7 @@ class Heterogeneous_Dataset(Dataset):
         self.matching = matching
         assert output_format in ['dict','json', 'csv', 'embedding'], "The output format should be one of ['dict','json', 'csv', 'embedding']"
         self.output_format = output_format
+        self.timezone = timezone
         
         if self.output_format == 'embedding':
             assert self.formatter is not None, "The embedding formatter should be provided if the output format is embedding"
@@ -251,6 +262,16 @@ class Heterogeneous_Dataset(Dataset):
         self.dynamic_data['time'] = self.dynamic_data.index
         self.dynamic_data.index = pd.to_datetime(self.dynamic_data.index)
         # sort the index
+        # check if the index have timezone
+        if self.dynamic_data.index.tz is not None:
+            if self.timezone is not None:
+                print('[ info ] The index has timezone, converting to {}'.format(self.timezone))
+                self.dynamic_data.index = self.dynamic_data.index.tz_convert(self.timezone).tz_localize(None)
+            else:
+                print('[ info ] The index has timezone, forcing UTC')
+                self.dynamic_data.index = self.dynamic_data.index.tz_convert('UTC').tz_localize(None)
+            # print('[ info ] The index has timezone, converting to naive datetime, if need to keep timezone, please implement alignment using UDT')
+            # self.dynamic_data.index = self.dynamic_data.index.tz_convert('Europe/Berlin').tz_localize(None)
         self.dynamic_data.sort_index(inplace=True)
 
         print('[ info ] Successfully load the dynamic data embedding from {}'.format(self.formatter))
@@ -260,12 +281,24 @@ class Heterogeneous_Dataset(Dataset):
         down_time = [down_time[k]['time'] for k in down_time.keys()]
         down_time = [[pd.to_datetime(t[0]), pd.to_datetime(t[1])] for t in down_time]
 
+        # check if all the downtime have timezone
+        if any([t[0].tz is not None for t in down_time]):
+            if self.timezone is not None:
+                print('[ info ] The downtime has timezone, converting to {}'.format(self.timezone))
+                down_time = [[t[0].tz_convert(self.timezone).tz_localize(None), t[1].tz_convert(self.timezone).tz_localize(None)] for t in down_time]
+            else:
+                print('[ info ] The downtime has timezone, forcing UTC')
+                down_time = [[t[0].tz_convert('UTC').tz_localize(None), t[1].tz_convert('UTC').tz_localize(None)] for t in down_time]
+            # print('[ info ] The downtime has timezone, converting to naive datetime, if need to keep timezone, please implement alignment using UDT')
+            # down_time = [[t[0].tz_localize(None), t[1].tz_localize(None)] for t in down_time]
+
         general_info = self.static_data['general_info']
         channel_info = self.static_data['channel_info'][id]
         downtime_prompt = self.static_data['downtime_prompt']
-        # Convert downtime ranges to IntervalIndex
-        down_time = [tuple(t) for t in down_time]
-        downtime_ranges = pd.IntervalIndex.from_tuples(down_time)
+        # Convert downtime ranges to IntervalIndex using from_arrays
+        start_times = [t[0] for t in down_time]
+        end_times = [t[1] for t in down_time]
+        downtime_ranges = pd.IntervalIndex.from_arrays(start_times, end_times)
 
         return partial(self.get_hetero_data, downtime_ranges, general_info, channel_info, downtime_prompt)
             

@@ -63,11 +63,15 @@ def ratio_spliter(split=(7,1,2),seq_len=0, df=None):
     return train_data, val_data, test_data
 
 def timestamp_spliter(split = ['2020-01-01', '2020-02-01'], seq_len=0, df=None, timestamp_col='timestamp'):
-    assert len(split) == 2, "Split should be a list of two strings of time stamps"
+    
     if isinstance(split[0], str):
         split = [pd.to_datetime(x) for x in split]
     else:
         raise ValueError("Split should be a list of strings")
+    if len(split) == 3:
+        print(f'[ info ] Discarding the data before {split[0]}')
+        df = df[df[timestamp_col] >= split[0]]
+        split = split[1:]
     train_data = df[df[timestamp_col] < split[0]]
     val_data = df[(df[timestamp_col] >= split[0]) & (df[timestamp_col] < split[1])]
     test_data = df[df[timestamp_col] >= split[1]]

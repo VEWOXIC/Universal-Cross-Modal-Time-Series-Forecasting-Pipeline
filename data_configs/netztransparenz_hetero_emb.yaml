@@ -1,0 +1,21 @@
+root_path: /data/Blob_WestJP/v-zhijianxu/WIATS/Germany_Renewable_Power_Grid/impute_data
+spliter: timestamp
+split_info:
+  - '2015-01-01' # discard data before 2015
+  - '2021-01-01'
+  - '2022-01-01'
+timestamp_col: time
+target: 
+  - power
+id_info: id_info.json
+id: all
+formatter: '{i}.parquet'
+sampling_rate: 15min
+base_T: 96
+time_zone: Europe/Berlin
+hetero_info:
+  root_path: /data/Blob_WestJP/v-zhijianxu/WIATS/Germany_Renewable_Power_Grid/weather/merged_report_embedding # None for same
+  formatter: fast_general_formal_embeddings_????.pkl
+  matching: backward #single # default backward for 1day sampling
+  input_format: embedding
+  static_path: ../../static_info_embeddings.pkl
