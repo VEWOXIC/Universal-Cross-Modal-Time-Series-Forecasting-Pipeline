@@ -34,6 +34,8 @@ class TimeSeriesLightningModel(pl.LightningModule):
         
         # Configure automatic optimization if needed
         self.automatic_optimization = True
+
+        self.test_loss = []
         
     def _select_criterion(self):
         """Select the loss function."""
@@ -112,8 +114,8 @@ class TimeSeriesLightningModel(pl.LightningModule):
     def _run_epoch_test(self):
         """Run test on all subsets and print results."""
         # Skip if we don't have access to datamodule or if test dataset isn't set up yet
-        if not hasattr(self.trainer, 'datamodule') or not hasattr(self.trainer.datamodule, 'test_dataset'):
-            return
+        if not hasattr(self.trainer.datamodule, 'test_dataset'):
+            self.trainer.datamodule.setup(stage='test')
         
         print("\n\n------- Testing on Epoch {} -------".format(self.current_epoch + 1))
         
@@ -157,22 +159,17 @@ class TimeSeriesLightningModel(pl.LightningModule):
         """Test step."""
         output, gt = self.forward(batch)
         loss = self.criterion(output, gt)
+        # Log metrics
+        self.test_loss.append(loss.item())
 
-        self.log(f'test_loss_dataloader_{dataloader_idx}', loss, on_epoch=True, add_dataloader_idx=False, sync_dist=True)
-
-        return {"loss": loss, "dataloader_idx": dataloader_idx}
-
-    # def on_test_epoch_end(self):
-    #     metrics = self.trainer.callback_metrics
+    def on_test_epoch_end(self):
+        """After test completes, log average test loss."""
+        # print('!!!!!!!!!!!!in on_test_epoch_end')
+        avg_loss = np.mean(self.test_loss)
+        self.log('test_loss', avg_loss, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
         
-    #     # Find all test loss metrics for different dataloaders
-    #     test_losses = {k: v.item() for k, v in metrics.items() if k.startswith('test_loss_dataloader_')}
-        
-    #     # Log overall average loss
-    #     if test_losses:
-    #         overall_avg_loss = sum(test_losses.values()) / len(test_losses)
-    #         self.log('test_avg_loss', overall_avg_loss)
-    #         print(f"Overall test loss: {overall_avg_loss:.7f}")
+        # Reset test loss for next epoch
+        self.test_loss = []
 
 
     def configure_optimizers(self):
@@ -209,17 +206,26 @@ def train_lightning_model(args, setting):
     # Initialize data module
     data_module = TimeSeriesDataModule(args)
     
-    # Initialize model
-    model = TimeSeriesLightningModel(args)
     
-    # Create checkpoint directory
-    checkpoint_path = os.path.join(args.checkpoints, setting)
-    if not os.path.exists(checkpoint_path):
-        os.makedirs(checkpoint_path)
+
+    if args.last_ckpt is not None:
+        # Load the last checkpoint if provided
+        print(f"Loading model from checkpoint: {args.last_ckpt}")
+        model = TimeSeriesLightningModel.load_from_checkpoint(args.last_ckpt, args=args)
+        checkpoint_path = os.path.dirname(args.last_ckpt)
+        print(f"Checkpoint path: {checkpoint_path}")
     
-    # Save args
-    with open(os.path.join(checkpoint_path, 'args.json'), 'w') as f:
-        json.dump(args.__dict__, f)
+    else:
+        # Initialize model
+        model = TimeSeriesLightningModel(args)
+        # Create checkpoint directory
+        checkpoint_path = os.path.join(args.checkpoints, setting)
+        if not os.path.exists(checkpoint_path):
+            os.makedirs(checkpoint_path)
+    
+        # Save args
+        with open(os.path.join(checkpoint_path, 'args.json'), 'w') as f:
+            json.dump(args.__dict__, f)
     
     # Configure callbacks
     early_stopping = EarlyStopping(
@@ -273,25 +279,37 @@ def train_lightning_model(args, setting):
     
     # Train model
     print(f'>>>>>>>start training : {setting}>>>>>>>>>>>>>>>>>>>>>>>>>>>')
-    trainer.fit(model, data_module)
+    if not args.test:
+        trainer.fit(model, data_module)
     
     # Final test - run it once with all dataloaders together
     print(f'>>>>>>>final testing : {setting}>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+    data_module.setup(stage='test')
     test_loaders = data_module.test_dataloader()
-    dataloaders_list = [loader for _, loader in test_loaders.items()]
-    dataset_ids = list(test_loaders.keys())
+
+    info_results = {}
+    for i, (subset_id, loader) in enumerate(test_loaders.items()):
+        print(f"Testing {subset_id}...")
+        trainer.test(model, dataloaders=loader)
+        print(f"Test loss for {subset_id}: {trainer.callback_metrics['test_loss'].item():.7f}")
+        info_results[subset_id] = trainer.callback_metrics['test_loss'].item()
     
-    results = trainer.test(model, dataloaders=dataloaders_list)
-    
-    # Print results for each dataset
-    for i, result in enumerate(results):
-        dataset_id = dataset_ids[i] if i < len(dataset_ids) else f"unknown_{i}"
-        print(f"Test results for {dataset_id}:")
-        print(f"- Loss: {result[f'test_loss_dataloader_{i}']:.7f}")
+
+    # # Print results for each dataset
+    # for i, result in enumerate(results):
+    #     dataset_id = dataset_ids[i] if i < len(dataset_ids) else f"unknown_{i}"
+    #     print(f"Test results for {dataset_id}:")
+    #     print(f"- Loss: {result[f'test_loss_dataloader_{i}']:.7f}")
+    #     info_results[dataset_id] = result[f'test_loss_dataloader_{i}']
+    print(info_results)
+    if trainer.is_global_zero:  # Only the main process writes the file
+        print(info_results)
+        with open(os.path.join(checkpoint_path, 'test_results.json'), 'w') as f:
+            json.dump(info_results, f)
+    if args.test:
+        return
     
     # Load best model and return
     best_model_path = checkpoint_callback.best_model_path
-
-    print(f"Best model path: {best_model_path}")
     
     return best_model_path  # Return the wrapped model for compatibility 

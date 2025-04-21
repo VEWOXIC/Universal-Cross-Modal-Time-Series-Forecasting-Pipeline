@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser(description='Time Series Forecasting with PyTor
 # model config
 parser.add_argument('--model', type=str, default='FITS', help='Model name (DLinear, FITS, PatchTST, TGTSF, iTransformer, etc.) - Must correspond to a model file in models/ directory')
 parser.add_argument('--model_config', type=str, default='model_configs/FITS.yaml', help='Path to model configuration YAML file, containing model-specific parameters')
+parser.add_argument('--last_ckpt', type=str, default=None, help='Path to the last checkpoint file (if resuming training or testing from a specific checkpoint)')
 
 # data loader
 parser.add_argument('--data', type=str, default='solar', help='Dataset name for reference (actual data location is specified in data_config)')
@@ -49,6 +50,9 @@ parser.add_argument('--precision', type=str, default='32', help='Numerical preci
 parser.add_argument('--gradient_clip_val', type=float, default=0.0, help='Gradient clipping value to prevent exploding gradients (0 to disable)')
 parser.add_argument('--test_after_epoch', action='store_true', help='Test after each epoch')
 
+# Testing
+parser.add_argument('--test', action='store_true', help='Test the model after training (if set, training will not be performed). need specify the last checkpoint')
+
 args = parser.parse_args()
 
 # make training faster
@@ -68,7 +72,7 @@ data_configs = dotdict(data_configs)
 args.data_config = data_configs
 
 # get current time
-current_time = time.strftime('%m-%d-%H%M', time.localtime(time.time()))
+current_time = 'ligntning_' + time.strftime("%Y%m%d_%H", time.localtime())
 
 # setting record of experiment
 if args.ahead is not None:
