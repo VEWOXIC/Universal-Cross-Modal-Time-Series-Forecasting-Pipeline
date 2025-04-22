@@ -268,7 +268,7 @@ class Heterogeneous_Dataset(Dataset):
                 print('[ info ] The index has timezone, converting to {}'.format(self.timezone))
                 self.dynamic_data.index = self.dynamic_data.index.tz_convert(self.timezone).tz_localize(None)
             else:
-                print('[ info ] The index has timezone, forcing UTC')
+                print('[ Warning ] The index has timezone, forcing UTC')
                 self.dynamic_data.index = self.dynamic_data.index.tz_convert('UTC').tz_localize(None)
             # print('[ info ] The index has timezone, converting to naive datetime, if need to keep timezone, please implement alignment using UDT')
             # self.dynamic_data.index = self.dynamic_data.index.tz_convert('Europe/Berlin').tz_localize(None)
@@ -287,7 +287,7 @@ class Heterogeneous_Dataset(Dataset):
                 print('[ info ] The downtime has timezone, converting to {}'.format(self.timezone))
                 down_time = [[t[0].tz_convert(self.timezone).tz_localize(None), t[1].tz_convert(self.timezone).tz_localize(None)] for t in down_time]
             else:
-                print('[ info ] The downtime has timezone, forcing UTC')
+                print('[ Warning ] The downtime has timezone, forcing UTC')
                 down_time = [[t[0].tz_convert('UTC').tz_localize(None), t[1].tz_convert('UTC').tz_localize(None)] for t in down_time]
             # print('[ info ] The downtime has timezone, converting to naive datetime, if need to keep timezone, please implement alignment using UDT')
             # down_time = [[t[0].tz_localize(None), t[1].tz_localize(None)] for t in down_time]

@@ -12,9 +12,10 @@ This framework supports various traditional time series models, text-embedding b
   - [Installation](#installation)
   - [Quick Start](#quick-start)
     - [Start with a predefined task:](#start-with-a-predefined-task)
-    - [Training a model with PyTorch:](#training-a-model-with-pytorch)
+    - [Develop with PyTorch:](#develop-with-pytorch)
     - [Training a model with PyTorch Lightning:](#training-a-model-with-pytorch-lightning)
-    - [Using multi-GPU training:](#using-multi-gpu-training)
+  - [Features](#features)
+  - [Support Datasets](#support-datasets)
   - [Pipeline Components](#pipeline-components)
     - [Data Flow](#data-flow)
     - [Training Process](#training-process)
@@ -86,7 +87,9 @@ The framework consists of several key components:
 bash scripts/solar/DLinear/DLinear_day.sh
 ```
 
-### Training a model with PyTorch:
+### Develop with PyTorch:
+
+Use the `run.py` script to train a model with PyTorch. This script allows you to specify the model, data configuration, and other parameters. It is exactly the same pipeline as the previous DLinear implementation. Easy to adapt and debug. 
 
 ```bash
 python run.py --model DLinear --data_config data_configs/fullsolar.yaml --model_config model_configs/general/DLinear.yaml --input_len 96 --output_len 96
@@ -94,15 +97,30 @@ python run.py --model DLinear --data_config data_configs/fullsolar.yaml --model_
 
 ### Training a model with PyTorch Lightning:
 
+After the development, you may want to use multi-GPU training and other features provided by PyTorch Lightning. The `run_lightning.py` script is the entry point for training with Lightning. Just replace the `run.py` with `run_lightning.py` in the command line and add `--use_multi_gpu` and `--devices` arguments to enable multi-GPU training.
+
 ```bash
 python run_lightning.py --model DLinear --data_config data_configs/fullsolar.yaml --model_config model_configs/general/DLinear.yaml --input_len 96 --output_len 96
 ```
 
-### Using multi-GPU training:
-
 ```bash
 python run_lightning.py --model DLinear --data_config data_configs/fullsolar.yaml --model_config model_configs/general/DLinear.yaml --input_len 96 --output_len 96 --use_multi_gpu --devices 0,1,2,3
 ```
+
+## Features
+
+- **DLinear-like Pipeline**: Familiar, easy-to-use and adaptable pipeline for various time series forecasting task.
+- **Flexible Model/Dataset Support**: Use yaml configuration files to define models and datasets. Easier to manage and extend.
+- **Ready for Multimodal Time Series Task**: Multi-modal time series analysis is the next big thing in time series forecasting. This framework is ready for with both embedding-based and text-based method. 
+- **Dual Pipeline**: Supports both PyTorch and PyTorch Lightning for training. Pytorch for easy debugging and development, and Lightning for efficient multi-GPU training and experiment tracking.
+- **Unified & Simple Task Definition**: Task defination method with `--ahead` argument for real-time aligned task definition. The ahead task is automatically aligns with the sampling rate of the dataset. E.g. if the ahead is 1 day, the prediction horizon is 24 for hourly data and 24*60=1440 for minutely sampled data.
+- **Customizable Datapipeline**: Easy to customize the ahead task, dataset splitter and so on. Just modify the corresponding yaml file or the code in `data_provider/data_helper.py`.
+
+## Support Datasets
+
+Apart from the original time series dataset for TSF, e.g. ETT. We also support the following multimodal datasets:
+
+- [WIATS: Weather Intervention-Aware Time Series Benchmark](https://huggingface.co/collections/VEWOXIC/wiats-weather-intervention-aware-time-series-benchmark-6805e446a4dd84280a40a699)
 
 
 ## Pipeline Components
@@ -183,6 +201,7 @@ stride: 8
 hetero_align_stride: True # if this is set to True, the dataloader will align the stride of the heterogeneous data with the time series patching for less memory usage
 revin: True
 task: TGTSF # 
+time_zone: UTC # [optional] add this if your data have timezone information, change to the timezone of your data
 ```
 
 ### Data Configuration
@@ -201,7 +220,7 @@ target:
   - kWh
 id_info: id_info.json
 id: all
-formatter: 'id_{i}.parquet'
+formatter: 'id_{i}.parquet' # i for the index in id_info.json
 sampling_rate: 1h
 base_T: 24
 ```
@@ -224,7 +243,7 @@ base_T: 24
 hetero_info:
   sampling_rate: 1day
   root_path: /path/to/hetero/data
-  formatter: weather_forecast_????.json
+  formatter: weather_forecast_????.json # use regex to match the file name
   matching: single
   input_format: json
   static_path: static_info.json
@@ -330,33 +349,7 @@ Heterogeneous data should be organized with the following components:
    - Stored in the `id_info.json` file
    - Contains time ranges for each station/channel when data was not collected
 
-Example JSON structure for dynamic data:
-```json
-{
-  "20210101120000": {
-    "temperature": 25.5,
-    "humidity": 60.2,
-    "precipitation": 0.0
-  },
-  "20210101130000": {
-    "temperature": 26.1,
-    "humidity": 58.7,
-    "precipitation": 0.0
-  }
-}
-```
 
-Example static information:
-```json
-{
-  "general_info": "This dataset contains solar generation data with weather forecasts.",
-  "downtime_prompt": "The sensor was down for maintenance.",
-  "channel_info": {
-    "station1": "Solar panel on building A, south-facing orientation.",
-    "station2": "Solar panel on building B, west-facing orientation."
-  }
-}
-```
 
 ### Heterogeneous Data Configuration
 
@@ -385,7 +378,7 @@ This alignment is handled by the `time_matcher` method in the `Heterogeneous_Dat
 
 ### Input Formats
 
-Heterogeneous data can be provided in several formats:
+Heterogeneous data can be provided to the model in several formats:
 
 - **json**: Data is loaded from JSON files and returned as a JSON string
 - **dict**: Data is loaded and returned as Python dictionaries
