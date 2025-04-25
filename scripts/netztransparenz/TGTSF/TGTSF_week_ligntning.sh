@@ -3,7 +3,7 @@ export CUDA_VISIBLE_DEVICES=1,2,3
 python -u run_lightning.py \
     --model 'TGTSF' \
     --model_config 'model_configs/general/TGTSF.yaml' \
-    --data traffic \
+    --data netztransparenz \
     --data_config './data_configs/netztransparenz_hetero_emb.yaml' \
     --ahead week \
     --batch_size 512 \

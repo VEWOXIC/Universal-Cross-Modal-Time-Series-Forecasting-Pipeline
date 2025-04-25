@@ -35,7 +35,7 @@ class data_buffer():
             return df_raw
     def clear(self):
         self.buffer = {}
-        print('Buffer cleared')
+        print('[ info ] Buffer cleared')
         
 
 def ratio_spliter(split=(7,1,2),seq_len=0, df=None):
