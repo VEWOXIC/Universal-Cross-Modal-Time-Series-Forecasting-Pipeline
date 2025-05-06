@@ -39,9 +39,7 @@ class data_buffer():
         
 
 def ratio_spliter(split=(7,1,2),seq_len=0, df=None):
-    # split mark
-    train_split = split[0] / sum(split)
-    val_split = split[1] / sum(split) + train_split    # [----train----] train_split [----val----] val_split [----test----]
+    
     # check if split is string it should be in format "x:y:z"
     if isinstance(split, str):
         assert len(split.split(':')) == 3, "Split should be in format 'x:y:z'"
@@ -50,6 +48,10 @@ def ratio_spliter(split=(7,1,2),seq_len=0, df=None):
         assert len(split) == 3, "Split should be in format 'x:y:z', or list with length of 3"
     else:
         raise ValueError("Split should be in format 'x:y:z', or list with length of 3")
+    
+    # split mark
+    train_split = split[0] / sum(split)
+    val_split = split[1] / sum(split) + train_split    # [----train----] train_split [----val----] val_split [----test----]
     
     raw_data_len = len(df)
 

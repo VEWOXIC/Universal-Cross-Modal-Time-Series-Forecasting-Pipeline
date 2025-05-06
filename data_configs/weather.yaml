@@ -1,0 +1,10 @@
+root_path: /data/Blob_WestJP/v-zhijianxu/Weather-Captioned
+spliter: ratio
+split_info: '7:1:2'
+timestamp_col: Date Time
+target: all
+id_info: id_info.json
+id: all
+formatter: '{i}.parquet'
+sampling_rate: 10min
+base_T: 144

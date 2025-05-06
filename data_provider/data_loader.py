@@ -113,10 +113,14 @@ class Universal_Dataset(Dataset):
         
 
         self.timestamp = self.data[self.timestamp_col].values.copy()
-        self.data = self.data[self.target].values.astype(np.float32).copy()
+        if self.target == 'all':
+            self.data = self.data.drop(columns=[self.timestamp_col])
+            self.data = self.data.values.astype(np.float32).copy()
+        else:
+            self.data = self.data[self.target].values.astype(np.float32).copy()
 
         if self.scale:
-            self.scaler.fit(train_data[self.target].values)
+            self.scaler.fit(self.data)
             self.data = self.scaler.transform(self.data).astype(np.float32).copy()
 
     def __preload_hetero__(self):
@@ -367,10 +371,14 @@ class Heterogeneous_Dataset(Dataset):
             matched_dynamic = self.dynamic_data.loc[matched_times].copy()
             matched_dynamic['note'] = np.where(is_downtime, downtime_prompt, '')
 
+            matched_dynamic = matched_dynamic.to_dict(orient='records')
+            # remove the time from the dicts
+            for record in matched_dynamic:
+                record.pop('time', None)
             if self.output_format == 'dict':
-                output_dynamic = matched_dynamic.to_dict(orient='records')
+                output_dynamic = matched_dynamic
             elif self.output_format == 'json':
-                output_dynamic = matched_dynamic.to_json(orient='records')
+                output_dynamic = [json.dumps(record) for record in matched_dynamic]
             elif self.output_format == 'csv':
                 output_dynamic = matched_dynamic.to_csv(index=False)
             else:

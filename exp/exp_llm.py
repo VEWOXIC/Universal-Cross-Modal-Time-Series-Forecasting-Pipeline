@@ -64,6 +64,10 @@ class Experiment(Exp_Basic):
         criterion = self._select_criterion()
         data_sets = self.data_provider.get_test(return_type='set')
         total_loss = []
+
+        if self.args.filtered_samples != None:
+            filtered_samples = json.load(open(self.args.filtered_samples))
+
         if valiset == 'full':
             pass
         else:
@@ -78,8 +82,10 @@ class Experiment(Exp_Basic):
                 os.makedirs(os.path.join(savepath, info))
             info_savepath= os.path.join(savepath, info)
 
-
-            indexes = list(range(0, len(data_set), self.args.sample_step))
+            if self.args.filtered_samples != None:
+                indexes = filtered_samples[info]
+            else:
+                indexes = list(range(0, len(data_set), self.args.sample_step))
             my_process_iteration = partial(process_iteration, dataset=data_set, args=self.args, model=self.model, info_savepath=info_savepath)
 
             print('[DEBUG]', data_set)
@@ -92,9 +98,10 @@ class Experiment(Exp_Basic):
                 
                 for index in tqdm(indexes, desc=f"Testing {info}"):
                     processed = my_process_iteration(index)
-                    gts.append(processed["gt"])
-                    preds.append(processed["pred"])
-                    info_result.append(processed["result"])
+                    if processed is not None:
+                        gts.append(processed["gt"])
+                        preds.append(processed["pred"])
+                        info_result.append(processed["result"])
             else:
                 # get the number of gpus
                 num_gpus = torch.cuda.device_count()

@@ -4,5 +4,5 @@ python -u run.py \
     --data solar \
     --data_config './data_configs/fullsolar.yaml' \
     --ahead day \
-    --batch_size 1024 #| tee ./logs/solar/PatchTST_day.log
+    --batch_size 1024 | tee ./logs/solar/PatchTST_day.log
     

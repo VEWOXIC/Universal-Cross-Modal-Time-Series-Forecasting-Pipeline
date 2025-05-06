@@ -27,6 +27,8 @@ parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='l
 parser.add_argument('--data_config', type=str, default='./data_configs/fullsolar_hetero.yaml', help='data profile')
 parser.add_argument('--scale', type=bool, default=False, help='scale data')
 parser.add_argument('--disable_buffer', default=False, action='store_true', help='disable data buffer')
+parser.add_argument('--filtered_samples', type=str, default=None, help='filtered samples for training')
+parser.add_argument('--preload_hetero', default=False, action='store_true', help='Preload heterogeneous data for faster access (increases RAM usage but reduces disk I/O)')
 
 # forecasting task
 parser.add_argument('--ahead', type=str, default='day', help='day/week/month ahead forecasting')

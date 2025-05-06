@@ -23,7 +23,7 @@ class LLM_Socket():
 
         self.client = openai.OpenAI(api_key=self.api_key, base_url=self.url)
 
-        self.check_url_avaliability()
+        # self.check_url_avaliability()
 
         self.load_templates()
 
