@@ -12,5 +12,5 @@ dropout: 0.2
 patch_len: 6
 stride: 3
 hetero_align_stride: True # use this to reduce RAM and communication overhead according to patching requirement
-revin: True
+revin: False
 task: TGTSF

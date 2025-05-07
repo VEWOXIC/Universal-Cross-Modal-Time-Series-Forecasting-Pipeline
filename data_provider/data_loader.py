@@ -12,14 +12,14 @@ import json
 from datetime import datetime
 from functools import partial
 import glob
-import joblib
+import joblib, torch
 
 warnings.filterwarnings('ignore')
 
 class Universal_Dataset(Dataset):
     def __init__(self, root_path, flag='train', data_path='ETTh1.csv',
                  seq_len=24, pred_len=24, spliter=ratio_spliter, timestamp_col='date',
-                 target='OT', scale=True, data_buffer=None, hetero_data_getter=None, preload_hetero=False, hetero_stride=1, task=None, custom_input=None, timezone=None):
+                 target='OT', scale=True, data_buffer=None, hetero_data_getter=None, preload_hetero=False, hetero_stride=1, task=None, custom_input=None, timezone=None, downsample=None):
         # size [seq_len, label_len, pred_len]
         # info
         self.seq_len = seq_len
@@ -48,6 +48,7 @@ class Universal_Dataset(Dataset):
 
         self.task = task
         self.custom_input = custom_input
+        self.downsample = downsample
 
         self.__input_format_parser__()
 
@@ -123,6 +124,12 @@ class Universal_Dataset(Dataset):
             self.scaler.fit(self.data)
             self.data = self.scaler.transform(self.data).astype(np.float32).copy()
 
+        if self.downsample is not None:
+
+            self.data = self.data[::self.downsample]
+            self.timestamp = self.timestamp[::self.downsample]
+
+
     def __preload_hetero__(self):
         if self.preload_hetero:
             print('[ info ] Preloading the full heterogeneous data')
@@ -188,7 +195,7 @@ class Universal_Dataset(Dataset):
 
 
 class Heterogeneous_Dataset(Dataset):
-    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json', timezone=None):
+    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json', timezone=None, noise = 0.0):
         super().__init__()
         self.root_path = root_path
         self.formatter = formatter
@@ -206,6 +213,13 @@ class Heterogeneous_Dataset(Dataset):
             self.load_embedding()
         else:
             self.load_data()
+        self.noise = noise
+
+    def __addnoise__(self, x):
+        x = x * (1 - self.noise) + np.random.randn(*x.shape) * self.noise
+        # normalize
+        x = x / np.linalg.norm(x, axis=-1, keepdims=True)
+        return x
 
     def load_data(self):
         self.dynamic_data = {}
@@ -366,6 +380,9 @@ class Heterogeneous_Dataset(Dataset):
             output_dynamic = np.empty((len(matched_dynamic), output_dynamic_.shape[1] + downtime_data_.shape[1], downtime_prompt.shape[-1]), dtype=np.float32)
             output_dynamic[:, :output_dynamic_.shape[1],:] = output_dynamic_
             output_dynamic[:, output_dynamic_.shape[1]:,:] = downtime_data_
+
+            if self.noise > 0:
+                output_dynamic = self.__addnoise__(output_dynamic)
 
         else:
             matched_dynamic = self.dynamic_data.loc[matched_times].copy()
