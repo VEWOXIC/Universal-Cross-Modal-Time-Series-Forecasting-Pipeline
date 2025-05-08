@@ -39,6 +39,8 @@ class Universal_Dataset(Dataset):
 
         self.hetero_data_getter = (lambda x: x) if hetero_data_getter is None else hetero_data_getter # return the timestamp
         self.timezone = timezone
+        self.downsample = downsample
+
         self.__read_data__()
         self.preload_hetero = preload_hetero
         self.hetero_stride = hetero_stride
@@ -48,7 +50,7 @@ class Universal_Dataset(Dataset):
 
         self.task = task
         self.custom_input = custom_input
-        self.downsample = downsample
+
 
         self.__input_format_parser__()
 
@@ -117,11 +119,14 @@ class Universal_Dataset(Dataset):
         if self.target == 'all':
             self.data = self.data.drop(columns=[self.timestamp_col])
             self.data = self.data.values.astype(np.float32).copy()
+            train_data = train_data.drop(columns=[self.timestamp_col])
+            train_data = train_data.values.astype(np.float32).copy()
         else:
             self.data = self.data[self.target].values.astype(np.float32).copy()
+            train_data = train_data[self.target].values.astype(np.float32).copy()
 
         if self.scale:
-            self.scaler.fit(self.data)
+            self.scaler.fit(train_data)
             self.data = self.scaler.transform(self.data).astype(np.float32).copy()
 
         if self.downsample is not None:

@@ -1,6 +1,6 @@
 # export CUDA_VISIBLE_DEVICES=0
 
-for noise in 0.0 0.2 0.5 0.8
+for noise in 0.0
 do
 
 python -u run_lightning.py \
@@ -16,6 +16,6 @@ python -u run_lightning.py \
     --noise $noise \
     --patience 10 \
     --checkpoints '/data/Blob_WestJP/v-zhijianxu/TGTSF_abl/' \
-    --devices 0,1,2,3,4,5,6,7 | tee ./logs/weather/TGTSF_96_$noise.log
+    --devices 0,2,3 | tee ./logs/weather/TGTSF_96_$noise.log
     
 done
