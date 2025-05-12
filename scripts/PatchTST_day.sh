@@ -6,5 +6,6 @@ python -u run.py \
     --input_len 288 \
     --output_len 96 \
     --num_workers 16 \
+    --downsample 6 \
     --batch_size 1024 #| tee ./logs/traffic/PatchTST_day.log
     

@@ -129,3 +129,4 @@ lightning_logs
 .fuse*
 *.log.*
 .vscode
+*.pdf

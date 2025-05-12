@@ -1,0 +1,17 @@
+root_path: /data/Blob_WestJP/v-zhijianxu/Weather-Captioned
+spliter: ratio
+split_info: '7:1:2'
+timestamp_col: Date Time
+target: all
+id_info: id_info.json
+id: all
+formatter: '{i}.parquet'
+downsample: 6
+sampling_rate: 1h
+base_T: 24
+hetero_info:
+  root_path: /data/Blob_WestJP/v-zhijianxu/Weather-Captioned # None for same
+  formatter: embeddings.pkl
+  matching: backward #single # default backward for 1day sampling
+  input_format: embedding
+  static_path: static_info_embeddings.pkl

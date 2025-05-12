@@ -25,7 +25,6 @@ parser.add_argument('--disable_buffer', default=False, action='store_true', help
 parser.add_argument('--preload_hetero', default=False, action='store_true', help='Preload heterogeneous data for faster access (increases RAM usage but reduces disk I/O)')
 parser.add_argument('--prefetch_factor', type=int, default=2, help='Number of batches to prefetch per worker in dataloader (higher values use more memory)')
 parser.add_argument('--noise', type=float, default=0.0, help='optimizer learning rate')
-parser.add_argument('--downsample', type=int, default=1, help='number of augmented data')
 
 # forecasting task
 parser.add_argument('--ahead', type=str, default=None, help='Shorthand for forecast horizon: "day", "week", or "month" (automatically sets input_len and output_len based on sampling_rate)')
