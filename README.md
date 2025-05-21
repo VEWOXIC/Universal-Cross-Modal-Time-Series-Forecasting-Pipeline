@@ -3,9 +3,7 @@
 <div align="center">
 
 [<img src="https://devin.ai/assets/deepwiki-badge.png" alt="Ask DeepWiki.com" height="20"/>](https://deepwiki.com/VEWOXIC/Universal-Cross-Modal-Time-Series-Forecasting-Pipeline)
-![Static Badge](https://img.shields.io/badge/Check_Tutorial-aaa?logo=https%3A%2F%2Fcode2tutorial.com%2F_next%2Fimage%3Furl%3D%252Ficon.png%26w%3D32%26q%3D75&label=Code2Tutorial&link=https%3A%2F%2Fcode2tutorial.com%2Ftutorial%2Fb08f8f15-cd02-475e-a4ee-17e0b775ae81%2Findex.md)
-
-
+[<img alt="Static Badge" src="https://img.shields.io/badge/Check_Tutorial-aaa?logo=https%3A%2F%2Fcode2tutorial.com%2F_next%2Fimage%3Furl%3D%252Ficon.png%26w%3D32%26q%3D75&label=Code2Tutorial&link=https%3A%2F%2Fcode2tutorial.com%2Ftutorial%2Fb08f8f15-cd02-475e-a4ee-17e0b775ae81%2Findex.md">](https://code2tutorial.com/tutorial/b08f8f15-cd02-475e-a4ee-17e0b775ae81/index.md)
 
 </div>
 
