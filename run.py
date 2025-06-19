@@ -34,10 +34,10 @@ parser.add_argument('--input_len', type=int, default=1000, help='Input sequence 
 
 # optimization
 parser.add_argument('--num_workers', type=int, default=0, help='Number of subprocesses for data loading (0 means data is loaded in the main process)')
-parser.add_argument('--train_epochs', type=int, default=30, help='Maximum number of training epochs')
+parser.add_argument('--train_epochs', type=int, default=50, help='Maximum number of training epochs')
 parser.add_argument('--batch_size', type=int, default=96, help='Batch size for training (per GPU when using multi-GPU)')
 parser.add_argument('--patience', type=int, default=3, help='Early stopping patience: training stops if validation loss does not improve for this many epochs')
-parser.add_argument('--learning_rate', type=float, default=1e-3, help='Initial learning rate for optimizer')
+parser.add_argument('--learning_rate', type=float, default=5e-4, help='Initial learning rate for optimizer')
 parser.add_argument('--loss', type=str, default='mse', help='Loss function: "mse" (Mean Squared Error) or "l1" (Mean Absolute Error)')
 parser.add_argument('--lradj', type=str, default='type3', help='Learning rate adjustment strategy: "type1" (halving), "type2" (step schedule), "type3" (cosine decay), "type4" (linear decay), or "constant"')
 
