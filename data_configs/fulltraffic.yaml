@@ -1,13 +1,13 @@
-root_path: /data/Blob_WestJP/v-zhijianxu/Benchmark/fulltraffic/impute_data
-spliter: timestamp
+root_path: ./data/traffic
+spliter: '6:2:2'
 split_info:
   - '2020-01-01'
   - '2021-01-01'
-timestamp_col: DATA_AS_OF
+timestamp_col: date
 target: 
-  - SPEED
-id_info: id_info_imputed.json
-id: all
-formatter: 'id_{i}.parquet'
+  - OT
+id_info: id_info.json
+id: all 
+formatter: 'traffic.csv'
 sampling_rate: 5min
 base_T: 288

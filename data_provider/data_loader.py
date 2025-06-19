@@ -112,7 +112,7 @@ class Universal_Dataset(Dataset):
         # convert the self.timestamp_col to yyyymmddHHMMSS int
         self.data[self.timestamp_col] = self.data[self.timestamp_col].dt.strftime('%Y%m%d%H%M%S')
         # convert to int
-        self.data[self.timestamp_col] = self.data[self.timestamp_col].astype(int)
+        self.data[self.timestamp_col] = self.data[self.timestamp_col].astype(np.int64)
         
 
         self.timestamp = self.data[self.timestamp_col].values.copy()

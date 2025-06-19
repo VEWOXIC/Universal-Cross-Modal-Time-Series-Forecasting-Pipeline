@@ -4,5 +4,7 @@ python -u run.py \
     --data traffic \
     --data_config './data_configs/fulltraffic.yaml' \
     --ahead day \
-    --batch_size 1024 | tee ./logs/traffic/DLinear_day.log
+    --input_len 96 \
+    --output_len 96 \
+    --batch_size 128 | tee ./logs/traffic/DLinear_day.log \
     

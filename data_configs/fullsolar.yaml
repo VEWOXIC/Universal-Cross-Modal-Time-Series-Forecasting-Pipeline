@@ -1,4 +1,4 @@
-root_path: /data/Blob_WestJP/v-zhijianxu/Benchmark/fullsolar/impute_data
+root_path: /data/solar
 spliter: timestamp
 split_info:
   - '2021-01-01'
