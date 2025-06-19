@@ -1,8 +1,8 @@
 python -u run.py \
     --model 'DLinear' \
     --model_config 'model_configs/general/DLinear.yaml' \
-    --data traffic \
-    --data_config './data_configs/fulltraffic.yaml' \
+    --data ETT \
+    --data_config './data_configs/fullETT.yaml' \
     --input_len 288 \
     --output_len 96 \
     --batch_size 128 \
