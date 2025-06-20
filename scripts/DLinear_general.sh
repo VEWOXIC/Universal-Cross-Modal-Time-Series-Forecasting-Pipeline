@@ -5,6 +5,6 @@ python -u run.py \
     --data_config './data_configs/fullETT.yaml' \
     --input_len 288 \
     --output_len 96 \
-    --batch_size 128 \
-    --learning_rate 0.001 #| tee ./logs/traffic/DLinear_general.log
+    --batch_size 256 \
+    --learning_rate 0.0005 #| tee ./logs/traffic/DLinear_general.log
     

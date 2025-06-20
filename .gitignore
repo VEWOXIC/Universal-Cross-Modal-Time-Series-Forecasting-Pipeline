@@ -134,3 +134,6 @@ lightning_logs
 # data
 /data
 /data_preprocess/example_data
+
+# imgs
+/imgs
