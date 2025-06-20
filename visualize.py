@@ -9,13 +9,6 @@ from models import model_init
 from data_provider.data_factory import Data_Provider
 from utils.tools import dotdict
 
-def calculate_metrics(pred, true):
-    """
-    Calculate criterias: Mean Absolute Error (MAE) and Mean Squared Error (MSE)
-    """
-    mae = torch.nn.functional.l1_loss(pred, true)
-    mse = torch.nn.functional.mse_loss(pred, true)
-    return mae.item(), mse.item()
 
 def plot_prediction(indate, input_data, outdate, output_data, prediction_data, data_id, sample_num, img_path):
     """
@@ -34,9 +27,10 @@ def plot_prediction(indate, input_data, outdate, output_data, prediction_data, d
     plt.savefig(img_path)
     print(f"Prediction plot saved to {img_path}")
 
-def main(args):
+
+def visualize_main(args):
     """
-    Main program for the script.
+    Main visualize program for the script.
     """
     # --- Load config and checkpoint ---
     ckpt_path = os.path.join(args.ckpt_base, args.ckpt_id)
@@ -69,12 +63,6 @@ def main(args):
         prediction_tensor = model(input_tensor)
         prediction_tensor = prediction_tensor[:, -config.output_len:, :]
 
-    # --- Calculate MAE, MSE ---
-    mae, mse = calculate_metrics(prediction_tensor, output_tensor)
-    print(f"Metrics for this sample:")
-    print(f"MAE: {mae:.4f}")
-    print(f"MSE: {mse:.4f}")
-
     # --- Visualization ---
     indate_dt = pd.to_datetime([str(i) for i in x_time], format='%Y%m%d%H%M%S')
     outdate_dt = pd.to_datetime([str(i) for i in y_time], format='%Y%m%d%H%M%S')
@@ -84,6 +72,7 @@ def main(args):
     prediction_np = prediction_tensor.cpu().numpy().squeeze()
 
     plot_prediction(indate_dt, input_np, outdate_dt, output_np, prediction_np, args.data_id, args.sample_num, args.img_path)
+
 
 if __name__ == '__main__':
     """
@@ -95,10 +84,10 @@ if __name__ == '__main__':
     parser.add_argument('--ckpt_base', type=str, default='checkpoints', help='Base directory for checkpoints')
     parser.add_argument('--ckpt_id', type=str, default='06-20-1205_DLinear_ETT_96_288', help='Checkpoint folder ID')
     parser.add_argument('--data_id', type=str, default='1', help='Data ID to visualize')
-    parser.add_argument('--sample_num', type=int, default=1, help='The sample index to visualize')
+    parser.add_argument('--sample_num', type=int, default=10, help='The sample index to visualize')
     parser.add_argument('--img_path', type=str, default='./imgs/visualize.png', help='Path to save the prediction visualization image')
 
     args = parser.parse_args()
     
-    main(args)
+    visualize_main(args)
     

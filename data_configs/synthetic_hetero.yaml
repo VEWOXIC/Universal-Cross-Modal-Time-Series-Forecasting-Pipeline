@@ -1,0 +1,20 @@
+# Synthetic dataset configuration
+root_path: ./data/example_data
+spliter: timestamp
+split_info:
+  - '2021-09-01'
+  - '2021-12-01'
+timestamp_col: date
+target: 
+  - value
+id_info: id_info.json
+id: all
+formatter: 'id_{i}.parquet'
+sampling_rate: 1h
+hetero_info:
+  sampling_rate: 1day
+  root_path: ./data/example_data\hetero
+  formatter: weather_forecast_????.json
+  matching: single
+  input_format: json
+  static_path: static_info.json
