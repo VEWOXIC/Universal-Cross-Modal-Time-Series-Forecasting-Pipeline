@@ -1,10 +1,11 @@
-root_path: /data/Blob_WestJP/v-zhijianxu/Benchmark/fullsolar/impute_data
-spliter: timestamp
-split_info:
-  - '2021-01-01'
-  - '2022-01-01'
+root_path: ./data/Canada_photovoltaics_plants/time_series
+# spliter: timestamp
+spliter: ratio
+split_info: "7:1:2"
+  # - '2021-01-01'
+  # - '2022-01-01'
 timestamp_col: date
-target: 
+target: # all
   - kWh
 id_info: id_info_imputed.json
 id: all
@@ -13,8 +14,8 @@ sampling_rate: 1h
 base_T: 24
 hetero_info:
   sampling_rate: 1day
-  root_path: /data/Blob_WestJP/v-zhijianxu/Benchmark/fullsolar/calgary # None for same
+  root_path: ./data/Canada_photovoltaics_plants/weather/calgary/weather_report/general_report
   formatter: fast_general_weather_forecast_????.json
-  matching: single #single # default backward for 1day sampling
+  matching: single  #single  # default backward for 1day sampling
   input_format: json
   static_path: static_info.json
