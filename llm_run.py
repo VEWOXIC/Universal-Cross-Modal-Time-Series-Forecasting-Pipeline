@@ -15,6 +15,10 @@ from utils.task import ahead_task_parser
 
 import openai
 
+import certifi
+os.environ["SSL_CERT_FILE"] = certifi.where()
+
+
 parser = argparse.ArgumentParser(description='CWTFormer for Time Series Forecasting')
 
 # model config
@@ -29,6 +33,7 @@ parser.add_argument('--scale', type=bool, default=False, help='scale data')
 parser.add_argument('--disable_buffer', default=False, action='store_true', help='disable data buffer')
 parser.add_argument('--filtered_samples', type=str, default=None, help='filtered samples for training')
 parser.add_argument('--preload_hetero', default=False, action='store_true', help='Preload heterogeneous data for faster access (increases RAM usage but reduces disk I/O)')
+parser.add_argument('--noise', type=float, default=0.0, help='Noise level for data augmentation')
 
 # forecasting task
 parser.add_argument('--ahead', type=str, default='day', help='day/week/month ahead forecasting')
@@ -39,7 +44,7 @@ parser.add_argument('--no_parallel', action='store_true', help='sample rate of d
 parser.add_argument('--valisets', type=str, default='full', help='validation subsets with comma separated')
 
 # optimization
-parser.add_argument('--num_workers', type=int, default=8, help='data loader num workers')
+parser.add_argument('--num_workers', type=int, default=0, help='data loader num workers')
 parser.add_argument('--train_epochs', type=int, default=50, help='train epochs')
 parser.add_argument('--batch_size', type=int, default=96, help='batch size of train input data')
 parser.add_argument('--patience', type=int, default=3, help='early stopping patience')
