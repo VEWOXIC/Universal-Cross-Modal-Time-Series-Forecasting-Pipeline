@@ -149,6 +149,8 @@ def evaluate_all_samples(args):
 
             if -1 in pred_values:
                 print(f"Warning: LLM has failed to predict {filename} (due to -1 in prediction values).")
+                if not args.include_llm_failure:
+                    continue
 
             if len(true_values) != len(pred_values):
                 print(f"Warning: Skipping {filename} due to data length mismatch.")
@@ -201,6 +203,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_id', type=str, default='314106', help='Data ID to display in the plot title')
     parser.add_argument('--date_start', type=int, default=20220203000000, help='The sample date to display in the plot title')
     parser.add_argument('--evaluate_mode', type=str, default='all_samples', choices=['single_sample', 'all_samples'], help='Mode to evaluate: single sample or all samples in data ID')
+    parser.add_argument('--include_llm_failure', type=bool, default=False, help='Include LLM failure samples in the evaluation (default: True)')
 
     args = parser.parse_args()
     
