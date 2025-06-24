@@ -14,7 +14,7 @@ def plot_prediction(indate, input_data, outdate, output_data, prediction_data, d
     """
     figure the prediction visualization
     """
-    plt.figure(figsize=(15, 7))
+    plt.figure(figsize=(15, 7), dpi=300)
     plt.plot(indate, input_data, label='Input History')
     plt.plot(outdate, output_data, label='Ground Truth')
     plt.plot(outdate, prediction_data, label='Prediction', linestyle='--')
@@ -24,6 +24,12 @@ def plot_prediction(indate, input_data, outdate, output_data, prediction_data, d
     plt.legend()
     plt.grid(True)
     plt.gcf().autofmt_xdate()
+
+    img_dir = os.path.dirname(img_path)
+    if img_dir and not os.path.exists(img_dir):
+        os.makedirs(img_dir)
+        print(f"Created directory: {img_dir}")
+    
     plt.savefig(img_path)
     print(f"Prediction plot saved to {img_path}")
 
@@ -78,7 +84,7 @@ if __name__ == '__main__':
     """
     Main entry point for the script.
     """
-    parser = argparse.ArgumentParser(description='TSF Visualization and Evaluation')
+    parser = argparse.ArgumentParser(description='TSF/TGTSF Visualization')
     
     # --- config ---
     parser.add_argument('--ckpt_base', type=str, default='checkpoints', help='Base directory for checkpoints')

@@ -106,7 +106,7 @@ if __name__ == '__main__':
     """
     Main entry point for the script.
     """
-    parser = argparse.ArgumentParser(description='TSF Visualization and Evaluation')
+    parser = argparse.ArgumentParser(description='TSF/TGTSF Evaluation')
     
     # --- config ---
     parser.add_argument('--ckpt_base', type=str, default='checkpoints', help='Base directory for checkpoints')
