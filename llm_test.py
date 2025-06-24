@@ -1,23 +1,19 @@
-import openai
-
-import certifi
+from openai import OpenAI
 import os
-os.environ["SSL_CERT_FILE"] = certifi.where()
 
-#  base_url and api_key
-openai.base_url = ""
-openai.api_key = ""
-
-# prompt
-prompt = "hello, I am a time series forecasting model. Can you tell me about the latest advancements in time series forecasting?"
-
-# ChatCompletion api
-response = openai.chat.completions.create(
-    model="",
-    messages=[
-        {"role": "user", "content": prompt}
-    ]
+client = OpenAI(
+    api_key = os.getenv("MY_API_KEY"),
+    base_url = os.getenv("MY_BASE_URL"),
 )
 
-# 
-print("Answer:", response.choices[0].message.content)
+chat_completion = client.chat.completions.create(
+    messages=[
+        {
+            "role": "user",
+            "content": "hello, I am a time series forecasting model. Can you tell me about the latest advancements in time series forecasting?",
+        }
+    ],
+    model="gpt-4.1-nano",
+)
+
+print(chat_completion.choices[0].message.content)
