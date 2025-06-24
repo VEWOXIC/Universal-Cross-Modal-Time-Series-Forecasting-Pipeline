@@ -65,7 +65,7 @@ class LLM_Socket():
             print(result)
             raise e
         except Exception as e:
-            print(f"[Error] Unexpected Error: {e}")
+            print(f"[Error] Unexpected Error during extracting results: {e}")
             raise e
         
 
@@ -79,7 +79,11 @@ class LLM_Socket():
                                 temperature=self.temperature,
                                 timeout=1200,
                                 seed=int(np.random.choice([114,514,1919,810])),
-                            ).choices[0].message.content
+                            ) # .choices[0].message.content
+        # print(f"[DEBUG] Response: {response}")
+        response = response.choices[0].message.content
+        # print(f"[DEBUG] Response: {response}")
+
         # except openai.APITimeoutError:
         #     # sleep for a while and retry
         #     print("API Timeout Error: Retrying...")
@@ -147,8 +151,10 @@ class LLM_Socket():
                 
                 try:
                     result = self.call_openai(messages)
+                    # print(f"[DEBUG] Result: {result}")
                     messages.append({"role": "assistant", "content": result})
                     pred = self.extract_result(result)
+                    # print(f"[DEBUG] Pred: {pred}")
                     if str(pred[0][0]) != str(y_timestamp[0][0]):
                         print(f"Mismatch: pred[0][0] = {pred[0][0]}, y_timestamp[0][0] = {y_timestamp[0][0]}")
                         raise AssertionError("Mismatch between pred[0][0] and y_timestamp[0]")
@@ -196,14 +202,14 @@ class LLM_Socket():
                         messages = messages[:4]
                     else:
                         messages.append({"role": "user", "content": retry_prompt + 'Check your output! make sure your output is a json format!'})
-                    print(f"[Error] Unexpected Error: {e}")
+                    print(f"[Error] Unexpected Error during calling: {e}")
                     # sleep(10)
                     retry -= 1
                     continue
                 
 
         result = {'pred': pred, 
-                  'x_table': x_table,
+                'x_table': x_table,
                 'x_dy_table': x_dy_table,
                 'y_timestamp': y_timestamp,
                 'y_dy_table': y_dy_table,
