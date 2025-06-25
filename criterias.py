@@ -9,15 +9,7 @@ from models import model_init
 from data_provider.data_factory import Data_Provider
 from utils.tools import dotdict
 from tqdm import tqdm
-
-
-def calculate_metrics(pred, true):
-    """
-    Calculate criterias: Mean Absolute Error (MAE) and Mean Squared Error (MSE)
-    """
-    mae = torch.nn.functional.l1_loss(pred, true)
-    mse = torch.nn.functional.mse_loss(pred, true)
-    return mae.item(), mse.item()
+from utils.metrics import MAE, MSE
 
 
 def evaluate_single_sample(args, model, test_set, config):
@@ -31,7 +23,7 @@ def evaluate_single_sample(args, model, test_set, config):
         prediction_tensor = model(input_tensor)
         prediction_tensor = prediction_tensor[:, -config.output_len:, :]
 
-    mae, mse = calculate_metrics(prediction_tensor, output_tensor)
+    mae, mse = MAE(prediction_tensor.cpu().numpy(), output_tensor.cpu().numpy()), MSE(prediction_tensor.cpu().numpy(), output_tensor.cpu().numpy())
     print(f"MAE for this sample: {mae:.4f}")
     print(f"MSE for this sample: {mse:.4f}")
 
@@ -55,7 +47,7 @@ def evaluate_all_samples(args, model, test_set, config):
             prediction_tensor = model(input_tensor)
             prediction_tensor = prediction_tensor[:, -config.output_len:, :]
 
-        mae, mse = calculate_metrics(prediction_tensor, output_tensor)
+        mae, mse = MAE(prediction_tensor.cpu().numpy(), output_tensor.cpu().numpy()), MSE(prediction_tensor.cpu().numpy(), output_tensor.cpu().numpy())
         total_mae += mae
         total_mse += mse
         sample_count += 1

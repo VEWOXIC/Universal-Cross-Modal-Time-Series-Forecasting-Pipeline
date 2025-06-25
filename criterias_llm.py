@@ -3,18 +3,7 @@ import json
 import argparse
 import os
 from tqdm import tqdm
-
-
-def calculate_metrics(pred, true):
-    """
-    Calculate criterias using NumPy: Mean Absolute Error (MAE) and Mean Squared Error (MSE)
-    """
-    pred = np.array(pred)
-    true = np.array(true)
-    
-    mae = np.mean(np.abs(pred - true))
-    mse = np.mean((pred - true)**2)
-    return mae, mse
+from utils.metrics import MAE, MSE
 
 
 def evaluate_single_sample(args):
@@ -49,70 +38,12 @@ def evaluate_single_sample(args):
         print("Warning: No data found to evaluate.")
         return
 
-    # --- calculate mae and mse ---
-    mae, mse = calculate_metrics(pred_values, true_values)
+    # --- calculate metrics ---
+    mae, mse = MAE(pred_values, true_values), MSE(pred_values, true_values)
 
     print(f"MAE for this sample: {mae:.4f}")
     print(f"MSE for this sample: {mse:.4f}")
 
-"""
-def evaluate_all_samples(args):
-    
-    # Evaluate all samples listed in a main JSON file and calculate average criterias.
-    
-    # --- load from main JSON file ---
-    main_json_path = os.path.join(args.ckpt_base, args.ckpt_id, args.data_id, f"{args.data_id}_result.json")
-    print(f"Loading list of JSON files from: {main_json_path}")
-    try:
-        with open(main_json_path, 'r', encoding='utf-8') as f:
-            all_samples = json.load(f)
-    except FileNotFoundError:
-        print(f"Error: The main JSON file '{main_json_path}' was not found.")
-        return
-    except json.JSONDecodeError:
-        print(f"Error: Could not decode the main JSON file '{main_json_path}'. Make sure it's a valid JSON list of strings.")
-        return
-
-    if not isinstance(all_samples, list):
-        print("Error: The main JSON file should contain a list of file paths.")
-        return
-
-    total_mae = 0.0
-    total_mse = 0.0
-    sample_count = 0
-    
-    for sample_json in tqdm(all_samples, desc=f"Evaluating all JSON samples", unit="file"):
-        try:
-            data = sample_json
-
-            true_values = [float(item[1]) for item in data['y_table']]
-            pred_values = [float(item[1]) for item in data['pred']]
-
-            if len(true_values) != len(pred_values) or len(true_values) == 0:
-                print(f"Warning: Skipping file '{os.path.basename(sample_json)}' due to data mismatch or empty data.")
-                continue
-
-            mae, mse = calculate_metrics(pred_values, true_values)
-            total_mae += mae
-            total_mse += mse
-            sample_count += 1
-
-        except FileNotFoundError:
-            print(f"Warning: Skipping missing file '{sample_json}'")
-        except (KeyError, TypeError):
-            print(f"Warning: Skipping file due to missing 'y_table' or 'pred' keys or incorrect format.")
-        except Exception as e:
-            print(f"Warning: An unexpected error occurred with file '{os.path.basename(sample_json)}': {e}")
-            
-    if sample_count > 0:
-        avg_mae = total_mae / sample_count
-        avg_mse = total_mse / sample_count
-        print(f"Average MAE for all samples: {avg_mae:.4f}")
-        print(f"Average MSE for all samples: {avg_mse:.4f}")
-
-    else:
-        print("No valid samples were processed. Could not calculate average metrics.")
-"""
 
 def evaluate_all_samples(args):
     """
@@ -156,8 +87,8 @@ def evaluate_all_samples(args):
                 print(f"Warning: Skipping {filename} due to data length mismatch.")
                 continue
 
-            # calculate MAE and MSE
-            mae, mse = calculate_metrics(pred_values, true_values)
+            # calculate metrics
+            mae, mse = MAE(pred_values, true_values), MSE(pred_values, true_values)
             
             total_mae += mae
             total_mse += mse
@@ -167,7 +98,7 @@ def evaluate_all_samples(args):
             print(f"Warning: Skipping {filename} due to an error: {e}")
             continue
 
-    # calculate average mae and mse
+    # calculate average metrics
     if sample_count > 0:
         avg_mae = total_mae / sample_count
         avg_mse = total_mse / sample_count
@@ -203,7 +134,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_id', type=str, default='314106', help='Data ID to display in the plot title')
     parser.add_argument('--date_start', type=int, default=20220203000000, help='The sample date to display in the plot title')
     parser.add_argument('--evaluate_mode', type=str, default='all_samples', choices=['single_sample', 'all_samples'], help='Mode to evaluate: single sample or all samples in data ID')
-    parser.add_argument('--include_llm_failure', type=bool, default=False, help='Include LLM failure samples in the evaluation (default: True)')
+    parser.add_argument('--include_llm_failure', type=bool, default=False, help='Include LLM failure samples in the evaluation')
 
     args = parser.parse_args()
     
