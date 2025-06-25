@@ -53,13 +53,13 @@ def visualize_main(args):
     if not x_table or not y_table or not pred_table:
         raise ValueError("JSON file must contain 'x_table', 'y_table', and 'pred' keys with non-empty data.")
 
-    x_time = [item[0] for item in x_table]
-    input_np = np.array([item[1] for item in x_table])
+    x_time = [np.int64(item[0]) for item in x_table]
+    input_np = np.array([float(item[1]) for item in x_table])
 
-    y_time = [item[0] for item in y_table]
-    output_np = np.array([item[1] for item in y_table])
+    y_time = [np.int64(item[0]) for item in y_table]
+    output_np = np.array([float(item[1]) for item in y_table])
 
-    prediction_np = np.array([item[1] for item in pred_table])
+    prediction_np = np.array([float(item[1]) for item in pred_table])
 
     # --- Visualization ---
     print(f"--- Visualizing data for ID: {args.data_id}, Sample: {args.date_start} ---")

@@ -36,8 +36,8 @@ def evaluate_single_sample(args):
     if true_table is None or pred_table is None:
         raise KeyError("JSON file must contain both 'y_table' (ground truth) and 'pred' (prediction) keys.")
 
-    true_values = [item[1] for item in true_table]
-    pred_values = [item[1] for item in pred_table]
+    true_values = [float(item[1]) for item in true_table]
+    pred_values = [float(item[1]) for item in pred_table]
 
     if len(true_values) != len(pred_values):
         raise ValueError(
@@ -85,8 +85,8 @@ def evaluate_all_samples(args):
         try:
             data = sample_json
 
-            true_values = [item[1] for item in data['y_table']]
-            pred_values = [item[1] for item in data['pred']]
+            true_values = [float(item[1]) for item in data['y_table']]
+            pred_values = [float(item[1]) for item in data['pred']]
 
             if len(true_values) != len(pred_values) or len(true_values) == 0:
                 print(f"Warning: Skipping file '{os.path.basename(sample_json)}' due to data mismatch or empty data.")
