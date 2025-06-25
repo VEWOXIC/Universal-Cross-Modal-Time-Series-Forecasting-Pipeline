@@ -15,6 +15,8 @@
 
 该框架支持多种传统时间序列模型、基于文本嵌入的跨模态预测以及基于语言模型的推理方法。
 
+数据集: https://huggingface.co/collections/VEWOXIC/wiats-weather-intervention-aware-time-series-benchmark-6805e446a4dd84280a40a699
+
 ## 目录
 
 - [通用跨模态时间序列预测框架](#通用跨模态时间序列预测框架)
