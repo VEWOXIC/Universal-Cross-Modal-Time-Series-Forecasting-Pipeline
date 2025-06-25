@@ -13,7 +13,7 @@ chat_completion = client.chat.completions.create(
             "content": "hello, I am a time series forecasting model. Can you tell me about the latest advancements in time series forecasting?",
         }
     ],
-    model="deepseek-r1-250528",
+    model="gpt-4.1-nano",
 )
 
 print(chat_completion.choices[0].message.content)
