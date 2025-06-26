@@ -130,3 +130,10 @@ lightning_logs
 *.log.*
 .vscode
 *.pdf
+
+# data
+/data
+/data_preprocess/example_data
+
+# imgs
+/imgs

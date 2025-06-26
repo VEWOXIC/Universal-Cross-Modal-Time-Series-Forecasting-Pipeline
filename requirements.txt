@@ -1,3 +1,5 @@
+# 清华镜像 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple <xxx包>
+
 einops==0.8.0
 matplotlib==3.9.2
 numpy==1.26.4
@@ -12,13 +14,12 @@ fastparquet
 vllm==0.7.2 # 0.8.3 provides reasoning compatability but consumes more memory
 fschat[model_worker,webui]
 pandas
-# torch
 transformers
 flash-attn
 openai
 flashinfer-python
 nvitop
-pytorch_lightning>=2.0.0
 torch>=1.13.0
+pytorch_lightning>=2.0.0
 pyyaml>=6.0
 tensorboard>=2.8.0 

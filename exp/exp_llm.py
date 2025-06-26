@@ -146,13 +146,18 @@ def process_iteration(index, dataset, args, model, info_savepath):
 
     gt = iter[1]
     gt = gt[-args.output_len:, 0]#.numpy()  # Ensure it's a numpy array
+    # print("[DEBUG]: gt: ", gt)
 
     pred = result['pred']
     pred = [p[1] for p in pred]
     pred = np.asarray(pred)  # Convert to numpy array if not already
     pred = pred[-args.output_len:]  # Extract the correct dimensions
+    # print("[DEBUG]: pred: ", pred)
+
     result['log']=log[2:]
     date = result['pred'][0][0]
+    if type(date) != int:
+        date = date[0]  # Extract the date from the first element if it's a list (especially when llm does not follow your prompt)
     with open(os.path.join(info_savepath, f'{date}_result.json'), 'w') as f:
         json.dump(result, f, indent=4)
 
