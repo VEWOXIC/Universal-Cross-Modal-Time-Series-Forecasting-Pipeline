@@ -6,7 +6,7 @@ split_info: # "7:1:2"
   - '2022-01-01'
 timestamp_col: Time
 target: all
-  # - 
+  # - value
 id_info: id_info.json
 id: all
 formatter: '{i}.parquet'

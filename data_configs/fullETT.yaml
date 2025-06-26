@@ -10,4 +10,4 @@ id_info: id_info.json
 id: all 
 formatter: 'ETTh1.csv'
 sampling_rate: 1hour
-base_T: 288  # not correct, need to check again!
+base_T: 24

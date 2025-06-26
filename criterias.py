@@ -18,10 +18,20 @@ def evaluate_single_sample(args, model, test_set, config):
 
     input_tensor = torch.tensor(seq_x).to(config.device).float().unsqueeze(0)
     output_tensor = torch.tensor(seq_y).to(config.device).float().unsqueeze(0)
+    y_hetero = torch.tensor(y_hetero).to(config.device).float().unsqueeze(0)
+    hetero_channel = torch.tensor(hetero_channel).to(config.device).float().unsqueeze(0)
 
     with torch.no_grad():
-        prediction_tensor = model(input_tensor)
-        prediction_tensor = prediction_tensor[:, -config.output_len:, :]
+        if args.task == 'TSF':
+            # For TSF, we only need seq_x
+            prediction_tensor = model(x=input_tensor)
+            prediction_tensor = prediction_tensor[:, -config.output_len:, :]
+        elif args.task == 'TGTSF':
+            # For TGTSF, we need to pass news and channel description
+            prediction_tensor = model(x=input_tensor, news=y_hetero, channel_description=hetero_channel)
+            prediction_tensor = prediction_tensor[:, -config.output_len:, :]
+        else:
+            raise ValueError("Task type must be either 'TSF' or 'TGTSF'.")
 
     mae, mse = MAE(prediction_tensor.cpu().numpy(), output_tensor.cpu().numpy()), MSE(prediction_tensor.cpu().numpy(), output_tensor.cpu().numpy())
     print(f"MAE for this sample: {mae:.4f}")
@@ -42,10 +52,20 @@ def evaluate_all_samples(args, model, test_set, config):
 
         input_tensor = torch.tensor(seq_x).to(config.device).float().unsqueeze(0)
         output_tensor = torch.tensor(seq_y).to(config.device).float().unsqueeze(0)
+        y_hetero = torch.tensor(y_hetero).to(config.device).float().unsqueeze(0)
+        hetero_channel = torch.tensor(hetero_channel).to(config.device).float().unsqueeze(0)
 
         with torch.no_grad():
-            prediction_tensor = model(input_tensor)
-            prediction_tensor = prediction_tensor[:, -config.output_len:, :]
+            if args.task == 'TSF':
+                # For TSF, we only need seq_x
+                prediction_tensor = model(x=input_tensor)
+                prediction_tensor = prediction_tensor[:, -config.output_len:, :]
+            elif args.task == 'TGTSF':
+                # For TGTSF, we need to pass news and channel description
+                prediction_tensor = model(x=input_tensor, news=y_hetero, channel_description=hetero_channel)
+                prediction_tensor = prediction_tensor[:, -config.output_len:, :]
+            else:
+                raise ValueError("Task type must be either 'TSF' or 'TGTSF'.")
 
         mae, mse = MAE(prediction_tensor.cpu().numpy(), output_tensor.cpu().numpy()), MSE(prediction_tensor.cpu().numpy(), output_tensor.cpu().numpy())
         total_mae += mae
@@ -77,9 +97,9 @@ def criterias_main(args):
     # --- Load data ---
     D = Data_Provider(config)
     test_set = D.get_test("set")
-    train_set = D.get_train("set")
-    val_set = D.get_val("set")
-    print(len(train_set["1"]), len(val_set["1"]), len(test_set["1"]))
+    # train_set = D.get_train("set")
+    # val_set = D.get_val("set")
+    # print(len(train_set[args.data_id]), len(val_set[args.data_id]), len(test_set[args.data_id]))
 
     # --- Initialize and load model ---
     model = model_init(config.model, config.model_config, config).to(config.device)
@@ -102,10 +122,11 @@ if __name__ == '__main__':
     
     # --- config ---
     parser.add_argument('--ckpt_base', type=str, default='checkpoints', help='Base directory for checkpoints')
-    parser.add_argument('--ckpt_id', type=str, default='06-20-0955_DLinear_ETT_96_288', help='Checkpoint folder ID')
-    parser.add_argument('--data_id', type=str, default='1', help='Data ID to visualize')
-    parser.add_argument('--sample_num', type=int, default=100, help='The sample index to visualize')
+    parser.add_argument('--ckpt_id', type=str, default='06-26-1502_TGTSF_CAISO_96_288', help='Checkpoint folder ID')
+    parser.add_argument('--data_id', type=str, default='demand_Current_demand', help='Data ID to visualize')
+    parser.add_argument('--sample_num', type=int, default=0, help='The sample index to visualize')
     parser.add_argument('--evaluate_mode', type=str, default='all_samples', choices=['single_sample', 'all_samples'], help='Mode to evaluate: single sample or all samples in data ID')
+    parser.add_argument('--task', type=str, default='TGTSF', choices=['TSF', 'TGTSF'], help='Task type: TSF or TGTSF')
 
     args = parser.parse_args()
     

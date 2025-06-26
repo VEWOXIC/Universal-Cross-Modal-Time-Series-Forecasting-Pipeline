@@ -14,7 +14,8 @@ python -u run.py \
     --batch_size 256 \
     --noise $noise \
     --patience 10 \
-    --learning_rate 0.0001 \
+    --learning_rate 0.001 \
+    --train_epochs 1 \
     # --devices 0,2,3 | tee ./logs/weather/TGTSF_96_$noise.log
     # --num_workers 16 \
     # --use_multi_gpu \

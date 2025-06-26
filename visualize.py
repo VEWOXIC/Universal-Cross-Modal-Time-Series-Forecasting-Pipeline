@@ -64,10 +64,20 @@ def visualize_main(args):
 
     input_tensor = torch.tensor(seq_x).to(config.device).float().unsqueeze(0)
     output_tensor = torch.tensor(seq_y).to(config.device).float().unsqueeze(0)
+    y_hetero = torch.tensor(y_hetero).to(config.device).float().unsqueeze(0)
+    hetero_channel = torch.tensor(hetero_channel).to(config.device).float().unsqueeze(0)
 
     with torch.no_grad():
-        prediction_tensor = model(input_tensor)
-        prediction_tensor = prediction_tensor[:, -config.output_len:, :]
+        if args.task == 'TSF':
+            # For TSF, we only need seq_x
+            prediction_tensor = model(x=input_tensor)
+            prediction_tensor = prediction_tensor[:, -config.output_len:, :]
+        elif args.task == 'TGTSF':
+            # For TGTSF, we need to pass news and channel description
+            prediction_tensor = model(x=input_tensor, news=y_hetero, channel_description=hetero_channel)
+            prediction_tensor = prediction_tensor[:, -config.output_len:, :]
+        else:
+            raise ValueError("Task type must be either 'TSF' or 'TGTSF'.")
 
     # --- Visualization ---
     indate_dt = pd.to_datetime([str(i) for i in x_time], format='%Y%m%d%H%M%S')
@@ -88,10 +98,11 @@ if __name__ == '__main__':
     
     # --- config ---
     parser.add_argument('--ckpt_base', type=str, default='checkpoints', help='Base directory for checkpoints')
-    parser.add_argument('--ckpt_id', type=str, default='06-20-1205_DLinear_ETT_96_288', help='Checkpoint folder ID')
-    parser.add_argument('--data_id', type=str, default='1', help='Data ID to visualize')
-    parser.add_argument('--sample_num', type=int, default=10, help='The sample index to visualize')
-    parser.add_argument('--img_path', type=str, default='./imgs/visualize.png', help='Path to save the prediction visualization image')
+    parser.add_argument('--ckpt_id', type=str, default='06-26-1502_TGTSF_CAISO_96_288', help='Checkpoint folder ID')
+    parser.add_argument('--data_id', type=str, default='demand_Current_demand', help='Data ID to visualize')
+    parser.add_argument('--sample_num', type=int, default=0, help='The sample index to visualize')
+    parser.add_argument('--img_path', type=str, default='./imgs/visualize_TGTSF.png', help='Path to save the prediction visualization image')
+    parser.add_argument('--task', type=str, default='TGTSF', choices=['TSF', 'TGTSF'], help='Task type: TSF or TGTSF')
 
     args = parser.parse_args()
     

@@ -80,8 +80,8 @@ if __name__ == '__main__':
     parser.add_argument('--ckpt_base', type=str, default='checkpoints', help='Base directory for checkpoints')
     parser.add_argument('--ckpt_id', type=str, default='06-24-1659_gpt-4.1-nano_solar_day_ahead', help='Checkpoint folder ID')
     parser.add_argument('--data_id', type=str, default='314106', help='Data ID to display in the plot title')
-    parser.add_argument('--date_start', type=int, default=20220203000000, help='The sample date to display in the plot title')
-    parser.add_argument('--img_path', type=str, default='./imgs/visualize_llm.png', help='Path to save the prediction visualization image')
+    parser.add_argument('--date_start', type=int, default=20220210000000, help='The sample date to display in the plot title')
+    parser.add_argument('--img_path', type=str, default='./imgs/visualize_LLMTSF.png', help='Path to save the prediction visualization image')
 
     args = parser.parse_args()
     
