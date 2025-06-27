@@ -4,8 +4,8 @@ split_info: "7:1:2"
   # - '2020-01-01'
   # - '2021-01-01'
 timestamp_col: date
-target: # all
-  - OT
+target: all
+  # - OT
 id_info: id_info.json
 id: all 
 formatter: 'ETTh1.csv'

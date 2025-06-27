@@ -67,17 +67,18 @@ def visualize_main(args):
     y_hetero = torch.tensor(y_hetero).to(config.device).float().unsqueeze(0)
     hetero_channel = torch.tensor(hetero_channel).to(config.device).float().unsqueeze(0)
 
-    with torch.no_grad():
-        if args.task == 'TSF':
-            # For TSF, we only need seq_x
-            prediction_tensor = model(x=input_tensor)
-            prediction_tensor = prediction_tensor[:, -config.output_len:, :]
-        elif args.task == 'TGTSF':
-            # For TGTSF, we need to pass news and channel description
-            prediction_tensor = model(x=input_tensor, news=y_hetero, channel_description=hetero_channel)
-            prediction_tensor = prediction_tensor[:, -config.output_len:, :]
-        else:
-            raise ValueError("Task type must be either 'TSF' or 'TGTSF'.")
+    with torch.inference_mode():
+        with torch.no_grad():
+            if args.task == 'TSF':
+                # For TSF, we only need seq_x
+                prediction_tensor = model(x=input_tensor)
+                prediction_tensor = prediction_tensor[:, -config.output_len:, :]
+            elif args.task == 'TGTSF':
+                # For TGTSF, we need to pass news and channel description
+                prediction_tensor = model(x=input_tensor, news=y_hetero, channel_description=hetero_channel)
+                prediction_tensor = prediction_tensor[:, -config.output_len:, :]
+            else:
+                raise ValueError("Task type must be either 'TSF' or 'TGTSF'.")
 
     # --- Visualization ---
     indate_dt = pd.to_datetime([str(i) for i in x_time], format='%Y%m%d%H%M%S')

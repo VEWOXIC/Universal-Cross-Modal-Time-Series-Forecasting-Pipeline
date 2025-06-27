@@ -131,8 +131,8 @@ if __name__ == '__main__':
     # --- config ---
     parser.add_argument('--ckpt_base', type=str, default='checkpoints', help='Base directory for checkpoints')
     parser.add_argument('--ckpt_id', type=str, default='06-24-1659_gpt-4.1-nano_solar_day_ahead', help='Checkpoint folder ID')
-    parser.add_argument('--data_id', type=str, default='314106', help='Data ID to display in the plot title')
-    parser.add_argument('--date_start', type=int, default=20220203000000, help='The sample date to display in the plot title')
+    parser.add_argument('--data_id', type=str, default='314106', help='Data ID for evaluation')
+    parser.add_argument('--date_start', type=int, default=20220203000000, help='The sample date for evaluation')
     parser.add_argument('--evaluate_mode', type=str, default='all_samples', choices=['single_sample', 'all_samples'], help='Mode to evaluate: single sample or all samples in data ID')
     parser.add_argument('--include_llm_failure', type=bool, default=False, help='Include LLM failure samples in the evaluation')
 
