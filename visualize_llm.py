@@ -38,7 +38,7 @@ def visualize_main(args):
     json_path = os.path.join(args.ckpt_base, args.ckpt_id, args.data_id, f"{str(args.date_start)}_result.json")
     
     if not os.path.exists(json_path):
-        print(f"Error: JSON file not found at {args.json_path}")
+        print(f"Error: JSON file not found at {json_path}")
         return
     
     print(f"Loading data from: {json_path}")
@@ -67,7 +67,8 @@ def visualize_main(args):
     indate_dt = pd.to_datetime([str(i) for i in x_time], format='%Y%m%d%H%M%S')
     outdate_dt = pd.to_datetime([str(i) for i in y_time], format='%Y%m%d%H%M%S')
 
-    plot_prediction(indate_dt, input_np, outdate_dt, output_np, prediction_np, args.data_id, args.date_start, args.img_path)
+    plot_prediction(indate_dt, input_np, outdate_dt, output_np, prediction_np, args.data_id, args.date_start, 
+                    os.path.join(args.img_path, f"{args.ckpt_id}_{args.data_id}_{args.date_start}.png"))
 
 
 if __name__ == '__main__':
@@ -78,10 +79,10 @@ if __name__ == '__main__':
     
     # --- config ---
     parser.add_argument('--ckpt_base', type=str, default='checkpoints', help='Base directory for checkpoints')
-    parser.add_argument('--ckpt_id', type=str, default='06-24-1659_gpt-4.1-nano_solar_day_ahead', help='Checkpoint folder ID')
+    parser.add_argument('--ckpt_id', type=str, default='06-30-1449_deepseek-v3-250324_solar_day_ahead', help='Checkpoint folder ID')
     parser.add_argument('--data_id', type=str, default='314106', help='Data ID to display in the plot title')
-    parser.add_argument('--date_start', type=int, default=20220210000000, help='The sample date to display in the plot title')
-    parser.add_argument('--img_path', type=str, default='./imgs/visualize_LLMTSF.png', help='Path to save the prediction visualization image')
+    parser.add_argument('--date_start', type=int, default=20250204000000, help='The sample date to display in the plot title')
+    parser.add_argument('--img_path', type=str, default='./imgs/LLMTSF', help='Path to save the prediction visualization image')
 
     args = parser.parse_args()
     

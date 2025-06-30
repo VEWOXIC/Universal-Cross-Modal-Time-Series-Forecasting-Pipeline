@@ -10,7 +10,7 @@ from data_provider.data_factory import Data_Provider
 from utils.tools import dotdict
 
 
-def plot_prediction(indate, input_data, outdate, output_data, prediction_data, data_id, sample_num, img_path):
+def plot_prediction(indate, input_data, outdate, output_data, prediction_data, data_id, sample_id, img_path):
     """
     figure the prediction visualization
     """
@@ -18,7 +18,7 @@ def plot_prediction(indate, input_data, outdate, output_data, prediction_data, d
     plt.plot(indate, input_data, label='Input History')
     plt.plot(outdate, output_data, label='Ground Truth')
     plt.plot(outdate, prediction_data, label='Prediction', linestyle='--')
-    plt.title(f'Prediction Visualization for ID: {data_id}, Sample: {sample_num}')
+    plt.title(f'Prediction Visualization for ID: {data_id}, Sample: {sample_id}')
     plt.xlabel('Timestamp')
     plt.ylabel('Value')
     plt.legend()
@@ -59,8 +59,8 @@ def visualize_main(args):
     model.load_state_dict(torch.load(os.path.join(ckpt_path, 'checkpoint.pth'), map_location=config.device))
     model.eval()
 
-    print(f"--- Perform on ID {args.data_id}, sample {args.sample_num} ---")
-    seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel = test_set[args.data_id][args.sample_num]
+    print(f"--- Perform on ID {args.data_id}, sample {args.sample_id} ---")
+    seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel = test_set[args.data_id][args.sample_id]
 
     input_tensor = torch.tensor(seq_x).to(config.device).float().unsqueeze(0)
     output_tensor = torch.tensor(seq_y).to(config.device).float().unsqueeze(0)
@@ -88,7 +88,8 @@ def visualize_main(args):
     output_np = output_tensor.cpu().numpy().squeeze()
     prediction_np = prediction_tensor.cpu().numpy().squeeze()
 
-    plot_prediction(indate_dt, input_np, outdate_dt, output_np, prediction_np, args.data_id, args.sample_num, args.img_path)
+    plot_prediction(indate_dt, input_np, outdate_dt, output_np, prediction_np, args.data_id, args.sample_id, 
+                    os.path.join(args.img_path, args.task, f"{args.ckpt_id}_{args.data_id}_{args.sample_id}.png"))
 
 
 if __name__ == '__main__':
@@ -99,11 +100,11 @@ if __name__ == '__main__':
     
     # --- config ---
     parser.add_argument('--ckpt_base', type=str, default='checkpoints', help='Base directory for checkpoints')
-    parser.add_argument('--ckpt_id', type=str, default='06-26-1502_TGTSF_CAISO_96_288', help='Checkpoint folder ID')
-    parser.add_argument('--data_id', type=str, default='demand_Current_demand', help='Data ID to visualize')
-    parser.add_argument('--sample_num', type=int, default=0, help='The sample index to visualize')
-    parser.add_argument('--img_path', type=str, default='./imgs/visualize_TGTSF.png', help='Path to save the prediction visualization image')
-    parser.add_argument('--task', type=str, default='TGTSF', choices=['TSF', 'TGTSF'], help='Task type: TSF or TGTSF')
+    parser.add_argument('--ckpt_id', type=str, default='06-27-1728_DLinear_ETT_96_720', help='Checkpoint folder ID')
+    parser.add_argument('--data_id', type=str, default='1', help='Data ID to visualize')
+    parser.add_argument('--sample_id', type=int, default=10, help='The sample index to visualize')
+    parser.add_argument('--img_path', type=str, default='./imgs', help='Path to save the prediction visualization image')
+    parser.add_argument('--task', type=str, default='TSF', choices=['TSF', 'TGTSF'], help='Task type: TSF or TGTSF')
 
     args = parser.parse_args()
     
