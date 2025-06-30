@@ -1,6 +1,6 @@
-root_path: ./data/traffic
+root_path: ./data/ETT
 spliter: 'ratio'
-split_info: "7:1:2"
+split_info: "6:2:2"
   # - '2020-01-01'
   # - '2021-01-01'
 timestamp_col: date
@@ -8,6 +8,6 @@ target: all
   # - OT
 id_info: id_info.json
 id: all 
-formatter: 'traffic.csv'
+formatter: 'ETTh2.csv'
 sampling_rate: 1h
 base_T: 24
