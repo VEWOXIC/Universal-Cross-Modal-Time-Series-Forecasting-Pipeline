@@ -83,17 +83,20 @@ else:
     current_time = time.strftime('%m-%d-%H%M', time.localtime(time.time()))
 # setting record of experiment
 
+# Remove the "/" "\" in args.model
+_model = args.model.replace('/', '-').replace('\\', '-')
+
 if args.ahead is not None:
     assert args.ahead in ['day', 'week', 'month'], 'ahead task not supported, or add your own parser'
 
     try:
         args.output_len, args.input_len = ahead_task_parser(args.ahead, data_configs.sampling_rate)
-        setting = f'{current_time}_{args.model}_{args.data}_{args.ahead}_ahead'
+        setting = f'{current_time}_{_model}_{args.data}_{args.ahead}_ahead'
     except:
-        setting = f'{current_time}_{args.model}_{args.data}_{args.output_len}_{args.input_len}'
+        setting = f'{current_time}_{_model}_{args.data}_{args.output_len}_{args.input_len}'
         raise ValueError('sampling rate not found in data config, fall back to default, input output length')
 else:
-    setting = f'{current_time}_{args.model}_{args.data}_{args.output_len}_{args.input_len}'
+    setting = f'{current_time}_{_model}_{args.data}_{args.output_len}_{args.input_len}'
 
 # check if the checkpoint path exists
 if not os.path.exists(os.path.join(args.checkpoints,setting)):

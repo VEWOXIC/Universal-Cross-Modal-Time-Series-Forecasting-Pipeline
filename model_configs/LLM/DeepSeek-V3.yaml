@@ -1,11 +1,11 @@
-model: gpt-4.1-nano
+model: deepseek-v3-250324
 system_prompt: prompt_templates/general_template/system.template
 first_prompt: prompt_templates/general_template/firstattempt.template
 retry_prompt: prompt_templates/general_template/retry.template
 merge_system: True
 temperature: 0.6
-base_url: https://api.agicto.cn/v1
-api_key: 
+base_url: https://ark.cn-beijing.volces.com/api/v3
+api_key: d61217e7-8ff3-4937-83ed-3dd2bebf72ad
 retry: 3
 force_retry: False
 queue_len: 2

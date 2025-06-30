@@ -2,8 +2,8 @@ from openai import OpenAI
 import os
 
 client = OpenAI(
-    api_key = os.getenv("MY_API_KEY"),
-    base_url = os.getenv("MY_BASE_URL"),
+    api_key = os.getenv("SI_API_KEY"),
+    base_url = os.getenv("SI_BASE_URL"),
 )
 
 chat_completion = client.chat.completions.create(
@@ -13,7 +13,7 @@ chat_completion = client.chat.completions.create(
             "content": "hello, I am a time series forecasting model. Can you tell me about the latest advancements in time series forecasting?",
         }
     ],
-    model="gpt-4.1-nano",
+    model="deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
 )
 
 print(chat_completion.choices[0].message.content)
