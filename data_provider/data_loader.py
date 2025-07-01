@@ -109,6 +109,8 @@ class Universal_Dataset(Dataset):
         elif self.set_type == 'test':
             self.data = test_data
 
+        print(f"[ info ] Length of {self.set_type}: {self.data.shape[0]}")
+
         # convert the self.timestamp_col to yyyymmddHHMMSS int
         self.data[self.timestamp_col] = self.data[self.timestamp_col].dt.strftime('%Y%m%d%H%M%S')
         # convert to int
