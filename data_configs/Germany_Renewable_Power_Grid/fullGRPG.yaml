@@ -1,12 +1,13 @@
-root_path: /data/Blob_WestJP/v-zhijianxu/WIATS/Germany_Renewable_Power_Grid/impute_data
+root_path: ./data/Germany_Renewable_Power_Grid/impute_data
 spliter: timestamp
-split_info:
+# spliter: ratio
+split_info: # "7:1:2"
   - '2015-01-01' # discard data before 2015
   - '2021-01-01'
   - '2022-01-01'
 timestamp_col: time
-target: 
-  - power
+target: all
+  # - power
 id_info: id_info.json
 id: all
 formatter: '{i}.parquet'

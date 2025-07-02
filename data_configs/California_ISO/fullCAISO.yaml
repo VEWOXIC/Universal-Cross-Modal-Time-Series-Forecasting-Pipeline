@@ -1,8 +1,9 @@
 root_path: ./data/California_ISO/time_series
-spliter: ratio
-split_info: "7:1:2"
-  # - '2021-01-01'
-  # - '2022-01-01'
+spliter: timestamp
+# spliter: ratio
+split_info: # "7:1:2"
+  - '2021-01-01'
+  - '2022-01-01'
 timestamp_col: Time
 target: all
   # - value

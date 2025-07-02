@@ -1,0 +1,25 @@
+root_path: ./data/Germany_Renewable_Power_Grid/impute_data
+spliter: timestamp
+# spliter: ratio
+split_info: # "7:1:2"
+  - '2015-01-01' # discard data before 2015
+  - '2021-01-01'
+  - '2022-01-01'
+timestamp_col: time
+target: all
+  # - power
+id_info: id_info.json
+id: all
+  # - 'wind_TenneT'
+  # - 'solar_TenneT'
+formatter: '{i}.parquet'
+sampling_rate: 15min
+base_T: 96
+time_zone: Europe/Berlin
+hetero_info:
+  sampling_rate: 1day
+  root_path: ./data/Germany_Renewable_Power_Grid/weather/Bayreuth-TenneT/weather_report
+  formatter: fast_general_formal_forecast_????.json
+  matching: single
+  input_format: json
+  static_path: static_info.json

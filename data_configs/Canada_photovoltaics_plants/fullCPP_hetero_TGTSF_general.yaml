@@ -1,12 +1,12 @@
 root_path: ./data/Canada_photovoltaics_plants/time_series
-# spliter: timestamp
-spliter: ratio
-split_info: "7:1:2"
-  # - '2021-01-01'
-  # - '2022-01-01'
+spliter: timestamp
+# spliter: ratio
+split_info: # "7:1:2"
+  - '2021-01-01'
+  - '2022-01-01'
 timestamp_col: date
-target: # all
-  - kWh
+target: all
+  # - kWh
 id_info: id_info_imputed.json
 id: all
 formatter: 'id_{i}.parquet'
@@ -15,6 +15,6 @@ base_T: 24
 hetero_info:
   root_path: ./data/Canada_photovoltaics_plants/weather/calgary/report_embedding/general_report
   formatter: fast_general_weather_embeddings_????.pkl
-  matching: backward  # single  # default backward for 1day sampling
+  matching: backward
   input_format: embedding
   static_path: static_info_embeddings.pkl

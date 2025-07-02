@@ -5,8 +5,8 @@ split_info: # "7:1:2"
   - '2021-01-01'
   - '2022-01-01'
 timestamp_col: date
-target: # all
-  - kWh
+target: all
+  # - kWh
 id_info: id_info_imputed.json
 id: all
 formatter: 'id_{i}.parquet'
@@ -14,8 +14,8 @@ sampling_rate: 1h
 base_T: 24
 hetero_info:
   sampling_rate: 1day
-  root_path: ./data/Canada_photovoltaics_plants/weather/calgary/weather_report/general_report
-  formatter: fast_general_weather_forecast_????.json
-  matching: backward  # single  # default backward for 1day sampling
+  root_path: ./data/Canada_photovoltaics_plants/weather/calgary/weather_report/formal_report
+  formatter: fast_general_formal_forecast_????.json
+  matching: single
   input_format: json
   static_path: static_info.json
