@@ -1,4 +1,0 @@
-bash scripts/Germany_Renewable_Power_Grid/DLinear/DLinear_month.sh
-bash scripts/Germany_Renewable_Power_Grid/FITS/FITS_month.sh
-bash scripts/Germany_Renewable_Power_Grid/PatchTST/PatchTST_month.sh
-bash scripts/Germany_Renewable_Power_Grid/iTrans/iTrans_month.sh

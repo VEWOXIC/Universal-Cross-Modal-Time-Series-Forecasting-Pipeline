@@ -1,21 +1,21 @@
-root_path: ./data/California_ISO/time_series
+root_path: ./data/Jena_Atmospheric_Physics/time_series
 spliter: timestamp
 # spliter: ratio
 split_info: # "7:1:2"
   - '2021-01-01'
   - '2022-01-01'
-timestamp_col: Time
+timestamp_col: Date Time
 target: all
   # - value
 id_info: id_info.json
 id: all
 formatter: '{i}.parquet'
-sampling_rate: 5min
-base_T: 288
+sampling_rate: 10min
+base_T: 144
 hetero_info:
   sampling_rate: 1day
-  root_path: ./data/California_ISO/weather/san-diego/weather_report/formal_report
-  formatter: fast_general_formal_forecast_????.json
+  root_path: ./data/Jena_Atmospheric_Physics/weather
+  formatter: 
   matching: single
   input_format: json
   static_path: static_info.json

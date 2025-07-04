@@ -10,5 +10,6 @@ target: all
 id_info: id_info_imputed.json
 id: all
 formatter: 'id_{i}.parquet'
-sampling_rate: 5min
-base_T: 288
+downsample: 12
+sampling_rate: 1h
+base_T: 24
