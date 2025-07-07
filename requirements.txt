@@ -3,6 +3,8 @@
 einops==0.8.0
 matplotlib==3.9.2
 numpy==1.26.4
+torch>=1.13.0
+pytorch_lightning>=2.0.0
 pmdarima==2.0.4
 ptflops==0.7.4
 ray==2.37.0
@@ -11,15 +13,13 @@ sentence_transformers==3.2.0
 thop==0.1.1.post2209072238
 tqdm==4.66.5
 fastparquet
-vllm==0.7.2 # 0.8.3 provides reasoning compatability but consumes more memory
+# vllm==0.7.2 # 0.8.3 provides reasoning compatability but consumes more memory
 fschat[model_worker,webui]
 pandas
 transformers
-flash-attn
+# flash-attn
 openai
-flashinfer-python
+# flashinfer-python
 nvitop
-torch>=1.13.0
-pytorch_lightning>=2.0.0
 pyyaml>=6.0
 tensorboard>=2.8.0 
