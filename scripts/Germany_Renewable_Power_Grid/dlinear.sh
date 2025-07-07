@@ -7,6 +7,6 @@ python -u run.py \
     --data_config './data_configs/Germany_Renewable_Power_Grid/fullGRPG_H.yaml' \
     --input_len 360 \
     --output_len $output_len \
-    --batch_size 512 | tee ./logs/Linear.log
+    --batch_size 512 | tee -a ./logs/Linear.log
     
 done

@@ -1,0 +1,10 @@
+# bash scripts/California_ISO/itrans.sh
+# bash scripts/California_ISO/patchTST.sh
+bash scripts/Canada_photovoltaics_plants/itrans.sh
+bash scripts/Canada_photovoltaics_plants/patchTST.sh
+bash scripts/Germany_Renewable_Power_Grid/itrans.sh
+bash scripts/Germany_Renewable_Power_Grid/patchTST.sh
+# bash scripts/Jena_Atmospheric_Physics/itrans.sh
+# bash scripts/Jena_Atmospheric_Physics/patchTST.sh
+bash scripts/NYC_traffic_speed/itrans.sh
+bash scripts/NYC_traffic_speed/patchTST.sh

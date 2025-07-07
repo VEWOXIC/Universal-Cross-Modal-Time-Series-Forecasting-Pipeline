@@ -18,4 +18,4 @@ hetero_info:
   formatter: fast_general_formal_embeddings_????.pkl
   matching: backward
   input_format: embedding
-  static_path: static_info_embeddings.pkl
+  static_path: static_info_embeddings_except_battery.pkl
