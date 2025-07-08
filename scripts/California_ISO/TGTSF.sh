@@ -1,12 +1,13 @@
 for output_len in 24 168 336 720
 do
-python -u run.py \
+python -u run_lightning.py \
     --model 'TGTSF' \
     --model_config 'model_configs/general/TGTSF.yaml' \
     --data California_ISO \
     --data_config './data_configs/California_ISO/fullCAISO_hetero_TGTSF_H.yaml' \
     --input_len 360 \
     --output_len $output_len \
-    --batch_size 512 | tee -a ./logs/IATSF.log
+    --batch_size 64 \
+    --devices '0,1,4' | tee -a ./logs/IATSF.log
 
 done
