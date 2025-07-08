@@ -1,0 +1,14 @@
+root_path: ./data/Bear/time_series
+spliter: timestamp
+# spliter: ratio
+split_info: # "7:1:2"
+  - '2020-09-03'
+  - '2020-10-03'
+timestamp_col: Timestamp
+target: all
+  # - Zone Temperature
+id_info: id_info.json
+id: all
+formatter: '{i}.parquet'
+sampling_rate: 5min
+base_T: 288

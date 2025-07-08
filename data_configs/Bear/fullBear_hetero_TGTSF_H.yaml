@@ -1,0 +1,21 @@
+root_path: ./data/Bear/time_series
+spliter: timestamp
+# spliter: ratio
+split_info: # "7:1:2"
+  - '2020-09-03'
+  - '2020-10-03'
+timestamp_col: Timestamp
+target: all
+  # - Zone Temperature
+id_info: id_info.json
+id: all
+formatter: '{i}.parquet'
+downsample: 12
+sampling_rate: 1h
+base_T: 24
+hetero_info:
+  root_path: 
+  formatter: fast_general_formal_embeddings_????.pkl
+  matching: backward
+  input_format: embedding
+  static_path: static_info_embeddings.pkl

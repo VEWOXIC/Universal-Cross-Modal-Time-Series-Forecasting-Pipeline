@@ -11,9 +11,9 @@ def modify_sh_files_in_directory(root_dir):
     # Define pairs of strings to find and replace.
     # Note: The strings must be an exact match, including spaces and quotes.
     replacements = {
-        "--data California_ISO": "--data Jena_Atmospheric_Physics",
-        "--data_config './data_configs/California_ISO/fullCAISO_H.yaml'": "--data_config './data_configs/Jena_Atmospheric_Physics/fullJAP_H.yaml'",
-        "--data_config './data_configs/California_ISO/fullCAISO_hetero_TGTSF_H.yaml'": "--data_config './data_configs/Jena_Atmospheric_Physics/fullJAP_hetero_TGTSF_H.yaml'"
+        "--data California_ISO": "--data Bear",
+        "--data_config './data_configs/California_ISO/fullCAISO_H.yaml'": "--data_config './data_configs/Bear/fullBear_H.yaml'",
+        "--data_config './data_configs/California_ISO/fullCAISO_hetero_TGTSF_H.yaml'": "--data_config './data_configs/Bear/fullBear_hetero_TGTSF_H.yaml'"
     }
     
     # Count the number of modified files.

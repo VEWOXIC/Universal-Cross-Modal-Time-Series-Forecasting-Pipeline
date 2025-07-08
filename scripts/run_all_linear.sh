@@ -7,4 +7,6 @@
 # bash scripts/Jena_Atmospheric_Physics/dlinear.sh
 # bash scripts/Jena_Atmospheric_Physics/FITS.sh
 # bash scripts/NYC_traffic_speed/dlinear.sh
-bash scripts/NYC_traffic_speed/FITS.sh
+# bash scripts/NYC_traffic_speed/FITS.sh
+bash scripts/Bear/dlinear.sh
+bash scripts/Bear/FITS.sh
