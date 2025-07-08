@@ -1,3 +1,5 @@
+# export TORCH_NCCL_ENABLE_MONITORING=0
+
 bash scripts/California_ISO/itrans.sh
 bash scripts/California_ISO/patchTST.sh
 bash scripts/Canada_photovoltaics_plants/itrans.sh
