@@ -1,4 +1,4 @@
-for output_len in 24 168 336 720
+for output_len in 24 168 336
 do
 python -u run_lightning.py \
     --model 'iTransformer' \
