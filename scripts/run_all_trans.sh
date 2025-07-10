@@ -10,3 +10,5 @@ bash scripts/Jena_Atmospheric_Physics/itrans.sh
 bash scripts/Jena_Atmospheric_Physics/patchTST.sh
 bash scripts/NYC_traffic_speed/itrans.sh
 bash scripts/NYC_traffic_speed/patchTST.sh
+bash scripts/Bear/itrans.sh
+bash scripts/Bear/patchTST.sh

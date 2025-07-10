@@ -7,6 +7,6 @@ python -u run_lightning.py \
     --data_config './data_configs/California_ISO/fullCAISO_H.yaml' \
     --input_len 360 \
     --output_len $output_len \
-    --batch_size 128 | tee -a ./logs/Trans.log
+    --batch_size 512 | tee -a ./logs/Trans.log
 
 done
