@@ -7,7 +7,9 @@ python -u run_lightning.py \
     --data_config './data_configs/California_ISO/fullCAISO_hetero_TGTSF_H.yaml' \
     --input_len 360 \
     --output_len $output_len \
-    --batch_size 64 \
+    --batch_size 256 \
+    --patience 5 \
+    --train_epochs 50 \
     --devices '0,1,4' | tee -a ./logs/IATSF.log
 
 done
