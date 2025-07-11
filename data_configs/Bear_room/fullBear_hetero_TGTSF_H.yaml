@@ -14,8 +14,8 @@ downsample: 12
 sampling_rate: 1h
 base_T: 24
 hetero_info:
-  root_path: 
-  formatter: fast_general_formal_embeddings_????.pkl
+  root_path: ./data/Bear_room/hetero/weather/report_embedding/formal_report
+  formatter: wm_messages_v1_embeddings.pkl
   matching: backward
   input_format: embedding
   static_path: static_info_embeddings.pkl
