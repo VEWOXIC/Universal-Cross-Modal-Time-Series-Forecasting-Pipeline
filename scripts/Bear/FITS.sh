@@ -1,4 +1,4 @@
-for output_len in 24 168 336
+for output_len in 24 72 120 168
 do
 python -u run.py \
     --model 'FITS' \
