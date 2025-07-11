@@ -1,4 +1,4 @@
-root_path: ./data/Bear/time_series
+root_path: ./data/Bear_room/time_series
 spliter: timestamp
 # spliter: ratio
 split_info: # "7:1:2"
@@ -13,3 +13,9 @@ formatter: '{i}.parquet'
 downsample: 12
 sampling_rate: 1h
 base_T: 24
+hetero_info:
+  root_path: 
+  formatter: fast_general_formal_embeddings_????.pkl
+  matching: backward
+  input_format: embedding
+  static_path: static_info_embeddings.pkl
