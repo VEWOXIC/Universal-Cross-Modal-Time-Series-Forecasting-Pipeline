@@ -13,7 +13,7 @@ formatter: 'id_{i}.parquet'
 sampling_rate: 5min
 base_T: 288
 hetero_info:
-  root_path: ./data/NYC_traffic_speed/weather/brooklyn/report_embedding
+  root_path: ./data/NYC_traffic_speed/weather/merged_report_embedding
   formatter: fast_general_formal_embeddings_????.pkl
   matching: backward
   input_format: embedding
