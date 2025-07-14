@@ -1,12 +1,13 @@
 for output_len in 288 864 1440 2016
 do
-python -u run.py \
+python -u run_lightning.py \
     --model 'FITS' \
     --model_config 'model_configs/general/FITS.yaml' \
     --data Bear_room \
     --data_config './data_configs/Bear_room/fullBear.yaml' \
     --input_len 4320 \
     --output_len $output_len \
-    --batch_size 512 | tee -a ./logs/Linear.log
+    --batch_size 512 \
+    --device '3' | tee -a ./logs/Linear.log
     
 done

@@ -69,49 +69,25 @@ def get_lossdf(dataset, model_TST, model_TGTSF, stride, config):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Filter reasoning samples")
-    parser.add_argument('--data', type=str, required=True, help="Dataset name (e.g., 'solar')")
-    parser.add_argument('--ahead', type=str, required=True, help="Prediction horizon (e.g., 'day')")
-    parser.add_argument('--stride', type=int, required=True, help="Prediction horizon (e.g., 'day')")
+    parser.add_argument('--data', type=str, default="Canada_photovoltaics_plants", help="Dataset name (e.g., 'solar')")
+    parser.add_argument('--baseline_model', type=str, default="PatchTST", help="Model name (e.g., 'PatchTST')")
+    parser.add_argument('--version', type=str, default="latest", help="Model version (e.g., 'latest')", choices=['latest', 'newest'])
+    parser.add_argument('--input_len', type=int, default=360, help="Input length (e.g., 360)")
+    parser.add_argument('--output_len', type=int, default=24, help="Prediction horizon (e.g., 168)")
+    parser.add_argument('--type', type=str, default="ckpt", help="Type of model checkpoint (e.g., 'ckpt')")
+    parser.add_argument('--sample_root', type=str, default='./sample_indexes', help="Root directory for saving samples")
+    # parser.add_argument('--ahead', type=str, required=True, help="Prediction horizon (e.g., 'day')")
     args = parser.parse_args()
 
     data = args.data
-    ahead = args.ahead
-    stride = int(args.stride)
+    baseline_model = args.baseline_model
+    version = args.version
+    input_len = args.input_len
+    output_len = args.output_len
+    checkpoint_type = args.type
 
-    model = 'PatchTST'
-    version = 'latest'
-    ckpt_base = './checkpoints/'+data
-
-    ckpt_id = f'_{model}_{data}_{ahead}_ahead'
-
-    if version == 'latest':
-        # find all the path that end with the ckpt_id
-        ckpt_paths = [os.path.join(ckpt_base, i) for i in os.listdir(ckpt_base) if i.endswith(ckpt_id)]
-        # the path is in format of yyyy-mm-dd{ckpt_id}, now find the latest one
-        ckpt_paths.sort()
-        ckpt_path = ckpt_paths[-1]
-    else:
-        ckpt_path = version + ckpt_id
-
-    config = dotdict(json.load(open(os.path.join(ckpt_path, 'args.json'))))
-    config.model_config = dotdict(config.model_config)
-    config.data_config = dotdict(config.data_config)
-
-    config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    config.batch_size = 1
-
-    model_TST = model_init(config.model, config.model_config, config).to(config.device)
-    # load the model
-    model_TST.load_state_dict(torch.load(os.path.join(ckpt_path, 'checkpoint.pth'))) 
-    model_TST.eval()
-
-    ################################
-
-    model = 'TGTSF'
-    version = 'latest'#'04-16-0316'#'latest'
-    ckpt_base = './checkpoints/'+data
-
-    ckpt_id = f'_{model}_{data}_{ahead}_ahead'
+    ckpt_base = './checkpoints/'
+    ckpt_id = f'_{baseline_model}_{data}_{output_len}_{input_len}'
 
     if version == 'latest':
         # find all the path that end with the ckpt_id
@@ -123,13 +99,54 @@ if __name__ == "__main__":
         ckpt_path = version + ckpt_id
         ckpt_path = os.path.join(ckpt_base, ckpt_path)
 
+    print(f'[Info] Using checkpoint path: {ckpt_path}')
+
     config = dotdict(json.load(open(os.path.join(ckpt_path, 'args.json'))))
     config.model_config = dotdict(config.model_config)
     config.data_config = dotdict(config.data_config)
 
     config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config.batch_size = 1
-    print(ckpt_path)
+
+    model_TST = model_init(config.model, config.model_config, config).to(config.device)
+    # load the model
+    ckpt = glob.glob(os.path.join(ckpt_path, 'checkpoint*'))[0]
+    checkpoint = torch.load(ckpt)
+
+    # Fix the state_dict by removing the "model." prefix
+    if ckpt.endswith('.ckpt'):
+        state_dict = {key.replace("model.model.", "model."): value for key, value in checkpoint['state_dict'].items()}
+    else:
+        state_dict = checkpoint
+
+    model_TST.load_state_dict(state_dict) 
+    model_TST.eval()
+
+    print(f'[Info] Using model: {config.model}')
+
+    ################################
+
+    TG_model = 'TGTSF'
+    ckpt_id = f'_{TG_model}_{data}_{output_len}_{input_len}'
+
+    if version == 'latest':
+        # find all the path that end with the ckpt_id
+        ckpt_paths = [os.path.join(ckpt_base, i) for i in os.listdir(ckpt_base) if ckpt_id in i]
+        # the path is in format of yyyy-mm-dd{ckpt_id}, now find the latest one
+        ckpt_paths.sort()
+        ckpt_path = ckpt_paths[-1]
+    else:
+        ckpt_path = version + ckpt_id
+        ckpt_path = os.path.join(ckpt_base, ckpt_path)
+
+    print(f'[Info] Using checkpoint path: {ckpt_path}')
+
+    config = dotdict(json.load(open(os.path.join(ckpt_path, 'args.json'))))
+    config.model_config = dotdict(config.model_config)
+    config.data_config = dotdict(config.data_config)
+
+    config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    config.batch_size = 1
 
     model_TGTSF = model_init(config.model, config.model_config, config).to(config.device)
     # load the model
@@ -138,7 +155,6 @@ if __name__ == "__main__":
 
     # Fix the state_dict by removing the "model." prefix
     if ckpt.endswith('.ckpt'):
-        
         state_dict = {key.replace("model.", ""): value for key, value in checkpoint['state_dict'].items()}
     else:
         state_dict = checkpoint
@@ -147,12 +163,21 @@ if __name__ == "__main__":
     model_TGTSF.load_state_dict(state_dict)
     model_TGTSF.eval()
 
+    print(f'[Info] Using model: {config.model}')
+
     id_data = Data_Provider(config)
     fullsets = id_data.get_test('set')
-    print(fullsets.keys())
+    print(f'[Info] fullset keys: {fullsets.keys()}')
+
+    if output_len == 24:
+        ahead = 'day'
+    elif output_len == 168:
+        ahead = 'week'
+    else:
+        ahead = 'none'
 
     try:
-        existing = os.path.join(f'./{data}_sample_{ahead}.json')
+        existing = os.path.join(args.sample_root, f'{data}_sample_{ahead}.json')
         existing = json.load(open(existing))
         existing = existing.keys()
     except:
@@ -170,7 +195,7 @@ if __name__ == "__main__":
             continue
         dataset = fullsets[i]
         print(i)
-        lossdf = get_lossdf(dataset, model_TST, model_TGTSF, stride, config)
+        lossdf = get_lossdf(dataset, model_TST, model_TGTSF, output_len, config)
         lossdf.to_csv(os.path.join(ckpt_path, f'lossdf_{i}.csv'))
         try:
             samples = get_reasoning_samples(lossdf)
@@ -179,5 +204,5 @@ if __name__ == "__main__":
             continue
         print(samples)
         sample_dict[i] = samples
-        with open(os.path.join(f'./{data}_sample_{ahead}.json'), 'w') as f:
+        with open(os.path.join(args.sample_root, f'{data}_sample_{ahead}.json'), 'w') as f:
             json.dump(sample_dict, f)
