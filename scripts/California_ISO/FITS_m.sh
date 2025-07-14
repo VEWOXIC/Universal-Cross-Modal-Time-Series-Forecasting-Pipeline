@@ -8,6 +8,6 @@ python -u run_lightning.py \
     --input_len 4320 \
     --output_len $output_len \
     --batch_size 256 \
-    --gpu '3' | tee -a ./logs/Linear.log
+    --device '3' | tee -a ./logs/Linear.log
     
 done
