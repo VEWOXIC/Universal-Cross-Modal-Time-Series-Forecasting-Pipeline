@@ -7,7 +7,7 @@ python -u run_lightning.py \
     --data_config './data_configs/Jena_Atmospheric_Physics/fullJAP.yaml' \
     --input_len 2160 \
     --output_len $output_len \
-    --batch_size 512 \
+    --batch_size 256 \
     --gpu '3' | tee -a ./logs/Linear.log
     
 done

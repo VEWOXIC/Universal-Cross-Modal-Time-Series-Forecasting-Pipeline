@@ -7,7 +7,7 @@ python -u run_lightning.py \
     --data_config './data_configs/NYC_traffic_speed/fullNYCTS.yaml' \
     --input_len 4320 \
     --output_len $output_len \
-    --batch_size 512 \
+    --batch_size 256 \
     --gpu '3' | tee -a ./logs/Linear.log
     
 done
