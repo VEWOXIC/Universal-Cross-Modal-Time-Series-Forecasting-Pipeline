@@ -18,24 +18,36 @@ def get_reasoning_samples(lossdf):
     lossdf_ok = lossdf[lossdf.loss_mutual > -10]
     lossdf_pos = lossdf_ok[lossdf_ok.loss_mutual > 0]
     lossdf_neg = lossdf_ok[lossdf_ok.loss_mutual < 0]
+    
     prob_pos = lossdf_pos['loss_mutual']
     prob_neg = lossdf_neg['loss_mutual'].abs()
+    
     sample_num_pos = int(len(lossdf_pos) * 0.1)
     sample_num_neg = int(len(lossdf_neg) * 0.1)
-
-
-    while True:
-
-        weights_pos = prob_pos.tolist()
-        weights_neg = prob_neg.tolist()
-
-        # Use random.choices for sampling
-        sample_pos = random.choices(lossdf_pos.index.tolist(), weights=weights_pos, k=sample_num_pos)
-        sample_neg = random.choices(lossdf_neg.index.tolist(), weights=weights_neg, k=sample_num_neg)
-        break
-
-    samples = np.concatenate((sample_pos, sample_neg))
-    return samples.tolist()
+    
+    sample_num_pos = min(sample_num_pos, len(lossdf_pos))
+    sample_num_neg = min(sample_num_neg, len(lossdf_neg))
+    
+    if sample_num_pos > 0:
+        sample_pos = lossdf_pos.sample(
+            n=sample_num_pos, 
+            weights='loss_mutual', 
+            replace=False  # Without replacement
+        ).index.tolist()
+    else:
+        sample_pos = []
+    
+    if sample_num_neg > 0:
+        sample_neg = lossdf_neg.sample(
+            n=sample_num_neg, 
+            weights=prob_neg, 
+            replace=False  # Without replacement
+        ).index.tolist()
+    else:
+        sample_neg = []
+    
+    samples = sample_pos + sample_neg
+    return samples
 
 def get_lossdf(dataset, model_TST, model_TGTSF, stride, config):
     losslist = {}
@@ -76,6 +88,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_len', type=int, default=24, help="Prediction horizon (e.g., 168)")
     parser.add_argument('--type', type=str, default="ckpt", help="Type of model checkpoint (e.g., 'ckpt')")
     parser.add_argument('--sample_root', type=str, default='./sample_indexes', help="Root directory for saving samples")
+    parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
     # parser.add_argument('--ahead', type=str, required=True, help="Prediction horizon (e.g., 'day')")
     args = parser.parse_args()
 
@@ -85,8 +98,8 @@ if __name__ == "__main__":
     input_len = args.input_len
     output_len = args.output_len
     checkpoint_type = args.type
+    ckpt_base = args.checkpoint_base
 
-    ckpt_base = './checkpoints/'
     ckpt_id = f'_{baseline_model}_{data}_{output_len}_{input_len}'
 
     if version == 'latest':
@@ -191,18 +204,17 @@ if __name__ == "__main__":
     sample_dict = {}
     for i in fullsets.keys():
         if i in existing:
-            
             continue
         dataset = fullsets[i]
-        print(i)
+        print(f"[Info] handling {i}")
         lossdf = get_lossdf(dataset, model_TST, model_TGTSF, output_len, config)
         lossdf.to_csv(os.path.join(ckpt_path, f'lossdf_{i}.csv'))
         try:
             samples = get_reasoning_samples(lossdf)
         except:
-            print(f'error on {i}')
+            print(f'[Error] on {i}')
             continue
-        print(samples)
+        print(f"[Info] generated: {samples}")
         sample_dict[i] = samples
         with open(os.path.join(args.sample_root, f'{data}_sample_{ahead}.json'), 'w') as f:
             json.dump(sample_dict, f)
