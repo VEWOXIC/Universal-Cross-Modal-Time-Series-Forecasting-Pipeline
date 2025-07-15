@@ -1,3 +1,3 @@
 model_name: amazon/chronos-t5-base
-num_samples: 2
+num_samples: 10
 task: TSF

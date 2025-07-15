@@ -42,8 +42,10 @@ class Model(nn.Module):
             device_map=self.device,
             torch_dtype=torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float32,
         )
-        self.pipeline.model.to(self.device)
         print(f"[ info ] {self.model_name} loaded successfully on device {next(self.pipeline.model.parameters()).device}.")
+        
+        # Set to evaluation mode for inference
+        self.pipeline.model.eval()
 
     def move_to_device(self, seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel, device):
         # Chronos does not need to move data to device
@@ -104,9 +106,7 @@ class Model(nn.Module):
         
         # --- Output Formatting ---
         # Take the median across the generated samples for a robust point forecast.
-        # The shape becomes (batch_size, prediction_length).
+        # shape: [Batch, Pred_len]
         point_forecast = torch.median(forecast, dim=1).values
         
-        # The evaluation framework expects the output to have a feature dimension.
-        # We unsqueeze the last dimension to get (batch_size, prediction_length, 1).
-        return point_forecast.unsqueeze(-1)
+        return point_forecast

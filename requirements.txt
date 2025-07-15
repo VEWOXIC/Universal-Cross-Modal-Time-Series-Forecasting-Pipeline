@@ -16,7 +16,7 @@ fastparquet
 # vllm==0.7.2 # 0.8.3 provides reasoning compatability but consumes more memory
 fschat[model_worker,webui]
 pandas
-transformers
+transformers==4.40.1
 # flash-attn
 openai
 # flashinfer-python
