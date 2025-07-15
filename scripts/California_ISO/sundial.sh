@@ -7,7 +7,7 @@ python -u fm_run.py \
     --data_config './data_configs/California_ISO/fullCAISO_H.yaml' \
     --input_len 360 \
     --output_len $output_len \
-    --batch_size 256 \
+    --batch_size 1024 \
     --gpu 3 | tee -a ./logs/FM.log
     
 done
