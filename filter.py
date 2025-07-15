@@ -207,7 +207,7 @@ if __name__ == "__main__":
             continue
         dataset = fullsets[i]
         print(f"[Info] handling {i}")
-        lossdf = get_lossdf(dataset, model_TST, model_TGTSF, output_len, config)
+        lossdf = get_lossdf(dataset, model_TST, model_TGTSF, int(output_len / 2), config)
         lossdf.to_csv(os.path.join(ckpt_path, f'lossdf_{i}.csv'))
         try:
             samples = get_reasoning_samples(lossdf)
