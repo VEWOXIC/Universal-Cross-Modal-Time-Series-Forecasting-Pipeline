@@ -60,10 +60,6 @@ class Experiment(Exp_Basic):
         # output = output[:, -self.args.output_len:, :]
         gt = batch_y
 
-        if hasattr(self.model, 'scaler'):
-            # scaler is used to inverse transform the output and ground truth
-            output, gt = self.model.scaler(output, gt)
-
         return output, gt
 
     def test(self, savepath):

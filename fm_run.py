@@ -19,9 +19,7 @@ parser.add_argument('--model_config', type=str, default='./model_configs/FM/Chro
 parser.add_argument('--data', type=str, default='solar', help='Dataset name for reference (actual data location is specified in data_config)')
 parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='Directory to save model checkpoints and training artifacts')
 parser.add_argument('--data_config', type=str, default='./data_configs/data_profile.yaml', help='Path to data configuration YAML file specifying dataset location, format, and preprocessing')
-############# no scale for FM !!!! #############
-parser.add_argument('--scale', type=bool, default=False, help='Whether to standardize the data (zero mean, unit variance)')
-################################################
+parser.add_argument('--scale', type=bool, default=True, help='Whether to standardize the data (zero mean, unit variance)')
 parser.add_argument('--disable_buffer', default=False, action='store_true', help='Disable data buffer to reduce memory usage (may slow down training)')
 parser.add_argument('--preload_hetero', default=False, action='store_true', help='Preload heterogeneous data for faster access (increases RAM usage but reduces disk I/O)')
 parser.add_argument('--prefetch_factor', type=int, default=2, help='Number of batches to prefetch per worker in dataloader (higher values use more memory)')
