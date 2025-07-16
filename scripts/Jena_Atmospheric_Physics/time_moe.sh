@@ -7,7 +7,7 @@ python -u fm_run.py \
     --data_config './data_configs/Jena_Atmospheric_Physics/fullJAP_H.yaml' \
     --input_len 360 \
     --output_len $output_len \
-    --batch_size 256 \
-    --gpu 3 | tee -a ./logs/FM.log
+    --batch_size 200 \
+    --gpu 1 | tee -a ./logs/FM.log
     
 done
