@@ -1,4 +1,4 @@
-for output_len in 24 168 336 720
+for output_len in 72 120
 do
 python -u fm_run.py \
     --model 'Sundial' \

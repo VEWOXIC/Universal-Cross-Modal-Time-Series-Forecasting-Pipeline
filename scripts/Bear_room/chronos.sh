@@ -1,4 +1,4 @@
-for output_len in 24 168 336 720
+for output_len in 24 72 120 168
 do
 python -u fm_run.py \
     --model 'Chronos' \
