@@ -89,7 +89,7 @@ def visualize_main(args):
     prediction_np = prediction_tensor.cpu().numpy().squeeze()
 
     plot_prediction(indate_dt, input_np, outdate_dt, output_np, prediction_np, args.data_id, args.sample_id, 
-                    os.path.join(args.img_path, args.task, f"{args.ckpt_id}_{args.data_id}_{args.sample_id}.png"))
+                    os.path.join(args.img_path, args.task, f"{args.ckpt_id}_subset-{args.data_id}_sample-{args.sample_id}.png"))
 
 
 if __name__ == '__main__':

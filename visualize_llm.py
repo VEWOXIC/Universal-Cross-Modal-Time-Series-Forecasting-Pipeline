@@ -68,7 +68,7 @@ def visualize_main(args):
     outdate_dt = pd.to_datetime([str(i) for i in y_time], format='%Y%m%d%H%M%S')
 
     plot_prediction(indate_dt, input_np, outdate_dt, output_np, prediction_np, args.data_id, args.date_start, 
-                    os.path.join(args.img_path, f"{args.ckpt_id}_{args.data_id}_{args.date_start}.png"))
+                    os.path.join(args.img_path, args.task, f"{args.ckpt_id}_subset-{args.data_id}_date-{args.date_start}.png"))
 
 
 if __name__ == '__main__':
@@ -82,7 +82,8 @@ if __name__ == '__main__':
     parser.add_argument('--ckpt_id', type=str, default='06-30-1449_deepseek-v3-250324_solar_day_ahead', help='Checkpoint folder ID')
     parser.add_argument('--data_id', type=str, default='314106', help='Data ID to display in the plot title')
     parser.add_argument('--date_start', type=int, default=20250204000000, help='The sample date to display in the plot title')
-    parser.add_argument('--img_path', type=str, default='./imgs/LLMTSF', help='Path to save the prediction visualization image')
+    parser.add_argument('--img_path', type=str, default='./imgs', help='Path to save the prediction visualization image')
+    parser.add_argument('--task', type=str, default='Reasoning', choices=['Reasoning'], help='Task type: Reasoning')
 
     args = parser.parse_args()
     
