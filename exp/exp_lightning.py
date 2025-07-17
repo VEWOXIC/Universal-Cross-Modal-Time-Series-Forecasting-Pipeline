@@ -349,6 +349,10 @@ def train_lightning_model(args, setting):
         print(info_results)
         with open(os.path.join(checkpoint_path, 'test_results.json'), 'w') as f:
             json.dump(info_results, f)
+        with open(os.path.join(checkpoint_path, 'test_results_average.json'), 'w') as f:
+            # average loss of all subsets
+            json.dump({
+                'average loss of all subsets': np.mean(list(info_results.values()))})
     if args.test:
         return
     
