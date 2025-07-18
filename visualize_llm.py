@@ -6,7 +6,7 @@ import argparse
 import matplotlib.pyplot as plt
 
 
-def plot_prediction(indate, input_data, outdate, output_data, prediction_data, data_id, date_start, img_path):
+def plot_prediction(indate, input_data, outdate, output_data, prediction_data, dataset_name, model_name, data_id, date_start, img_path):
     """
     figure the prediction visualization
     """
@@ -14,7 +14,7 @@ def plot_prediction(indate, input_data, outdate, output_data, prediction_data, d
     plt.plot(indate, input_data, label='Input History')
     plt.plot(outdate, output_data, label='Ground Truth')
     plt.plot(outdate, prediction_data, label='Prediction', linestyle='--')
-    plt.title(f'Prediction Visualization for ID: {data_id}, Sample: {date_start}')
+    plt.title(f'Prediction Visualization for {dataset_name}: {data_id}, Model: {model_name}, Sample: {date_start}')
     plt.xlabel('Timestamp')
     plt.ylabel('Value')
     plt.legend()
@@ -67,8 +67,16 @@ def visualize_main(args):
     indate_dt = pd.to_datetime([str(i) for i in x_time], format='%Y%m%d%H%M%S')
     outdate_dt = pd.to_datetime([str(i) for i in y_time], format='%Y%m%d%H%M%S')
 
-    plot_prediction(indate_dt, input_np, outdate_dt, output_np, prediction_np, args.data_id, args.date_start, 
-                    os.path.join(args.img_path, args.task, f"{args.ckpt_id}_subset-{args.data_id}_date-{args.date_start}.png"))
+    plot_prediction(indate=indate_dt,
+                    input_data=input_np,
+                    outdate=outdate_dt,
+                    output_data=output_np,
+                    prediction_data=prediction_np,
+                    dataset_name=args.data,
+                    model_name=args.model,
+                    data_id=args.data_id,
+                    date_start=args.date_start,
+                    img_path=os.path.join(args.img_path, args.task, f"{args.ckpt_id}_subset-{args.data_id}_date-{args.date_start}.png"))
 
 
 if __name__ == '__main__':
@@ -84,6 +92,9 @@ if __name__ == '__main__':
     parser.add_argument('--date_start', type=int, default=20250204000000, help='The sample date to display in the plot title')
     parser.add_argument('--img_path', type=str, default='./imgs', help='Path to save the prediction visualization image')
     parser.add_argument('--task', type=str, default='Reasoning', choices=['Reasoning'], help='Task type: Reasoning')
+
+    parser.add_argument('--data', type=str, default='Solar', help='Dataset name')
+    parser.add_argument('--model', type=str, default='Qwen 2.5B', help='Model name (e.g., DeepSeek R1)')
 
     args = parser.parse_args()
     

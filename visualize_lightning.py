@@ -13,13 +13,13 @@ from data_provider.data_factory import Data_Provider
 from utils.tools import dotdict
 
 
-def plot_prediction(indate, input_data, outdate, output_data, prediction_data, subset_name, sample_id, img_path):
+def plot_prediction(indate, input_data, outdate, output_data, prediction_data, dataset_name, model_name, subset_name, sample_id, img_path):
     
     plt.figure(figsize=(15, 7), dpi=300)
     plt.plot(indate, input_data, label='Input History')
     plt.plot(outdate, output_data, label='Ground Truth')
     plt.plot(outdate, prediction_data, label='Prediction', linestyle='--')
-    plt.title(f'Prediction Visualization for Subset: {subset_name}, Sample: {sample_id}')
+    plt.title(f'Prediction Visualization for {dataset_name}: {subset_name}, Model: {model_name}, Sample: {sample_id}')
     plt.xlabel('Timestamp')
     plt.ylabel('Value')
     plt.legend()
@@ -76,6 +76,8 @@ def run_visualization(args, model, config, fullsets):
         outdate=outdate_dt,
         output_data=output_np,
         prediction_data=prediction_np,
+        dataset_name=args.data,
+        model_name=args.model,
         subset_name=subset_name,
         sample_id=sample_id,
         img_path=save_path
@@ -86,14 +88,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Time Series Forecasting Model Testing and Visualization")
     
     parser.add_argument('--data', type=str, default="California_ISO", help="Dataset name")
-    parser.add_argument('--model', type=str, default="TGTSF", help="Model name (e.g., 'PatchTST')")
+    parser.add_argument('--model', type=str, default="PatchTST", help="Model name (e.g., 'PatchTST')")
     parser.add_argument('--version', type=str, default="latest", help="Model version (e.g., 'latest' or a specific date like '2023-10-26')")
     parser.add_argument('--input_len', type=int, default=360, help="Input length")
-    parser.add_argument('--output_len', type=int, default=24, help="Prediction horizon")
+    parser.add_argument('--output_len', type=int, default=720, help="Prediction horizon")
     parser.add_argument('--type', type=str, default="ckpt", help="Type of model checkpoint")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
     parser.add_argument('--device', type=str, default="cuda:4" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
-    parser.add_argument('--task', type=str, default='TGTSF', choices=['TSF', 'TGTSF'], help="Task type: TSF or TGTSF")
+    parser.add_argument('--task', type=str, default='TSF', choices=['TSF', 'TGTSF'], help="Task type: TSF or TGTSF")
     
     parser.add_argument('--vis_subset', type=str, default='co2_Biogas_CO2', help="Name of the data subset to visualize from (e.g., 'test', 'val').")
     parser.add_argument('--vis_sample_id', type=int, default=0, help="The index of the sample to visualize within the subset.")
@@ -155,7 +157,10 @@ if __name__ == "__main__":
 
 
     if 'state_dict' in checkpoint:
-        state_dict = {key.replace("model.", ""): value for key, value in checkpoint['state_dict'].items()}
+        if args.task == 'TGTSF':
+            state_dict = {key.replace("model.", ""): value for key, value in checkpoint['state_dict'].items()}
+        elif args.task == 'TSF':
+            state_dict = {key.replace("model.model.", "model."): value for key, value in checkpoint['state_dict'].items() if 'news' not in key}
     else:
         state_dict = checkpoint
 
