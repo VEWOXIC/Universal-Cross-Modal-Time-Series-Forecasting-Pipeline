@@ -1,4 +1,4 @@
-for output_len in 288 2016
+for output_len in 2016
 do
 python -u fm_run.py \
     --model 'Sundial' \
@@ -7,7 +7,7 @@ python -u fm_run.py \
     --data_config './data_configs/California_ISO/fullCAISO.yaml' \
     --input_len 4320 \
     --output_len $output_len \
-    --batch_size 64 \
-    --gpu 3 | tee -a ./logs/FM.log
+    --batch_size 128 \
+    --gpu 4 | tee -a ./logs/FM.log
     
 done

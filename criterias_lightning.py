@@ -10,18 +10,23 @@ from tqdm import tqdm
 import argparse, glob
 
 
-def run_test(dataset, model, config):
+def run_test(dataset, model, config, indexes):
     total_mse, total_mae = 0.0, 0.0
     num_samples = 0
 
+    if indexes is not None:
+        dataset = [dataset[i] for i in indexes]
+    
     for sample_num in tqdm(range(len(dataset)), desc="Running tests"):
         with torch.no_grad():
-            batch_x, batch_y, _, _, _, _, _, _, _, _ = dataset[sample_num]
+            batch_x, batch_y, _, _, _, y_hetero, _, _, _, hetero_channel = dataset[sample_num]
 
             batch_x = torch.tensor(batch_x).unsqueeze(0).float().to(config.device)
             batch_y = torch.tensor(batch_y).unsqueeze(0).float().to(config.device)
+            y_hetero = torch.tensor(y_hetero).unsqueeze(0).float().to(config.device)
+            hetero_channel = torch.tensor(hetero_channel).unsqueeze(0).float().to(config.device)
 
-            prediction = model(x=batch_x)
+            prediction = model(x=batch_x) if config.task == 'TSF' else model(x=batch_x, news=y_hetero, channel_description=hetero_channel)
             prediction = prediction[:, -config.output_len:, :]
 
             mse_loss = torch.nn.MSELoss()(prediction, batch_y)
@@ -41,6 +46,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Time Series Forecasting Model Testing")
     parser.add_argument('--data', type=str, default="NYC_traffic_speed", help="Dataset name")
     parser.add_argument('--baseline_model', type=str, default="DLinear", help="Model name (e.g., 'PatchTST')")
+    parser.add_argument('--task', type=str, default="TSF", choices=["TSF", "TGTSF"], help="Task type")
     parser.add_argument('--version', type=str, default="latest", help="Model version (e.g., 'latest' or a specific date like '2023-10-26')", choices=['latest', 'newest'])
     parser.add_argument('--input_len', type=int, default=4320, help="Input length")
     parser.add_argument('--output_len', type=int, default=8640, help="Prediction horizon")
@@ -48,6 +54,8 @@ if __name__ == "__main__":
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
     parser.add_argument('--batch_size', type=int, default=4096, help="Batch size used during training (for config)")
     parser.add_argument('--device', type=str, default="cuda:4" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
+    parser.add_argument('--filtered_samples', type=str, default=None, help='filtered samples for testing')
+    
     args = parser.parse_args()
 
     data = args.data
@@ -83,12 +91,14 @@ if __name__ == "__main__":
     config.data_config = dotdict(config.data_config)
     
     config.device = torch.device(args.device)
-    config.batch_size = args.batch_size
+    config.batch_size = args.batch_size if args.filtered_samples is None else 1  # Remain batch size = 1 for filtered testing
+
+    config.task = args.task
 
     print(f"[Info] Running on device: {config.device}")
 
 
-    model_TST = model_init(config.model, config.model_config, config).to(config.device)
+    model = model_init(config.model, config.model_config, config).to(config.device)
     
     ckpt_file = glob.glob(os.path.join(ckpt_path, 'checkpoint*'))
     if not ckpt_file:
@@ -104,8 +114,8 @@ if __name__ == "__main__":
     else:
         state_dict = checkpoint
 
-    model_TST.load_state_dict(state_dict)
-    model_TST.eval()
+    model.load_state_dict(state_dict)
+    model.eval()
 
     print(f'[Info] Successfully loaded model: {config.model}')
 
@@ -115,12 +125,21 @@ if __name__ == "__main__":
     print(f'[Info] Found {len(fullsets)} datasets to test: {list(fullsets.keys())}')
 
     all_results = {}
+
+    if args.filtered_samples is not None:
+        filtered_samples = json.load(open(args.filtered_samples))
+        print(f"[Info] Using filtered samples from: {args.filtered_samples}")
     
 
     for name, dataset in fullsets.items():
         print(f"\n[Info] Testing on dataset: {name}")
+
+        if args.filtered_samples is not None:
+            indexes = filtered_samples[name]
+            print(f"[Info] Using {len(indexes)} filtered samples for testing.")
+            print(f"[Info] Sample indexes: {indexes}")
         
-        mean_mse, mean_mae = run_test(dataset, model_TST, config)
+        mean_mse, mean_mae = run_test(dataset, model, config, indexes)
         
         all_results[name] = {'MSE': mean_mse, 'MAE': mean_mae}
         

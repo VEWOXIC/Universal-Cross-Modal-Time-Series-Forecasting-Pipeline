@@ -1,7 +1,7 @@
 import joblib
 
-pkl = joblib.load("./data/Germany_Renewable_Power_Grid/weather/merged_report_embedding/fast_general_formal_embeddings_2011.pkl")
+pkl = joblib.load("./data/California_ISO/static_info_embeddings_merged_except_battery.pkl")
 
 print(pkl.keys())
 
-print(pkl['201101010000'].shape)
+print(pkl["channel_info"]["merged_data"].shape)

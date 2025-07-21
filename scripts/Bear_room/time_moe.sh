@@ -1,4 +1,4 @@
-for output_len in 72 120 168
+for output_len in 24 72 120 168
 do
 python -u fm_run.py \
     --model 'TimeMoE' \
@@ -8,6 +8,6 @@ python -u fm_run.py \
     --input_len 360 \
     --output_len $output_len \
     --batch_size 256 \
-    --gpu 0 | tee -a ./logs/FM.log
+    --gpu 3 | tee -a ./logs/FM.log
     
 done

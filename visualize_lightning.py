@@ -13,13 +13,13 @@ from data_provider.data_factory import Data_Provider
 from utils.tools import dotdict
 
 
-def plot_prediction(indate, input_data, outdate, output_data, prediction_data, dataset_name, model_name, subset_name, sample_id, img_path):
+def plot_prediction(indate, input_data, outdate, output_data, prediction_data, dataset_name, model_name, subset_name, sample_id, channel_id, img_path):
     
     plt.figure(figsize=(15, 7), dpi=300)
     plt.plot(indate, input_data, label='Input History')
     plt.plot(outdate, output_data, label='Ground Truth')
     plt.plot(outdate, prediction_data, label='Prediction', linestyle='--')
-    plt.title(f'Prediction Visualization for {dataset_name}: {subset_name}, Model: {model_name}, Sample: {sample_id}')
+    plt.title(f'Prediction Visualization for {dataset_name}: {subset_name}: channel {channel_id}, Model: {model_name}, Sample: {sample_id}')
     plt.xlabel('Timestamp')
     plt.ylabel('Value')
     plt.legend()
@@ -70,6 +70,10 @@ def run_visualization(args, model, config, fullsets):
     
     save_path = os.path.join(args.vis_save_path, args.task, f"{args.fig_name}_subset-{subset_name}_sample-{sample_id}.png")
 
+    input_np = input_np if args.channel_id == 'all' else input_np[:, int(args.channel_id)]
+    output_np = output_np if args.channel_id == 'all' else output_np[:, int(args.channel_id)]
+    prediction_np = prediction_np if args.channel_id == 'all' else prediction_np[:, int(args.channel_id)]
+
     plot_prediction(
         indate=indate_dt,
         input_data=input_np,
@@ -80,6 +84,7 @@ def run_visualization(args, model, config, fullsets):
         model_name=args.model,
         subset_name=subset_name,
         sample_id=sample_id,
+        channel_id=args.channel_id,
         img_path=save_path
     )
 
@@ -88,17 +93,19 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Time Series Forecasting Model Testing and Visualization")
     
     parser.add_argument('--data', type=str, default="California_ISO", help="Dataset name")
-    parser.add_argument('--model', type=str, default="PatchTST", help="Model name (e.g., 'PatchTST')")
+    parser.add_argument('--model', type=str, default="TGTSF", help="Model name (e.g., 'PatchTST')")
     parser.add_argument('--version', type=str, default="latest", help="Model version (e.g., 'latest' or a specific date like '2023-10-26')")
     parser.add_argument('--input_len', type=int, default=360, help="Input length")
-    parser.add_argument('--output_len', type=int, default=720, help="Prediction horizon")
+    parser.add_argument('--output_len', type=int, default=168, help="Prediction horizon")
     parser.add_argument('--type', type=str, default="ckpt", help="Type of model checkpoint")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
+    parser.add_argument('--checkpoint_file', type=str, default="last", choices=["last", "best"], help="Specific checkpoint file to load (optional)")
     parser.add_argument('--device', type=str, default="cuda:4" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
-    parser.add_argument('--task', type=str, default='TSF', choices=['TSF', 'TGTSF'], help="Task type: TSF or TGTSF")
+    parser.add_argument('--task', type=str, default='TGTSF', choices=['TSF', 'TGTSF'], help="Task type: TSF or TGTSF")
     
-    parser.add_argument('--vis_subset', type=str, default='co2_Biogas_CO2', help="Name of the data subset to visualize from (e.g., 'test', 'val').")
-    parser.add_argument('--vis_sample_id', type=int, default=0, help="The index of the sample to visualize within the subset.")
+    parser.add_argument('--channel_id', type=str, default="all", help="'all' for all channels, or a specific channel number to visualize")
+    parser.add_argument('--vis_subset', type=str, default='demand_Current_demand', help="Name of the data subset to visualize from (e.g., 'test', 'val').")
+    parser.add_argument('--vis_sample_id', type=int, default=100, help="The index of the sample to visualize within the subset.")
     parser.add_argument('--vis_save_path', type=str, default='./imgs', help="Directory to save visualization images.")
     parser.add_argument('--fig_name', type=str, default='fig.png', help="Name of the figure file to save.")
 
@@ -146,7 +153,8 @@ if __name__ == "__main__":
 
     model = model_init(config.model, config.model_config, config).to(config.device)
     
-    ckpt_file_pattern = os.path.join(ckpt_path, 'checkpoint*')
+    ckpt_file_pattern = os.path.join(ckpt_path, 'checkpoint*') if args.checkpoint_file == "best" else os.path.join(ckpt_path, 'last*')
+    
     ckpt_files = glob.glob(ckpt_file_pattern)
     if not ckpt_files:
         raise FileNotFoundError(f"Checkpoint file not found in {ckpt_path} with pattern {ckpt_file_pattern}")

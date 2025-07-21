@@ -10,7 +10,7 @@ from data_provider.data_factory import Data_Provider
 from utils.tools import dotdict
 
 
-def plot_prediction(indate, input_data, outdate, output_data, prediction_data, data_id, dataset_name, model_name, sample_id, img_path):
+def plot_prediction(indate, input_data, outdate, output_data, prediction_data, data_id, dataset_name, model_name, sample_id, channel_id, img_path):
     """
     figure the prediction visualization
     """
@@ -18,7 +18,7 @@ def plot_prediction(indate, input_data, outdate, output_data, prediction_data, d
     plt.plot(indate, input_data, label='Input History')
     plt.plot(outdate, output_data, label='Ground Truth')
     plt.plot(outdate, prediction_data, label='Prediction', linestyle='--')
-    plt.title(f'Prediction Visualization for {dataset_name}: {data_id}, Model: {model_name}, Sample: {sample_id}')
+    plt.title(f'Prediction Visualization for {dataset_name}: {data_id}: channel {channel_id}, Model: {model_name}, Sample: {sample_id}')
     plt.xlabel('Timestamp')
     plt.ylabel('Value')
     plt.legend()
@@ -88,14 +88,18 @@ def visualize_main(args):
     output_np = output_tensor.cpu().numpy().squeeze()
     prediction_np = prediction_tensor.cpu().numpy().squeeze()
 
+    input_np = input_np if args.channel_id == 'all' else input_np[:, int(args.channel_id)]
+    output_np = output_np if args.channel_id == 'all' else output_np[:, int(args.channel_id)]
+    prediction_np = prediction_np if args.channel_id == 'all' else prediction_np[:, int(args.channel_id)]
+
     plot_prediction(indate=indate_dt,
                     input_data=input_np,
                     outdate=outdate_dt,
                     output_data=output_np,
                     prediction_data=prediction_np,
-                    
                     data_id=args.data_id,
                     sample_id=args.sample_id, 
+                    channel_id=args.channel_id,
                     img_path=os.path.join(args.img_path, args.task, f"{args.ckpt_id}_subset-{args.data_id}_sample-{args.sample_id}.png"))
 
 
@@ -115,7 +119,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--data', type=str, default='ETT', help='Dataset name')
     parser.add_argument('--model', type=str, default='DLinear', help='Model name (e.g., DLinear)')
-
+    parser.add_argument('--channel_id', type=str, default='all', help="'all' for all channels, or a specific channel number to visualize")
+    
     args = parser.parse_args()
     
     visualize_main(args)
