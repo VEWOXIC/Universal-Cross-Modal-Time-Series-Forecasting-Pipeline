@@ -1,6 +1,6 @@
 for output_len in 720
 do
-python -u fm_run.py \
+python -u run_fm.py \
     --model 'TimeMoE' \
     --model_config 'model_configs/FM/TimeMoE.yaml' \
     --data Canada_photovoltaics_plants \
@@ -14,7 +14,7 @@ done
 
 for output_len in 720
 do
-python -u fm_run.py \
+python -u run_fm.py \
     --model 'TimeMoE' \
     --model_config 'model_configs/FM/TimeMoE.yaml' \
     --data Jena_Atmospheric_Physics \

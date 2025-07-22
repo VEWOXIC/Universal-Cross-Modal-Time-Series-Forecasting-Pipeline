@@ -1,6 +1,6 @@
 for output_len in 168 336 720
 do
-python -u fm_run.py \
+python -u run_fm.py \
     --model 'TimeMoE' \
     --model_config 'model_configs/FM/TimeMoE.yaml' \
     --data Germany_Renewable_Power_Grid \

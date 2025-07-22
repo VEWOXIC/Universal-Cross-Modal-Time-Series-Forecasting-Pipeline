@@ -110,7 +110,11 @@ if __name__ == "__main__":
 
 
     if ckpt_file.endswith('.ckpt'):
-        state_dict = {key.replace("model.", ""): value for key, value in checkpoint['state_dict'].items()}
+        if args.baseline_model == "PatchTST":
+            state_dict = {key.replace("model.model.", "model."): value for key, value in checkpoint['state_dict'].items()} 
+        else:
+            state_dict = {key.replace("model.", ""): value for key, value in checkpoint['state_dict'].items()} 
+
     else:
         state_dict = checkpoint
 
@@ -141,9 +145,11 @@ if __name__ == "__main__":
         
         mean_mse, mean_mae = run_test(dataset, model, config, indexes)
         
-        all_results[name] = {'MSE': mean_mse, 'MAE': mean_mae}
-        
-        print(f"-> Results for '{name}': MSE = {mean_mse:.4f}, MAE = {mean_mae:.4f}")
+        if mean_mse != 0 and mean_mae != 0:
+            all_results[name] = {'MSE': mean_mse, 'MAE': mean_mae}
+            print(f"-> Results for '{name}': MSE = {mean_mse:.7f}, MAE = {mean_mae:.7f}")
+        else:
+            print(f"-> No index found in '{name}'")
 
 
     print("\n" + "="*50)

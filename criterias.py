@@ -203,9 +203,11 @@ def main():
             
             mean_mse, mean_mae = evaluate_full_dataset(dataset, model, config, indexes)
             
-            all_results[name] = {'MSE': mean_mse, 'MAE': mean_mae}
-            
-            print(f"-> Results for '{name}': MSE = {mean_mse:.4f}, MAE = {mean_mae:.4f}")
+            if mean_mse != 0 and mean_mae != 0:
+                all_results[name] = {'MSE': mean_mse, 'MAE': mean_mae}
+                print(f"-> Results for '{name}': MSE = {mean_mse:.7f}, MAE = {mean_mae:.7f}")
+            else:
+                print(f"-> No index found in '{name}'")
 
 
         print("\n" + "="*50)

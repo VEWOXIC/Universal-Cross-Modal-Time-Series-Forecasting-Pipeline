@@ -99,7 +99,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_len', type=int, default=168, help="Prediction horizon")
     parser.add_argument('--type', type=str, default="ckpt", help="Type of model checkpoint")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
-    parser.add_argument('--checkpoint_file', type=str, default="last", choices=["last", "best"], help="Specific checkpoint file to load (optional)")
+    parser.add_argument('--checkpoint_file', type=str, default="best", choices=["last", "best"], help="Specific checkpoint file to load (optional)")
     parser.add_argument('--device', type=str, default="cuda:4" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
     parser.add_argument('--task', type=str, default='TGTSF', choices=['TSF', 'TGTSF'], help="Task type: TSF or TGTSF")
     

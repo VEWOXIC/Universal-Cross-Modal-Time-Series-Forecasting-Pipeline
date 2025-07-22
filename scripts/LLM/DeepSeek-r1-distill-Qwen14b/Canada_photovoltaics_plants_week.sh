@@ -1,4 +1,4 @@
-python -u llm_run.py \
+python -u run_llm.py \
     --model 'deepseek-ai/DeepSeek-R1-Distill-Qwen-14B' \
     --model_config './model_configs/LLM/DeepSeek-R1-Distill-Qwen-14B.yaml' \
     --data solar \

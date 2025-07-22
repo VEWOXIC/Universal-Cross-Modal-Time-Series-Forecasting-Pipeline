@@ -1,6 +1,6 @@
 for output_len in 720 336 168 24
 do
-python -u fm_run.py \
+python -u run_fm.py \
     --model 'Chronos' \
     --model_config 'model_configs/FM/Chronos.yaml' \
     --data California_ISO \

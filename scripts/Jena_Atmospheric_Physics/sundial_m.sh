@@ -1,6 +1,6 @@
 for output_len in 144 1008
 do
-python -u fm_run.py \
+python -u run_fm.py \
     --model 'Sundial' \
     --model_config 'model_configs/FM/Sundial.yaml' \
     --data Jena_Atmospheric_Physics \

@@ -1,4 +1,4 @@
-python -u llm_run.py \
+python -u run_llm.py \
     --model 'Qwen/QwQ-32B' \
     --model_config './model_configs/LLM/QwQ-32B.yaml' \
     --data solar \

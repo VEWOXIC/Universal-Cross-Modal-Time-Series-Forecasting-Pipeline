@@ -1,6 +1,6 @@
 for output_len in 24 72 120 168
 do
-python -u fm_run.py \
+python -u run_fm.py \
     --model 'Chronos' \
     --model_config 'model_configs/FM/Chronos.yaml' \
     --data Bear_room \
