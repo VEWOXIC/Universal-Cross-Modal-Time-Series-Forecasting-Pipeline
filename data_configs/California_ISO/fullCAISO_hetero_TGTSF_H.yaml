@@ -14,7 +14,7 @@ downsample: 12
 sampling_rate: 1h
 base_T: 24
 hetero_info:
-  root_path: ./data/California_ISO/weather/merged_report_embedding_selected
+  root_path: ./data/California_ISO/weather/merged_report_embedding_new
   formatter: fast_general_formal_embeddings_????.pkl
   matching: backward
   input_format: embedding

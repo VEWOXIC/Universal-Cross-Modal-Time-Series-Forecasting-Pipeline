@@ -30,6 +30,7 @@ parser.add_argument('--downsample', type=int, default=None, help='number of augm
 parser.add_argument('--ahead', type=str, default=None, help='Shorthand for forecast horizon: "day", "week", or "month" (automatically sets input_len and output_len based on sampling_rate)')
 parser.add_argument('--output_len', type=int, default=1000, help='Output/prediction sequence length (number of time steps to forecast)')
 parser.add_argument('--input_len', type=int, default=1000, help='Input sequence length (number of historical time steps used for prediction)')
+parser.add_argument('--filtered_samples', type=str, default=None, help='filtered samples for testing')
 
 # optimization
 parser.add_argument('--num_workers', type=int, default=0, help='Number of subprocesses for data loading (0 means data is loaded in the main process)')
@@ -69,10 +70,16 @@ if args.ahead is not None:
         setting = f'{current_time}_{args.model}_{args.data}_{args.output_len}_{args.input_len}'
         raise ValueError('sampling rate not found in data config, fall back to default, input output length')
 else:
-    setting = f'{current_time}_{args.model}_{args.data}_{args.output_len}_{args.input_len}'
+    if args.filtered_samples is not None:
+        setting = f'filtered_{current_time}_{args.model}_{args.data}_{args.output_len}_{args.input_len}'
+    else:
+        setting = f'{current_time}_{args.model}_{args.data}_{args.output_len}_{args.input_len}'
 
 
 args.use_gpu = True if torch.cuda.is_available() and args.use_gpu else False
+
+if args.filtered_samples is not None:  # use batch size = 1 for filtered samples
+    args.batch_size = 1
 
 # Set seeds for reproducibility
 fix_seed = 2021

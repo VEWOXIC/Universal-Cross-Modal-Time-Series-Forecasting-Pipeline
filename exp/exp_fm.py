@@ -85,25 +85,49 @@ class Experiment(Exp_Basic):
         overall_running_loss = 0.0
         overall_total_samples = 0
 
+        if self.args.filtered_samples is not None:
+            filtered_samples = json.load(open(self.args.filtered_samples))
+            print(f"[Info] Using filtered samples from: {self.args.filtered_samples}")
+
         self.model.eval()
 
         for info, loader in loaders.items():
             info_running_loss = 0.0
             info_total_samples = 0
             
+            filter_index = filtered_samples[info]
+
             with torch.inference_mode():
                 for i, iter_data in tqdm(enumerate(loader), total=len(loader), desc=f"Testing {info}"):
-                    
-                    output, gt = self._forward_step(iter_data)
-                    
-                    current_batch_size = gt.size(0)
-                    loss = criterion(output, gt)
+                    if self.args.filtered_samples is not None and i in filter_index:
 
-                    info_running_loss += loss.item() * current_batch_size
-                    info_total_samples += current_batch_size
+                        print(f"[ Info ]: Testing on sample {i}, total: {len(filter_index)}")
+
+                        output, gt = self._forward_step(iter_data)
+                        
+                        current_batch_size = gt.size(0)
+                        loss = criterion(output, gt)
+
+                        info_running_loss += loss.item() * current_batch_size
+                        info_total_samples += current_batch_size
+                        
+                        overall_running_loss += loss.item() * current_batch_size
+                        overall_total_samples += current_batch_size
                     
-                    overall_running_loss += loss.item() * current_batch_size
-                    overall_total_samples += current_batch_size
+                    elif self.args.filtered_samples is None:
+
+                        print(f"[ Info ]: Testing on all samples")
+
+                        output, gt = self._forward_step(iter_data)
+                        
+                        current_batch_size = gt.size(0)
+                        loss = criterion(output, gt)
+
+                        info_running_loss += loss.item() * current_batch_size
+                        info_total_samples += current_batch_size
+                        
+                        overall_running_loss += loss.item() * current_batch_size
+                        overall_total_samples += current_batch_size
             
             if info_total_samples > 0:
                 info_epoch_loss = info_running_loss / info_total_samples
