@@ -319,6 +319,9 @@ class Heterogeneous_Dataset(Dataset):
 
         general_info = self.static_data['general_info']
         channel_info = self.static_data['channel_info'][id]
+
+        channel_info = channel_info.reshape(1, 256) if channel_info.shape == (256,) else channel_info
+        
         downtime_prompt = self.static_data['downtime_prompt']
         # Convert downtime ranges to IntervalIndex using from_arrays
         start_times = [t[0] for t in down_time]

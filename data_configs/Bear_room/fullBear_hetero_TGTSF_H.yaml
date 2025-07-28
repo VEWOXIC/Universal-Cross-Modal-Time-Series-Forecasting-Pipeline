@@ -1,21 +1,32 @@
-root_path: ./data/Bear_room/time_series
+root_path: ./data/Bear_room/time_series_temperature
 spliter: timestamp
 # spliter: ratio
 split_info: # "7:1:2"
-  - '2020-09-03'
-  - '2020-10-03'
+  - '2020-05-03'
+  - '2020-09-01'
+  - '2020-10-01'
+  - '2020-10-29'  # Discard the data after 10-30
 timestamp_col: Timestamp
 target: all
-  # - Zone Temperature
 id_info: id_info.json
-id: all
+id: # all
+  - '104'
+  # - '105'
+  # - '107'
+  # - '108'
+  # - '110'
+  # - '114'
+  # - '120'
+  # - '121'
+  # - '122'
 formatter: '{i}.parquet'
-downsample: 12
-sampling_rate: 1h
-base_T: 24
+# downsample: 12
+sampling_rate: 5min  # 1h
+base_T: 288  # 24
 hetero_info:
-  root_path: ./data/Bear_room/hetero/weather/report_embedding/formal_report
-  formatter: wm_messages_v1.pkl
-  matching: backward
+  # root_path: ./data/Bear_room/hetero/weather/report_embedding/formal_report
+  root_path: ./data/Bear_room/hetero/room/merged_room_embedding
+  formatter: 104_temperature.pkl
+  matching: single  # backward
   input_format: embedding
-  static_path: static_info_embeddings.pkl
+  static_path: static_info_embeddings_room.pkl

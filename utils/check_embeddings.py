@@ -1,7 +1,7 @@
 import joblib
 
-pkl = joblib.load("./data/California_ISO/static_info_embeddings_merged_except_battery.pkl")
+pkl = joblib.load("./data/NYC_traffic_speed/weather/merged_report_embedding/static_info_embeddings.pkl")
 
 print(pkl.keys())
 
-print(pkl["channel_info"]["merged_data"].shape)
+print(pkl["channel_info"])
