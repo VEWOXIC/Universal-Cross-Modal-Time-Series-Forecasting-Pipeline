@@ -8,6 +8,6 @@ python -u run_fm.py \
     --input_len 360 \
     --output_len $output_len \
     --batch_size 128 \
-    --gpu 0 | tee -a ./logs/FM.log
+    --gpu 2 | tee -a ./logs/FM.log
     
 done

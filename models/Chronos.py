@@ -3,7 +3,7 @@ import torch.nn as nn
 
 # pip install chronos-forecasting
 try:
-    from chronos import ChronosPipeline
+    from chronos import BaseChronosPipeline
 except ImportError:
     raise ImportError(
         "Chronos model requires the 'chronos-forecasting' library. "
@@ -37,7 +37,7 @@ class Model(nn.Module):
 
         # Initialize the Chronos pipeline from a pre-trained model.
         # device_map="auto" will automatically place the model on the best available device (GPU or CPU).
-        self.pipeline = ChronosPipeline.from_pretrained(
+        self.pipeline = BaseChronosPipeline.from_pretrained(
             self.model_name,
             device_map=self.device,
             torch_dtype=torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float32,
@@ -100,8 +100,7 @@ class Model(nn.Module):
         # (batch_size, num_samples, prediction_length)
         forecast = self.pipeline.predict(
             context=context,
-            prediction_length=self.pred_len,
-            num_samples=self.num_samples
+            prediction_length=self.pred_len
         )
         
         # --- Output Formatting ---

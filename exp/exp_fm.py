@@ -15,8 +15,6 @@ from data_provider.data_factory import Data_Provider
 
 from utils.tools import general_move_to_device
 
-warnings.filterwarnings('ignore')
-
 
 class Experiment(Exp_Basic):
     
@@ -95,7 +93,8 @@ class Experiment(Exp_Basic):
             info_running_loss = 0.0
             info_total_samples = 0
             
-            filter_index = filtered_samples[info]
+            if self.args.filtered_samples is not None:
+                filter_index = filtered_samples[info]
 
             with torch.inference_mode():
                 for i, iter_data in tqdm(enumerate(loader), total=len(loader), desc=f"Testing {info}"):
