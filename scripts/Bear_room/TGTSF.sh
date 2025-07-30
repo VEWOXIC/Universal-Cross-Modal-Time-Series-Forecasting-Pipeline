@@ -1,4 +1,4 @@
-for output_len in 144 # 12 144 288 576
+for output_len in 576 # 24 144 288 576
 do
 python -u run_lightning.py \
     --model 'TGTSF' \

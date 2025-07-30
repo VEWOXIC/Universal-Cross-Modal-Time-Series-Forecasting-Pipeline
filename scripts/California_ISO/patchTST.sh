@@ -1,4 +1,4 @@
-for output_len in 168 336 720 24
+for output_len in 168 # 336 720 24
 do
 python -u run_lightning.py \
     --model 'PatchTST' \

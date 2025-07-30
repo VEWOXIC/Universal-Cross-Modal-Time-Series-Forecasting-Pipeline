@@ -2,10 +2,10 @@ root_path: ./data/Bear_room/time_series_temperature
 spliter: timestamp
 # spliter: ratio
 split_info: # "7:1:2"
-  - '2020-05-03'
+  - '2020-06-01'
   - '2020-09-01'
   - '2020-10-01'
-  - '2020-10-29'  # Discard the data after 10-30
+  - '2020-10-20'  # Discard the data after 10-20
 timestamp_col: Timestamp
 target: all
 id_info: id_info.json

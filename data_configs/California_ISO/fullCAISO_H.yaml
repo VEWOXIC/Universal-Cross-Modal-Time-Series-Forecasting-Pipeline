@@ -1,4 +1,4 @@
-root_path: ./data/California_ISO/time_series
+root_path: ./data/California_ISO/time_series_new
 spliter: timestamp
 # spliter: ratio
 split_info: # "7:1:2"
@@ -8,7 +8,8 @@ timestamp_col: Time
 target: all
   # - value
 id_info: id_info_except_battery.json
-id: all
+id: # all
+  - 'fuelsource_SOLAR'
 formatter: '{i}.parquet'
 downsample: 12
 sampling_rate: 1h
