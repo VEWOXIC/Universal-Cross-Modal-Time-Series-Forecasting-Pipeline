@@ -129,6 +129,7 @@ class Universal_Dataset(Dataset):
 
         if self.scale:
             self.scaler.fit(train_data)
+            print(f"[ info ] mean and std (on train) of {self.data_path}: mean {self.scaler.mean_}, std {self.scaler.var_}")
             self.data = self.scaler.transform(self.data).astype(np.float32).copy()
 
         if self.downsample is not None:
