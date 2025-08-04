@@ -1,0 +1,4 @@
+bash scripts/test_all_linear_on_samples.sh
+bash scripts/test_all_trans_on_samples.sh
+bash scripts/test_all_IATSF_on_samples.sh
+bash scripts/test_all_FM_on_samples.sh
