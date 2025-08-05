@@ -12,7 +12,7 @@ patch_len: 12
 stride: 6
 padding_patch: end
 
-revin: False
+revin: True
 affine: False
 subtract_last: False
 decomposition: False

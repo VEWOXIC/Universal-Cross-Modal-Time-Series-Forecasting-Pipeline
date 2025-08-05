@@ -6,9 +6,9 @@ split_info: # "7:1:2"
   - '2022-01-01'
 timestamp_col: Time
 target: all
-  # - value
 id_info: id_info_except_battery.json
-id: all
+id:
+  - "all_except_battery"  # "all"
 formatter: '{i}.parquet'
 downsample: 12
 sampling_rate: 1h

@@ -1,6 +1,6 @@
 for output_len in 12 144 288 576
 do
-python -u run_lightning.py \
+python -u run.py \
     --model 'FITS' \
     --model_config 'model_configs/general/FITS.yaml' \
     --data Bear_room \
