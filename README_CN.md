@@ -58,6 +58,7 @@
     - [异构数据处理](#异构数据处理)
     - [多 GPU 训练](#多-gpu-训练)
     - [检查点管理](#检查点管理)
+    - [警告⚠](#警告)
 
 ## 架构概览
 
@@ -564,3 +565,6 @@ python run.py --model DLinear --data_config data_configs/fullsolar.yaml --model_
 -   `checkpoint.pth`: 基于验证损失的最佳模型
 -   `args.json`: 用于训练的命令行参数
 -   TensorBoard 日志（对于 Lightning）: `./checkpoints/tb_logs/{setting_name}/`
+
+### 警告⚠
+- 不要用 pytorch lightning 跑 FITS 这个模型，loss 会爆炸，初步猜测可能是复数计算的通信优化仍存在问题。

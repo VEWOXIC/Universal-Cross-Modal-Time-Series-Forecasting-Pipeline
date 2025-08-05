@@ -54,6 +54,7 @@ Compatable Datasets see: https://huggingface.co/collections/VEWOXIC/wiats-weathe
     - [Heterogeneous Data Handling](#heterogeneous-data-handling)
     - [Multi-GPU Training](#multi-gpu-training)
     - [Checkpoint Management](#checkpoint-management)
+    - [Warning ! !](#warning--)
 
 ## Architecture Overview
 
@@ -566,3 +567,6 @@ Checkpoints are saved in `./checkpoints/{setting_name}/`, including:
 - `args.json`: Command-line arguments used for training
 - TensorBoard logs (for Lightning): `./checkpoints/tb_logs/{setting_name}/`
 
+### Warning ! !
+
+- Please Do not run the FITS model with pytorch lightning, as the loss will explode. It is speculated that there might still be problems with the communication optimization of complex number computation.
