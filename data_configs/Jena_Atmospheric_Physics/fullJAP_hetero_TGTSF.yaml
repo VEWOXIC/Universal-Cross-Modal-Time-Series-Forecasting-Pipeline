@@ -13,6 +13,7 @@ formatter: '{i}.parquet'
 sampling_rate: 10min
 base_T: 144
 hetero_info:
+  hetero_type: all_for_one  # all_for_one, each_subset
   root_path: ./data/Jena_Atmospheric_Physics/weather/report_embedding/formal_report
   formatter: wm_messages_v1.pkl
   matching: backward

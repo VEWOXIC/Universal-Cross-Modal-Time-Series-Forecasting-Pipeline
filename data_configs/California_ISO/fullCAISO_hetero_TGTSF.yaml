@@ -13,6 +13,7 @@ formatter: '{i}.parquet'
 sampling_rate: 5min
 base_T: 288
 hetero_info:
+  hetero_type: all_for_one  # all_for_one, each_subset
   root_path: ./data/California_ISO/weather/merged_report_embedding
   formatter: fast_general_formal_embeddings_????.pkl
   matching: backward

@@ -10,43 +10,46 @@ timestamp_col: Timestamp
 target: all
 id_info: id_info.json
 id: # all
-  - '104'
-  - '107'
-  - '108'
-  - '120'
-  - '122'
-  - '208'
-  - '216'
-  - '229'
-  - '248'
-  - '252'
-  - '261'
-  - '281'
-  - '288'
-  - '304'
-  - '317'
-  - '329'
-  - '345'
-  - '348'
-  - '362'
-  - '380'
-  - '387'
-  - '403'
-  - '417'
-  - '428'
-  - '445'
-  - '450'
-  - '461'
-  - '470'
-  - '484'
+  - "104"
+  - "105"
+  # - '104'
+  # - '107'
+  # - '108'
+  # - '120'
+  # - '122'
+  # - '208'
+  # - '216'
+  # - '229'
+  # - '248'
+  # - '252'
+  # - '261'
+  # - '281'
+  # - '288'
+  # - '304'
+  # - '317'
+  # - '329'
+  # - '345'
+  # - '348'
+  # - '362'
+  # - '380'
+  # - '387'
+  # - '403'
+  # - '417'
+  # - '428'
+  # - '445'
+  # - '450'
+  # - '461'
+  # - '470'
+  # - '484'
 formatter: '{i}.parquet'
 # downsample: 12
 sampling_rate: 5min  # 1h
 base_T: 288  # 24
 hetero_info:
+  hetero_type: each_subset  # all_for_one, each_subset
   # root_path: ./data/Bear_room/hetero/weather/report_embedding/formal_report
-  root_path: ./data/Bear_room/hetero/room/merged_room_embedding
-  formatter: merged_room_report_embeddings_1F.pkl
+  root_path: ./data/Bear_room/hetero/room/report_embedding
+  formatter: all.pkl
   matching: single  # backward
   input_format: embedding
   static_path: static_info_embeddings.pkl

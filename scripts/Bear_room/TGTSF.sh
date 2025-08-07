@@ -1,4 +1,4 @@
-for output_len in 12 144 288 576
+for output_len in 12  # 144 288 576
 do
 python -u run_lightning.py \
     --model 'TGTSF' \
@@ -10,6 +10,6 @@ python -u run_lightning.py \
     --batch_size 64 \
     --patience 10 \
     --train_epochs 50 \
-    --devices '3' | tee -a ./logs/IATSF.log
+    --devices '4' | tee -a ./logs/IATSF.log
 
 done
