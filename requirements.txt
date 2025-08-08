@@ -1,4 +1,4 @@
-# 清华镜像 pip install -i https://pypi.tuna.tsinghua.edu.cn/simple <xxx包>
+# Tuna mirror: pip install -i https://pypi.tuna.tsinghua.edu.cn/simple <xxx包>
 
 einops==0.8.0
 matplotlib==3.9.2
@@ -13,13 +13,13 @@ sentence_transformers==3.2.0
 thop==0.1.1.post2209072238
 tqdm==4.66.5
 fastparquet
-# vllm==0.7.2 # 0.8.3 provides reasoning compatability but consumes more memory
+vllm==0.7.2  # 0.8.3 provides reasoning compatability but consumes more memory
 fschat[model_worker,webui]
 pandas
 transformers==4.40.1
-# flash-attn
+flash-attn
 openai
-# flashinfer-python
+flashinfer-python
 nvitop
 pyyaml>=6.0
 tensorboard>=2.8.0 

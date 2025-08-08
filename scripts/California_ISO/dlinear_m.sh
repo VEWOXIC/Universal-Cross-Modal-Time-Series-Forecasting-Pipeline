@@ -1,4 +1,4 @@
-for output_len in 288 2016 4032 8640
+for output_len in 288 2016  # 4032 8640
 do
 python -u run_lightning.py \
     --model 'DLinear' \
