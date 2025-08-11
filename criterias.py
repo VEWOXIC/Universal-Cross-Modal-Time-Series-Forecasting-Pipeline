@@ -103,7 +103,7 @@ def main():
     # --- Checkpoint and Model Config ---
     parser.add_argument('--model', type=str, default="DLinear", help="Model name (e.g., 'DLinear', 'PatchTST')")
     parser.add_argument('--data', type=str, default="ETTm1", help="Dataset name used for training (e.g., 'ETTm1')")
-    parser.add_argument('--version', type=str, default="latest", help="Checkpoint version ('latest' or a specific date prefix like '06-27-1728')")
+    parser.add_argument('--version', type=str, default="latest", help="Model version (e.g., 'latest' 'oldest' or a specific date like '2023-10-26')")
     parser.add_argument('--input_len', type=int, default=360, help="Input sequence length")
     parser.add_argument('--output_len', type=int, default=24, help="Output sequence length (prediction horizon)")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
@@ -120,7 +120,7 @@ def main():
     parser.add_argument('--sample_id', type=int, default=0, help='The sample index for single sample evaluation')
 
     # --- System Config ---
-    parser.add_argument('--device', type=str, default="cuda:4" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
+    parser.add_argument('--device', type=str, default="cuda:1" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
     
     args = parser.parse_args()
 
@@ -134,6 +134,13 @@ def main():
             raise FileNotFoundError(f"No checkpoint found with pattern: *{ckpt_pattern}")
         ckpt_paths.sort()
         ckpt_path = ckpt_paths[-1]
+    elif args.version == 'oldest':
+        # Find all matching checkpoint directories and sort them to get the oldest one
+        ckpt_paths = [os.path.join(args.checkpoint_base, d) for d in os.listdir(args.checkpoint_base) if ckpt_pattern in d]
+        if not ckpt_paths:
+            raise FileNotFoundError(f"No checkpoint found with pattern: *{ckpt_pattern}")
+        ckpt_paths.sort()
+        ckpt_path = ckpt_paths[0]
     else:
         # Construct the path from the specified version
         ckpt_folder_name = args.version + ckpt_pattern

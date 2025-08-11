@@ -82,14 +82,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Filter reasoning samples")
     parser.add_argument('--data', type=str, default="Canada_photovoltaics_plants", help="Dataset name (e.g., 'solar')")
     parser.add_argument('--baseline_model', type=str, default="PatchTST", help="Model name (e.g., 'PatchTST')")
-    parser.add_argument('--version', type=str, default="latest", help="Model version (e.g., 'latest')", choices=['latest', 'newest'])
+    parser.add_argument('--version', type=str, default="latest", help="Model version (e.g., 'latest'; 'oldest'; or a specific version string)")
     parser.add_argument('--input_len', type=int, default=360, help="Input length (e.g., 360)")
     parser.add_argument('--output_len', type=int, default=24, help="Prediction horizon (e.g., 168)")
     parser.add_argument('--type', type=str, default="ckpt", help="Type of model checkpoint (e.g., 'ckpt')")
     parser.add_argument('--sample_root', type=str, default='./sample_indexes', help="Root directory for saving samples")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
     parser.add_argument('--sampling_rate', type=float, default=0.1, help="Sampling rate for each subset")
-    # parser.add_argument('--ahead', type=str, required=True, help="Prediction horizon (e.g., 'day')")
+    parser.add_argument('--device', type=str, default='cuda:1', help="Device to use for training (e.g., 'cuda' or 'cpu')")
     args = parser.parse_args()
 
     data = args.data
@@ -108,6 +108,12 @@ if __name__ == "__main__":
         # the path is in format of yyyy-mm-dd{ckpt_id}, now find the latest one
         ckpt_paths.sort()
         ckpt_path = ckpt_paths[-1]
+    elif version == 'oldest':
+        # find all the path that end with the ckpt_id
+        ckpt_paths = [os.path.join(ckpt_base, i) for i in os.listdir(ckpt_base) if ckpt_id in i]
+        # the path is in format of yyyy-mm-dd{ckpt_id}, now find the oldest one
+        ckpt_paths.sort()
+        ckpt_path = ckpt_paths[0]
     else:
         ckpt_path = version + ckpt_id
         ckpt_path = os.path.join(ckpt_base, ckpt_path)
@@ -118,7 +124,7 @@ if __name__ == "__main__":
     config.model_config = dotdict(config.model_config)
     config.data_config = dotdict(config.data_config)
 
-    config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    config.device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     config.batch_size = 1
 
     model_TST = model_init(config.model, config.model_config, config).to(config.device)
@@ -148,6 +154,12 @@ if __name__ == "__main__":
         # the path is in format of yyyy-mm-dd{ckpt_id}, now find the latest one
         ckpt_paths.sort()
         ckpt_path = ckpt_paths[-1]
+    elif version == 'oldest':
+        # find all the path that end with the ckpt_id
+        ckpt_paths = [os.path.join(ckpt_base, i) for i in os.listdir(ckpt_base) if ckpt_id in i]
+        # the path is in format of yyyy-mm-dd{ckpt_id}, now find the oldest one
+        ckpt_paths.sort()
+        ckpt_path = ckpt_paths[0]
     else:
         ckpt_path = version + ckpt_id
         ckpt_path = os.path.join(ckpt_base, ckpt_path)
@@ -158,7 +170,7 @@ if __name__ == "__main__":
     config.model_config = dotdict(config.model_config)
     config.data_config = dotdict(config.data_config)
 
-    config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    config.device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     config.batch_size = 1
 
     model_TGTSF = model_init(config.model, config.model_config, config).to(config.device)
@@ -186,6 +198,10 @@ if __name__ == "__main__":
         ahead = 'day'
     elif output_len == 168:
         ahead = 'week'
+    elif output_len == 12:
+        ahead = 'hour'
+    elif output_len == 144:
+        ahead = 'half_a_day'
     else:
         ahead = 'none'
 

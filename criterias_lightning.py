@@ -50,13 +50,13 @@ if __name__ == "__main__":
     parser.add_argument('--data_config', type=str, default=None, help='Data config if using another dataset/splitting method, else None')
     parser.add_argument('--baseline_model', type=str, default="DLinear", help="Model name (e.g., 'PatchTST')")
     parser.add_argument('--task', type=str, default="TSF", choices=["TSF", "TGTSF"], help="Task type")
-    parser.add_argument('--version', type=str, default="latest", help="Model version (e.g., 'latest' or a specific date like '2023-10-26')", choices=['latest', 'newest'])
+    parser.add_argument('--version', type=str, default="latest", help="Model version (e.g., 'latest' 'oldest' or a specific date like '2023-10-26')")
     parser.add_argument('--input_len', type=int, default=4320, help="Input length")
     parser.add_argument('--output_len', type=int, default=8640, help="Prediction horizon")
     parser.add_argument('--type', type=str, default="ckpt", help="Type of model checkpoint")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
     parser.add_argument('--batch_size', type=int, default=1, help="Batch size = 1")
-    parser.add_argument('--device', type=str, default="cuda:4" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
+    parser.add_argument('--device', type=str, default="cuda:1" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
     parser.add_argument('--filtered_samples', type=str, default=None, help='filtered samples for testing')
     
     args = parser.parse_args()
@@ -70,12 +70,18 @@ if __name__ == "__main__":
 
     ckpt_id = f'_{baseline_model}_{data}_{output_len}_{input_len}'
 
-    if version in ['latest', 'newest']:
+    if version == 'latest':
         ckpt_paths = [os.path.join(ckpt_base, i) for i in os.listdir(ckpt_base) if ckpt_id in i]
         if not ckpt_paths:
             raise FileNotFoundError(f"No checkpoint found for pattern: *{ckpt_id}")
         ckpt_paths.sort()
         ckpt_path = ckpt_paths[-1]
+    elif args.version == 'oldest':
+        ckpt_paths = [os.path.join(ckpt_base, i) for i in os.listdir(ckpt_base) if ckpt_id in i]
+        if not ckpt_paths:
+            raise FileNotFoundError(f"No checkpoint found for pattern: *{ckpt_id}")
+        ckpt_paths.sort()
+        ckpt_path = ckpt_paths[0]
     else:
         ckpt_path = version + ckpt_id
         ckpt_path = os.path.join(ckpt_base, ckpt_path)
