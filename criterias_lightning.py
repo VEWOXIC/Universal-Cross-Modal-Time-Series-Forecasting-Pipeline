@@ -6,8 +6,10 @@ from models import model_init
 from data_provider.data_factory import Data_Provider
 from utils.tools import dotdict
 import json
+import yaml
 from tqdm import tqdm
-import argparse, glob
+import argparse
+import glob
 
 
 def run_test(dataset, model, config, indexes):
@@ -45,6 +47,7 @@ def run_test(dataset, model, config, indexes):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Time Series Forecasting Model Testing")
     parser.add_argument('--data', type=str, default="NYC_traffic_speed", help="Dataset name")
+    parser.add_argument('--data_config', type=str, default=None, help='Data config if using another dataset/splitting method, else None')
     parser.add_argument('--baseline_model', type=str, default="DLinear", help="Model name (e.g., 'PatchTST')")
     parser.add_argument('--task', type=str, default="TSF", choices=["TSF", "TGTSF"], help="Task type")
     parser.add_argument('--version', type=str, default="latest", help="Model version (e.g., 'latest' or a specific date like '2023-10-26')", choices=['latest', 'newest'])
@@ -52,7 +55,7 @@ if __name__ == "__main__":
     parser.add_argument('--output_len', type=int, default=8640, help="Prediction horizon")
     parser.add_argument('--type', type=str, default="ckpt", help="Type of model checkpoint")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
-    parser.add_argument('--batch_size', type=int, default=4096, help="Batch size used during training (for config)")
+    parser.add_argument('--batch_size', type=int, default=1, help="Batch size = 1")
     parser.add_argument('--device', type=str, default="cuda:4" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
     parser.add_argument('--filtered_samples', type=str, default=None, help='filtered samples for testing')
     
@@ -88,10 +91,11 @@ if __name__ == "__main__":
     
     config = dotdict(json.load(open(config_path)))
     config.model_config = dotdict(config.model_config)
-    config.data_config = dotdict(config.data_config)
+    config.data_config = dotdict(config.data_config) if args.data_config is None else dotdict(yaml.safe_load(open(args.data_config, 'r')))
+    
     
     config.device = torch.device(args.device)
-    config.batch_size = args.batch_size if args.filtered_samples is None else 1  # Remain batch size = 1 for filtered testing
+    config.batch_size = 1  # Must remain batch size = 1 for filtered testing
 
     config.task = args.task
 
@@ -142,6 +146,9 @@ if __name__ == "__main__":
             indexes = filtered_samples[name]
             print(f"[Info] Using {len(indexes)} filtered samples for testing.")
             print(f"[Info] Sample indexes: {indexes}")
+        else:
+            indexes = None
+            print("[Info] Using all samples for testing.")
         
         mean_mse, mean_mae = run_test(dataset, model, config, indexes)
         

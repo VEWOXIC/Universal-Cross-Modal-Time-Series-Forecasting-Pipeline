@@ -5,6 +5,7 @@ import os
 import json
 import argparse
 import glob
+import yaml
 from tqdm import tqdm
 from models import model_init
 from data_provider.data_factory import Data_Provider
@@ -103,10 +104,11 @@ def main():
     parser.add_argument('--model', type=str, default="DLinear", help="Model name (e.g., 'DLinear', 'PatchTST')")
     parser.add_argument('--data', type=str, default="ETTm1", help="Dataset name used for training (e.g., 'ETTm1')")
     parser.add_argument('--version', type=str, default="latest", help="Checkpoint version ('latest' or a specific date prefix like '06-27-1728')")
-    parser.add_argument('--input_len', type=int, default=96, help="Input sequence length")
-    parser.add_argument('--output_len', type=int, default=720, help="Output sequence length (prediction horizon)")
+    parser.add_argument('--input_len', type=int, default=360, help="Input sequence length")
+    parser.add_argument('--output_len', type=int, default=24, help="Output sequence length (prediction horizon)")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
-    parser.add_argument('--batch_size', type=int, default=32, help="Batch size used during training (for config)")
+    parser.add_argument('--batch_size', type=int, default=1, help="Batch size = 1")
+    parser.add_argument('--data_config', type=str, default=None, help="Path to the data configuration YAML file (optional)")
 
     # --- Task and Evaluation Mode ---
     parser.add_argument('--task', type=str, default="TSF", choices=["TSF", "TGTSF"], help="Task type: Time Series Forecasting or Text-Grounded TSF")
@@ -118,7 +120,7 @@ def main():
     parser.add_argument('--sample_id', type=int, default=0, help='The sample index for single sample evaluation')
 
     # --- System Config ---
-    parser.add_argument('--device', type=str, default="cuda:0" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
+    parser.add_argument('--device', type=str, default="cuda:4" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
     
     args = parser.parse_args()
 
@@ -146,12 +148,12 @@ def main():
     
     config = dotdict(json.load(open(config_path)))
     config.model_config = dotdict(config.model_config)
-    config.data_config = dotdict(config.data_config)
+    config.data_config = dotdict(config.data_config) if args.data_config is None else dotdict(yaml.safe_load(open(args.data_config, 'r')))
     
     # Override config with runtime arguments
     config.device = torch.device(args.device)
     config.task = args.task
-    config.batch_size = args.batch_size if args.filtered_samples is None else 1  # Use batch size of 1 for filtered testing
+    config.batch_size = 1  # Must remain batch size = 1 for filtered testing
     
     print(f"[Info] Running on device: {config.device}")
 
@@ -200,6 +202,9 @@ def main():
                 indexes = filtered_samples[name]
                 print(f"[Info] Using {len(indexes)} filtered samples for testing.")
                 print(f"[Info] Sample indexes: {indexes}")
+            else:
+                indexes = None
+                print("[Info] Using all samples for testing.")
             
             mean_mse, mean_mae = evaluate_full_dataset(dataset, model, config, indexes)
             

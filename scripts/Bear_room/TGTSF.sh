@@ -7,7 +7,7 @@ python -u run_lightning.py \
     --data_config './data_configs/Bear_room/fullBear_hetero_TGTSF.yaml' \
     --input_len 288 \
     --output_len $output_len \
-    --batch_size 64 \
+    --batch_size 128 \
     --patience 10 \
     --train_epochs 50 \
     --devices '0,3,4' | tee -a ./logs/IATSF.log
