@@ -47,7 +47,7 @@ hetero_info:
   hetero_type: each_subset  # all_for_one, each_subset
   root_path: ./data/Bear_room/hetero/room/report_embedding/formal_report
   # root_path: ./data/Bear_room/hetero/weather/report_embedding/formal_report
-  formatter: all.pkl  # all.pkl  flow.pkl  temperature.pkl
+  formatter: all.pkl  # all.pkl  flow.pkl  temperature.pkl  occupy.pkl
   # formatter: wm_messages_v1.pkl
   matching: single
   # matching: backward
