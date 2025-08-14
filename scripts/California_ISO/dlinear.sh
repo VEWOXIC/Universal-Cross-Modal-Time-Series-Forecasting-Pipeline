@@ -1,6 +1,6 @@
 for output_len in 24 168 336 720
 do
-python -u run_lightning.py \
+python -u run.py \
     --model 'DLinear' \
     --model_config 'model_configs/general/DLinear.yaml' \
     --data California_ISO \
@@ -8,6 +8,7 @@ python -u run_lightning.py \
     --input_len 360 \
     --output_len $output_len \
     --batch_size 256 \
+    --train_epochs 30 \
     --devices '3' | tee -a ./logs/Linear.log
     
 done

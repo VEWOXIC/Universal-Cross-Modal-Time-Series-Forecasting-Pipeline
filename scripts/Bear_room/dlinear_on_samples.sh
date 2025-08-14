@@ -7,7 +7,6 @@ python -u criterias.py \
     --output_len 12 \
     --batch_size 1 \
     --device "cuda:3" \
-    --evaluate_mode "all_samples" \
     --filtered_samples "sample_indexes/Bear_room_sample_hour.json" | tee -a ./logs/test_linear_on_samples.log
 
 python -u criterias.py \
@@ -19,5 +18,4 @@ python -u criterias.py \
     --output_len 144 \
     --batch_size 1 \
     --device "cuda:3" \
-    --evaluate_mode "all_samples" \
     --filtered_samples "sample_indexes/Bear_room_sample_half_a_day.json" | tee -a ./logs/test_linear_on_samples.log

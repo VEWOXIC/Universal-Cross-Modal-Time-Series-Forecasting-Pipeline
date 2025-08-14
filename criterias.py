@@ -13,51 +13,6 @@ from utils.tools import dotdict
 from utils.metrics import MAE, MSE
 
 
-def evaluate_single_sample(args, model, dataset_set, config):
-    """
-    Evaluates a single, specified sample from a dataset.
-    """
-    data_id = args.data_id
-    sample_id = args.sample_id
-
-    print(f"--- Performing evaluation on Dataset ID '{data_id}', Sample Index {sample_id} ---")
-
-    if data_id not in dataset_set:
-        raise KeyError(f"Data ID '{data_id}' not found in the test sets. Available IDs: {list(dataset_set.keys())}")
-    
-    dataset = dataset_set[data_id]
-    if sample_id >= len(dataset):
-        raise IndexError(f"Sample ID {sample_id} is out of bounds for dataset '{data_id}' which has {len(dataset)} samples.")
-
-    # Unpack the specific sample
-    seq_x, seq_y, _, _, _, y_hetero, _, _, _, hetero_channel = dataset[sample_id]
-
-    # Prepare tensors for the model
-    input_tensor = torch.tensor(seq_x).unsqueeze(0).float().to(config.device)
-    output_tensor = torch.tensor(seq_y).unsqueeze(0).float().to(config.device)
-    
-    with torch.no_grad():
-        if args.task == 'TSF':
-            prediction_tensor = model(x=input_tensor)
-        elif args.task == 'TGTSF':
-            y_hetero_tensor = torch.tensor(y_hetero).unsqueeze(0).float().to(config.device)
-            hetero_channel_tensor = torch.tensor(hetero_channel).unsqueeze(0).float().to(config.device)
-            prediction_tensor = model(x=input_tensor, news=y_hetero_tensor, channel_description=hetero_channel_tensor)
-        else:
-            raise ValueError("Task type must be either 'TSF' or 'TGTSF'.")
-
-    # Ensure prediction tensor is sliced to match output length
-    prediction_tensor = prediction_tensor[:, -config.output_len:, :]
-
-    # Calculate metrics
-    mae = MAE(prediction_tensor.cpu().numpy(), output_tensor.cpu().numpy())
-    mse = MSE(prediction_tensor.cpu().numpy(), output_tensor.cpu().numpy())
-    
-    print(f"MAE for this sample: {mae:.4f}")
-    print(f"MSE for this sample: {mse:.4f}")
-    return mse, mae
-
-
 def evaluate_full_dataset(dataset, model, config, indexes):
     """
     Evaluates all samples in a dataset using a DataLoader for efficient batch processing.
@@ -87,11 +42,8 @@ def evaluate_full_dataset(dataset, model, config, indexes):
         total_mae += mae_loss.item()
         total_mse += mse_loss.item()
         num_samples += batch_y.shape[0]
-
-    avg_mse = total_mse / num_samples if num_samples > 0 else 0
-    avg_mae = total_mae / num_samples if num_samples > 0 else 0
     
-    return avg_mse, avg_mae
+    return total_mse, total_mae, num_samples
 
 
 def main():
@@ -107,19 +59,10 @@ def main():
     parser.add_argument('--input_len', type=int, default=360, help="Input sequence length")
     parser.add_argument('--output_len', type=int, default=24, help="Output sequence length (prediction horizon)")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
-    parser.add_argument('--batch_size', type=int, default=1, help="Batch size = 1")
+    parser.add_argument('--batch_size', type=int, default=1, help="Batch size")
     parser.add_argument('--data_config', type=str, default=None, help="Path to the data configuration YAML file (optional)")
-
-    # --- Task and Evaluation Mode ---
     parser.add_argument('--task', type=str, default="TSF", choices=["TSF", "TGTSF"], help="Task type: Time Series Forecasting or Text-Grounded TSF")
-    parser.add_argument('--evaluate_mode', type=str, default='all_samples', choices=['single_sample', 'all_samples'], help='Evaluate a single sample or all samples')
     parser.add_argument('--filtered_samples', type=str, default=None, help='Path to a JSON file containing filtered sample indexes for evaluation')
-
-    # --- Single Sample Specific Args ---
-    parser.add_argument('--data_id', type=str, default='test', help="Dataset ID to use for single sample evaluation (e.g., 'test', 'val')")
-    parser.add_argument('--sample_id', type=int, default=0, help='The sample index for single sample evaluation')
-
-    # --- System Config ---
     parser.add_argument('--device', type=str, default="cuda:1" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
     
     args = parser.parse_args()
@@ -191,62 +134,45 @@ def main():
     fullsets = data_provider.get_test("set")
 
     # --- Run Evaluation ---
-    if args.evaluate_mode == 'single_sample':
-        evaluate_single_sample(args, model, fullsets, config)
     
-    elif args.evaluate_mode == 'all_samples':
-        all_results = {}
+    all_mae = 0.0
+    all_mse = 0.0
+    all_sample_num = 0
+
+    if args.filtered_samples is not None:
+        filtered_samples = json.load(open(args.filtered_samples))
+        print(f"[Info] Using filtered samples from: {args.filtered_samples}")
+    
+    for name, dataset in fullsets.items():
+        print(f"\n[Info] Testing on dataset: {name}")
 
         if args.filtered_samples is not None:
-            filtered_samples = json.load(open(args.filtered_samples))
-            print(f"[Info] Using filtered samples from: {args.filtered_samples}")
+            indexes = filtered_samples[name]
+            print(f"[Info] Using {len(indexes)} filtered samples for testing.")
+            print(f"[Info] Sample indexes: {indexes}")
+        else:
+            indexes = None
+            print("[Info] Using all samples for testing.")
         
+        total_mse, total_mae, num_samples = evaluate_full_dataset(dataset, model, config, indexes)
 
-        for name, dataset in fullsets.items():
-            print(f"\n[Info] Testing on dataset: {name}")
+        if num_samples > 0:
+            avg_mse = total_mse / num_samples if num_samples > 0 else 0
+            avg_mae = total_mae / num_samples if num_samples > 0 else 0
+            print(f"-> Results for '{name}': MSE = {avg_mse:.7f}, MAE = {avg_mae:.7f}")
 
-            if args.filtered_samples is not None:
-                indexes = filtered_samples[name]
-                print(f"[Info] Using {len(indexes)} filtered samples for testing.")
-                print(f"[Info] Sample indexes: {indexes}")
-            else:
-                indexes = None
-                print("[Info] Using all samples for testing.")
-            
-            mean_mse, mean_mae = evaluate_full_dataset(dataset, model, config, indexes)
-            
-            if mean_mse != 0 and mean_mae != 0:
-                all_results[name] = {'MSE': mean_mse, 'MAE': mean_mae}
-                print(f"-> Results for '{name}': MSE = {mean_mse:.7f}, MAE = {mean_mae:.7f}")
-            else:
-                print(f"-> No index found in '{name}'")
-
-
-        print("\n" + "="*50)
-        print(" " * 15 + "Overall Test Summary")
-        print("="*50)
-
-        summary_df = pd.DataFrame.from_dict(all_results, orient='index')
-        
-        if not summary_df.empty:
-
-            average_metrics = summary_df.mean()
-            all_results['Average'] = {'MSE': average_metrics['MSE'], 'MAE': average_metrics['MAE']}
-            
-            summary_df.loc['Average'] = average_metrics
-            print(summary_df.round(4))
-
-            results_save_dir = ckpt_path
-
-            summary_filename = os.path.join(results_save_dir, f'summary_results_{args.data}_{args.model}.json')
-            with open(summary_filename, 'w') as f:
-                json.dump(all_results, f, indent=4)
-            print(f"\n[Info] Summary results saved to {summary_filename}")
+            all_mse += total_mse
+            all_mae += total_mae
+            all_sample_num += num_samples
         
         else:
-            print("No datasets were tested.")
+            print(f"-> No index found in '{name}'")
 
-        print("="*50)
+
+    print("\n" + "="*50)
+    print(" " * 15 + "Overall Test Summary")
+    print(f"-> Results for all subsets: MSE = {all_mse / all_sample_num:.7f}, MAE = {all_mae / all_sample_num:.7f}")
+    print("="*50)
 
 
 if __name__ == '__main__':
