@@ -5,6 +5,7 @@ import os
 import json
 import argparse
 import glob
+import sys
 import yaml
 from tqdm import tqdm
 from models import model_init
@@ -13,25 +14,24 @@ from utils.tools import dotdict
 from utils.metrics import MAE, MSE
 
 
-def evaluate_full_dataset(dataset, model, config, indexes):
+def evaluate_full_dataset(loader, model, config, indexes):
     """
     Evaluates all samples in a dataset using a DataLoader for efficient batch processing.
     Calculates the true MSE and MAE over the entire dataset.
     """
     total_mse, total_mae = 0.0, 0.0
     num_samples = 0
-
-    if indexes is not None:
-        dataset = [dataset[i] for i in indexes]
     
-    for sample_num in tqdm(range(len(dataset)), desc="Running tests"):
+    for i, iter_data in tqdm(enumerate(loader), total=len(loader), desc="Running tests"):
+        if indexes is not None and i not in indexes:
+            continue
         with torch.no_grad():
-            batch_x, batch_y, _, _, _, y_hetero, _, _, _, hetero_channel = dataset[sample_num]
+            batch_x, batch_y, _, _, _, y_hetero, _, _, _, hetero_channel = iter_data
 
-            batch_x = torch.tensor(batch_x).unsqueeze(0).float().to(config.device)
-            batch_y = torch.tensor(batch_y).unsqueeze(0).float().to(config.device)
-            y_hetero = torch.tensor(y_hetero).unsqueeze(0).float().to(config.device)
-            hetero_channel = torch.tensor(hetero_channel).unsqueeze(0).float().to(config.device)
+            batch_x = torch.tensor(batch_x).to(config.device)
+            batch_y = torch.tensor(batch_y).to(config.device)
+            y_hetero = torch.tensor(y_hetero).to(config.device)
+            hetero_channel = torch.tensor(hetero_channel).to(config.device)
 
             prediction = model(x=batch_x) if config.task == 'TSF' else model(x=batch_x, news=y_hetero, channel_description=hetero_channel)
             prediction = prediction[:, -config.output_len:, :]
@@ -39,9 +39,9 @@ def evaluate_full_dataset(dataset, model, config, indexes):
             mse_loss = torch.nn.MSELoss()(prediction, batch_y)
             mae_loss = torch.nn.L1Loss()(prediction, batch_y)
 
-        total_mae += mae_loss.item()
-        total_mse += mse_loss.item()
-        num_samples += batch_y.shape[0]
+            total_mae += mae_loss.item() * batch_y.size(0)
+            total_mse += mse_loss.item() * batch_y.size(0)
+            num_samples += batch_y.size(0)
     
     return total_mse, total_mae, num_samples
 
@@ -59,7 +59,7 @@ def main():
     parser.add_argument('--input_len', type=int, default=360, help="Input sequence length")
     parser.add_argument('--output_len', type=int, default=24, help="Output sequence length (prediction horizon)")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
-    parser.add_argument('--batch_size', type=int, default=1, help="Batch size")
+    parser.add_argument('--batch_size', type=int, default=128, help="Batch size for testing")
     parser.add_argument('--data_config', type=str, default=None, help="Path to the data configuration YAML file (optional)")
     parser.add_argument('--task', type=str, default="TSF", choices=["TSF", "TGTSF"], help="Task type: Time Series Forecasting or Text-Grounded TSF")
     parser.add_argument('--filtered_samples', type=str, default=None, help='Path to a JSON file containing filtered sample indexes for evaluation')
@@ -102,8 +102,9 @@ def main():
     
     # Override config with runtime arguments
     config.device = torch.device(args.device)
+    config.num_workers = 0
     config.task = args.task
-    config.batch_size = 1  # Must remain batch size = 1 for filtered testing
+    config.batch_size = 1 if args.filtered_samples is not None else args.batch_size  # Must remain batch size = 1 for filtered testing
     
     print(f"[Info] Running on device: {config.device}")
 
@@ -131,7 +132,7 @@ def main():
 
     # --- Load Data ---
     data_provider = Data_Provider(config)
-    fullsets = data_provider.get_test("set")
+    fullloader = data_provider.get_test("loader")
 
     # --- Run Evaluation ---
     
@@ -143,7 +144,7 @@ def main():
         filtered_samples = json.load(open(args.filtered_samples))
         print(f"[Info] Using filtered samples from: {args.filtered_samples}")
     
-    for name, dataset in fullsets.items():
+    for name, loader in fullloader.items():
         print(f"\n[Info] Testing on dataset: {name}")
 
         if args.filtered_samples is not None:
@@ -154,7 +155,7 @@ def main():
             indexes = None
             print("[Info] Using all samples for testing.")
         
-        total_mse, total_mae, num_samples = evaluate_full_dataset(dataset, model, config, indexes)
+        total_mse, total_mae, num_samples = evaluate_full_dataset(loader, model, config, indexes)
 
         if num_samples > 0:
             avg_mse = total_mse / num_samples if num_samples > 0 else 0
@@ -177,3 +178,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    sys.exit(0)

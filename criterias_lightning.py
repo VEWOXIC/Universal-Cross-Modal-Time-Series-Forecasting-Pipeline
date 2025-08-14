@@ -10,38 +10,57 @@ import yaml
 from tqdm import tqdm
 import argparse
 import glob
+import sys
 
 
-def run_test(dataset, model, config, indexes):
+def run_test(loader, model, config, indexes, channel_wise):
+    
     total_mse, total_mae = 0.0, 0.0
     num_samples = 0
 
-    if indexes is not None:
-        dataset = [dataset[i] for i in indexes]
-    
-    for sample_num in tqdm(range(len(dataset)), desc="Running tests"):
-        with torch.no_grad():
-            batch_x, batch_y, _, _, _, y_hetero, _, _, _, hetero_channel = dataset[sample_num]
+    channel_mse = None
+    channel_mae = None
+    channel_counts = None
 
-            batch_x = torch.tensor(batch_x).unsqueeze(0).float().to(config.device)
-            batch_y = torch.tensor(batch_y).unsqueeze(0).float().to(config.device)
-            y_hetero = torch.tensor(y_hetero).unsqueeze(0).float().to(config.device)
-            hetero_channel = torch.tensor(hetero_channel).unsqueeze(0).float().to(config.device)
+    for i, iter_data in tqdm(enumerate(loader), total=len(loader), desc="Running tests"):
+        if indexes is not None and i not in indexes:
+            continue
+        with torch.no_grad():
+            batch_x, batch_y, _, _, _, y_hetero, _, _, _, hetero_channel = iter_data
+
+            batch_x = torch.tensor(batch_x).to(config.device)
+            batch_y = torch.tensor(batch_y).to(config.device)
+            y_hetero = torch.tensor(y_hetero).to(config.device)
+            hetero_channel = torch.tensor(hetero_channel).to(config.device)
 
             prediction = model(x=batch_x) if config.task == 'TSF' else model(x=batch_x, news=y_hetero, channel_description=hetero_channel)
-            prediction = prediction[:, -config.output_len:, :]
+            prediction = prediction[:, -config.output_len:, :]  # [B, L, C]
 
-            mse_loss = torch.nn.MSELoss()(prediction, batch_y)
-            mae_loss = torch.nn.L1Loss()(prediction, batch_y)
+            if channel_wise:
+                if channel_mse is None:
+                    C = prediction.shape[2]
+                    channel_mse = [0.0] * C
+                    channel_mae = [0.0] * C
+                    channel_counts = [0] * C
+                for k in range(prediction.shape[2]):
+                    mse_loss = torch.nn.MSELoss()(prediction[:, :, k], batch_y[:, :, k])
+                    mae_loss = torch.nn.L1Loss()(prediction[:, :, k], batch_y[:, :, k])
+                    channel_mse[k] += mse_loss.item()
+                    channel_mae[k] += mae_loss.item()
+                    channel_counts[k] += 1
 
-        total_mae += mae_loss.item()
-        total_mse += mse_loss.item()
-        num_samples += batch_y.shape[0]
+            else:
+                mse_loss = torch.nn.MSELoss()(prediction, batch_y)
+                mae_loss = torch.nn.L1Loss()(prediction, batch_y)
+                total_mae += mae_loss.item() * batch_y.size(0)
+                total_mse += mse_loss.item() * batch_y.size(0)
+                num_samples += batch_y.size(0)
 
-    avg_mse = total_mse / num_samples if num_samples > 0 else 0
-    avg_mae = total_mae / num_samples if num_samples > 0 else 0
+    if channel_wise:
+        return channel_mse, channel_mae, channel_counts
     
-    return avg_mse, avg_mae
+    else:
+        return total_mse, total_mae, num_samples
 
 
 if __name__ == "__main__":
@@ -55,10 +74,11 @@ if __name__ == "__main__":
     parser.add_argument('--output_len', type=int, default=8640, help="Prediction horizon")
     parser.add_argument('--type', type=str, default="ckpt", help="Type of model checkpoint")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
-    parser.add_argument('--batch_size', type=int, default=1, help="Batch size = 1")
+    parser.add_argument('--batch_size', type=int, default=256, help="Batch size for testing")
     parser.add_argument('--device', type=str, default="cuda:1" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
     parser.add_argument('--filtered_samples', type=str, default=None, help='filtered samples for testing')
-    
+    parser.add_argument('--channel_wise', type=bool, default=False, help='Channel wise testing')
+
     args = parser.parse_args()
 
     data = args.data
@@ -99,9 +119,9 @@ if __name__ == "__main__":
     config.model_config = dotdict(config.model_config)
     config.data_config = dotdict(config.data_config) if args.data_config is None else dotdict(yaml.safe_load(open(args.data_config, 'r')))
     
-    
     config.device = torch.device(args.device)
-    config.batch_size = 1  # Must remain batch size = 1 for filtered testing
+    config.num_workers = 0
+    config.batch_size = 1 if args.filtered_samples is not None else args.batch_size  # Must remain batch size = 1 for filtered testing
 
     config.task = args.task
 
@@ -133,19 +153,21 @@ if __name__ == "__main__":
 
     print(f'[Info] Successfully loaded model: {config.model}')
 
-
+    # Prepare datasets
     id_data = Data_Provider(config)
-    fullsets = id_data.get_test('set')
-    print(f'[Info] Found {len(fullsets)} datasets to test: {list(fullsets.keys())}')
+    fullloader = id_data.get_test('loader')
+    print(f'[Info] Found {len(fullloader)} datasets to test: {list(fullloader.keys())}')
 
-    all_results = {}
-
+    # Handle filtered samples if provided
     if args.filtered_samples is not None:
         filtered_samples = json.load(open(args.filtered_samples))
         print(f"[Info] Using filtered samples from: {args.filtered_samples}")
-    
 
-    for name, dataset in fullsets.items():
+    all_mae = 0.0 if not args.channel_wise else {}
+    all_mse = 0.0 if not args.channel_wise else {}
+    all_sample_num = 0 if not args.channel_wise else {}
+
+    for name, loader in fullloader.items():
         print(f"\n[Info] Testing on dataset: {name}")
 
         if args.filtered_samples is not None:
@@ -156,35 +178,39 @@ if __name__ == "__main__":
             indexes = None
             print("[Info] Using all samples for testing.")
         
-        mean_mse, mean_mae = run_test(dataset, model, config, indexes)
+        result = run_test(loader, model, config, indexes, args.channel_wise)
+        if args.channel_wise:
+            channel_mse, channel_mae, channel_counts = result
+            if sum(channel_counts) == 0:
+                print(f"-> No index found in '{name}'")
+            else:
+                all_mse[name] = channel_mse
+                all_mae[name] = channel_mae
+                all_sample_num[name] = channel_counts
+                avg_ch_mse = [m / count if count > 0 else 0 for m, count in zip(channel_mse, channel_counts)]
+                avg_ch_mae = [m / count if count > 0 else 0 for m, count in zip(channel_mae, channel_counts)]
+                print(f"-> Results for '{name}': Channel-wise MSE = {avg_ch_mse}, MAE = {avg_ch_mae}")
         
-        if mean_mse != 0 and mean_mae != 0:
-            all_results[name] = {'MSE': mean_mse, 'MAE': mean_mae}
-            print(f"-> Results for '{name}': MSE = {mean_mse:.7f}, MAE = {mean_mae:.7f}")
         else:
-            print(f"-> No index found in '{name}'")
-
-
+            total_mse, total_mae, num_samples = result
+            if num_samples > 0:
+                all_mse += total_mse
+                all_mae += total_mae
+                all_sample_num += num_samples
+                avg_mse = total_mse / num_samples
+                avg_mae = total_mae / num_samples
+                print(f"-> Results for '{name}': MSE = {avg_mse:.7f}, MAE = {avg_mae:.7f}")
+            else:
+                print(f"-> No index found in '{name}'")
+            
     print("\n" + "="*50)
     print(" " * 15 + "Overall Test Summary")
-    print("="*50)
-
-    summary_df = pd.DataFrame.from_dict(all_results, orient='index')
-    
-    if not summary_df.empty:
-
-        average_metrics = summary_df.mean()
-        all_results['Average'] = {'MSE': average_metrics['MSE'], 'MAE': average_metrics['MAE']}
-        
-        summary_df.loc['Average'] = average_metrics
-        print(summary_df.round(4))
-
-        summary_filename = os.path.join(results_save_dir, f'summary_results_{data}_{baseline_model}.json')
-        with open(summary_filename, 'w') as f:
-            json.dump(all_results, f, indent=4)
-        print(f"\n[Info] Summary results saved to {summary_filename}")
-    
+    if not args.channel_wise:
+        print(f"-> Results for all subsets: MSE = {all_mse / all_sample_num:.7f}, MAE = {all_mae / all_sample_num:.7f}")
     else:
-        print("No datasets were tested.")
-
+        overall_mse = {k: sum(v) / sum(all_sample_num[k]) if sum(all_sample_num[k]) > 0 else 0 for k, v in all_mse.items()}
+        overall_mae = {k: sum(v) / sum(all_sample_num[k]) if sum(all_sample_num[k]) > 0 else 0 for k, v in all_mae.items()}
+        print(f"-> Results for all subsets: MSE = {overall_mse:.7f}, MAE = {overall_mae:.7f}")
     print("="*50)
+
+    sys.exit(0)
