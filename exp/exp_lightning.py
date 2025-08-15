@@ -337,6 +337,8 @@ def train_lightning_model(args, setting):
     data_module.setup(stage='test')
     test_loaders = data_module.test_dataloader()
 
+    ## ！！！！！！！！！！！！！！！！！！！fuck you！！！！！！！！！！！！！！！！！！！！！！
+
     info_results = {}
     for i, (subset_id, loader) in enumerate(test_loaders.items()):
         print(f"Testing {subset_id}...")
