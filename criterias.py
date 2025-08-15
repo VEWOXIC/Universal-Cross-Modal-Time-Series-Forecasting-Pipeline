@@ -85,9 +85,12 @@ def main():
         ckpt_paths.sort()
         ckpt_path = ckpt_paths[0]
     else:
-        # Construct the path from the specified version
-        ckpt_folder_name = args.version + ckpt_pattern
-        ckpt_path = os.path.join(args.checkpoint_base, ckpt_folder_name)
+        pattern = os.path.join(args.checkpoint_base, args.version + ckpt_pattern)
+        ckpt_paths = glob.glob(pattern)
+        if not ckpt_paths:
+            raise FileNotFoundError(f"No checkpoint found for pattern: {pattern}")
+        ckpt_paths.sort()
+        ckpt_path = ckpt_paths[-1]
 
     print(f"[Info] Using checkpoint path: {ckpt_path}")
 

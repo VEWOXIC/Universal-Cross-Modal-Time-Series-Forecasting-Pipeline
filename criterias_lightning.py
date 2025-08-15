@@ -45,9 +45,9 @@ def run_test(loader, model, config, indexes, channel_wise):
                 for k in range(prediction.shape[2]):
                     mse_loss = torch.nn.MSELoss()(prediction[:, :, k], batch_y[:, :, k])
                     mae_loss = torch.nn.L1Loss()(prediction[:, :, k], batch_y[:, :, k])
-                    channel_mse[k] += mse_loss.item()
-                    channel_mae[k] += mae_loss.item()
-                    channel_counts[k] += 1
+                    channel_mse[k] += mse_loss.item() * batch_y.size(0)
+                    channel_mae[k] += mae_loss.item() * batch_y.size(0)
+                    channel_counts[k] += batch_y.size(0)
 
             else:
                 mse_loss = torch.nn.MSELoss()(prediction, batch_y)
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     output_len = args.output_len
     ckpt_base = args.checkpoint_base
 
-    ckpt_id = f'_{baseline_model}_{data}_{output_len}_{input_len}'
+    ckpt_id = f'_{baseline_model}_{data}_{output_len}_{input_len}_pl'
 
     if version == 'latest':
         ckpt_paths = [os.path.join(ckpt_base, i) for i in os.listdir(ckpt_base) if ckpt_id in i]
@@ -103,8 +103,12 @@ if __name__ == "__main__":
         ckpt_paths.sort()
         ckpt_path = ckpt_paths[0]
     else:
-        ckpt_path = version + ckpt_id
-        ckpt_path = os.path.join(ckpt_base, ckpt_path)
+        pattern = os.path.join(ckpt_base, version + ckpt_id)
+        ckpt_paths = glob.glob(pattern)
+        if not ckpt_paths:
+            raise FileNotFoundError(f"No checkpoint found for pattern: {pattern}")
+        ckpt_paths.sort()
+        ckpt_path = ckpt_paths[-1]
 
     print(f'[Info] Using checkpoint path: {ckpt_path}')
 
@@ -190,6 +194,7 @@ if __name__ == "__main__":
                 avg_ch_mse = [m / count if count > 0 else 0 for m, count in zip(channel_mse, channel_counts)]
                 avg_ch_mae = [m / count if count > 0 else 0 for m, count in zip(channel_mae, channel_counts)]
                 print(f"-> Results for '{name}': Channel-wise MSE = {avg_ch_mse}, MAE = {avg_ch_mae}")
+                print(f"-> Results for '{name}': All channel MSE = {sum(avg_ch_mse) / len(avg_ch_mse):.7f}, MAE = {sum(avg_ch_mae) / len(avg_ch_mae):.7f}")
         
         else:
             total_mse, total_mae, num_samples = result
@@ -205,12 +210,16 @@ if __name__ == "__main__":
             
     print("\n" + "="*50)
     print(" " * 15 + "Overall Test Summary")
-    if not args.channel_wise:
-        print(f"-> Results for all subsets: MSE = {all_mse / all_sample_num:.7f}, MAE = {all_mae / all_sample_num:.7f}")
+    if args.channel_wise:
+        sum_mse = [sum(m) for m in zip(*all_mse.values())]
+        sum_mae = [sum(m) for m in zip(*all_mae.values())]
+        sum_counts = [sum(c) for c in zip(*all_sample_num.values())]
+        overall_mse = [m / c if c > 0 else 0 for m, c in zip(sum_mse, sum_counts)]
+        overall_mae = [m / c if c > 0 else 0 for m, c in zip(sum_mae, sum_counts)]
+        print(f"-> Results for all subsets: channel-wise MSE = {overall_mse}, channel-wise MAE = {overall_mae}")
+        print(f"-> Results for all subsets: All channel MSE = {sum(overall_mse) / len(overall_mse):.7f}, MAE = {sum(overall_mae) / len(overall_mae):.7f}")
     else:
-        overall_mse = {k: sum(v) / sum(all_sample_num[k]) if sum(all_sample_num[k]) > 0 else 0 for k, v in all_mse.items()}
-        overall_mae = {k: sum(v) / sum(all_sample_num[k]) if sum(all_sample_num[k]) > 0 else 0 for k, v in all_mae.items()}
-        print(f"-> Results for all subsets: MSE = {overall_mse:.7f}, MAE = {overall_mae:.7f}")
+        print(f"-> Results for all subsets: MSE = {all_mse / all_sample_num:.7f}, MAE = {all_mae / all_sample_num:.7f}")
     print("="*50)
 
     sys.exit(0)
