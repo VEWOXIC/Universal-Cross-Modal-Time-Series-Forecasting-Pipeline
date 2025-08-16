@@ -58,7 +58,12 @@ class Experiment(Exp_Basic):
         for c in range(num_channels):
             # batch_x: [batch_size, seq_len, num_channels]
             channel_x = batch_x[:, :, c:c+1].squeeze(-1)  # channel_x: [batch_size, seq_len]
-            channel_output = self.model(x=channel_x).unsqueeze(-1)  # channel_output: [batch_size, output_len, 1]
+            if self.args.task == 'TSF':
+                channel_output = self.model.forward(x=channel_x).unsqueeze(-1)  # channel_output: [batch_size, output_len, 1]
+            elif self.args.task == 'TGTSF':
+                channel_output = self.model.forward(x=channel_x, context=batch_y_hetero + hetero_general + hetero_general) # .unsqueeze(-1)
+            else:
+                raise ValueError(f"Unsupported task type: {self.args.task}")
             outputs.append(channel_output)
         
         final_output = torch.cat(outputs, dim=-1)  # final_output: [batch_size, output_len, num_channels]

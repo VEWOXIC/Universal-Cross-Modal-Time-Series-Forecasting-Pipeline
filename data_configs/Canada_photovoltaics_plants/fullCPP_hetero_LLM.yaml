@@ -13,6 +13,7 @@ formatter: 'id_{i}.parquet'
 sampling_rate: 1h
 base_T: 24
 hetero_info:
+  hetero_type: all_for_one
   sampling_rate: 1day
   root_path: ./data/Canada_photovoltaics_plants/weather/calgary/weather_report/general_report
   formatter: fast_general_weather_forecast_????.json

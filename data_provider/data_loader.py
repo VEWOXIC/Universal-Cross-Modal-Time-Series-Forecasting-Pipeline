@@ -372,7 +372,7 @@ class Heterogeneous_Dataset(Dataset):
         general_info = self.static_data['general_info']
         channel_info = self.static_data['channel_info'][id]
 
-        channel_info = channel_info.reshape(1, 256) if channel_info.shape == (256,) else channel_info
+        # channel_info = channel_info.reshape(1, 256) if channel_info.shape == (256,) else channel_info
         
         downtime_prompt = self.static_data['downtime_prompt']
         # Convert downtime ranges to IntervalIndex using from_arrays
@@ -509,4 +509,6 @@ class Heterogeneous_Dataset(Dataset):
 
             matched_times = matched_times.strftime('%Y%m%d%H%M%S').tolist()
             return matched_times, general_info, channel_info, output_dynamic
-            
+        
+        else:
+            raise NotImplementedError('Only all_for_one and each_subset hetero type are supported, implement more if needed')

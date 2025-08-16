@@ -27,6 +27,7 @@ parser.add_argument('--noise', type=float, default=0.0, help='optimizer learning
 parser.add_argument('--downsample', type=int, default=None, help='number of augmented data')
 
 # forecasting task
+parser.add_argument('--task', type=str, default='TSF', choices=['TSF', 'TGTSF'], help='Task type: TSF (Time Series Forecasting) or TGTSF (Targeted Time Series Forecasting)')
 parser.add_argument('--ahead', type=str, default=None, help='Shorthand for forecast horizon: "day", "week", or "month" (automatically sets input_len and output_len based on sampling_rate)')
 parser.add_argument('--output_len', type=int, default=1000, help='Output/prediction sequence length (number of time steps to forecast)')
 parser.add_argument('--input_len', type=int, default=1000, help='Input sequence length (number of historical time steps used for prediction)')
@@ -43,7 +44,15 @@ parser.add_argument('--gpu', type=int, default=0, help='GPU device ID to use whe
 parser.add_argument('--use_multi_gpu', action='store_true', help='Use multiple GPUs for distributed training', default=False)
 parser.add_argument('--devices', type=str, default='0,1,2,3', help='Comma-separated list of GPU device IDs to use for multi-GPU training')
 
+# env variables
+parser.add_argument('--hf_mirror', type=bool, default=False, help='Use Hugging Face mirror for downloading models')
+
+
 args = parser.parse_args()
+
+# Set environment variables for HuggingFace
+if args.hf_mirror:
+    os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 # preload the yamls
 with open(args.model_config, 'r') as f:

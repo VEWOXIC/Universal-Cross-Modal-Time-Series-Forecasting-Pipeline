@@ -9,6 +9,7 @@ def model_init(model_name, configs, all_args, is_LLM=False, is_FM=False):
         return LLM_Socket(configs)
 
     elif is_FM:
+        configs['hist_len'] = all_args.input_len
         configs['pred_len'] = all_args.output_len
         configs['gpu'] = all_args.gpu if all_args.use_gpu else None
 

@@ -1,0 +1,6 @@
+model_name: ChengsenWang/ChatTime-1-7B-Chat
+num_samples: 10
+top_k: 100
+top_p: 1.0
+temperature: 1.0
+task: TGTSF
