@@ -10,12 +10,14 @@ target: all
 id_info: id_info.json
 id: all
 formatter: '{i}.parquet'
-sampling_rate: 10min
-base_T: 144
+downsample: 6
+sampling_rate: 1h
+base_T: 24
 hetero_info:
+  hetero_type: all_for_one
   sampling_rate: 1day
-  root_path: ./data/Jena_Atmospheric_Physics/weather
-  formatter: 
+  root_path: ./data/Jena_Atmospheric_Physics/weather/weather_report/general_report
+  formatter: fast_general_weather_forecast_????.json
   matching: single
   input_format: json
   static_path: static_info.json

@@ -10,12 +10,14 @@ target:
 id_info: id_info_imputed.json
 id: all
 formatter: 'id_{i}.parquet'
-sampling_rate: 5min
-base_T: 288
+downsample: 12
+sampling_rate: 1h
+base_T: 24
 hetero_info:
+  hetero_type: all_for_one
   sampling_rate: 1day
-  root_path: ./data/NYC_traffic_speed/weather/brooklyn/weather_report
-  formatter: fast_general_formal_forecast_????.json
+  root_path: ./data/NYC_traffic_speed/weather
+  formatter: merged_fast_general_weather_forecast.json
   matching: single
   input_format: json
   static_path: static_info.json
