@@ -53,20 +53,49 @@ class Experiment(Exp_Basic):
             # only move batch_x, batch_y to device for TSF models
             batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel = general_move_to_device(batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel, self.device)
         
-        num_channels = batch_x.size(-1)
-        outputs = []
-        for c in range(num_channels):
-            # batch_x: [batch_size, seq_len, num_channels]
-            channel_x = batch_x[:, :, c:c+1].squeeze(-1)  # channel_x: [batch_size, seq_len]
+        if self.args.individual:
+            num_channels = batch_x.size(-1)
+            outputs = []
+            for c in range(num_channels):
+                # batch_x: [batch_size, seq_len, num_channels]
+                channel_x = batch_x[:, :, c:c+1].squeeze(-1)  # channel_x: [batch_size, seq_len]
+
+                if self.args.task == 'TSF':
+                    channel_output = self.model.forward(x=channel_x)  # channel_output: [batch_size, output_len, 1]
+                elif self.args.task == 'TGTSF':
+                    channel_output = self.model.forward(x=channel_x, context=batch_y_hetero+hetero_general+hetero_general)
+                else:
+                    raise ValueError(f"Unsupported task type: {self.args.task}")
+                
+                if channel_output is None:
+                    print(f"[ Warning ]: Model returned None for channel {c}.")
+                    return None, None
+                elif torch.isnan(channel_output).any():
+                    print(f"[ Warning ]: NaN detected in model output")
+                    return None, None
+                else:
+                    channel_output = channel_output.unsqueeze(-1)
+                    print(f"Channel {c} output shape: {channel_output}")
+                
+                outputs.append(channel_output)
+            
+            final_output = torch.cat(outputs, dim=-1)  # final_output: [batch_size, output_len, num_channels]
+        
+        else:
             if self.args.task == 'TSF':
-                channel_output = self.model.forward(x=channel_x).unsqueeze(-1)  # channel_output: [batch_size, output_len, 1]
+                final_output = self.model.forward(x=batch_x)
             elif self.args.task == 'TGTSF':
-                channel_output = self.model.forward(x=channel_x, context=batch_y_hetero + hetero_general + hetero_general) # .unsqueeze(-1)
+                final_output = self.model.forward(x=batch_x, context=batch_y_hetero+hetero_general+hetero_general)
             else:
                 raise ValueError(f"Unsupported task type: {self.args.task}")
-            outputs.append(channel_output)
-        
-        final_output = torch.cat(outputs, dim=-1)  # final_output: [batch_size, output_len, num_channels]
+            
+            if final_output is None:
+                print(f"[ Warning ]: Model returned None for channel {c}.")
+                return None, None
+            elif torch.isnan(channel_output).any():
+                print(f"[ Warning ]: NaN detected in model output")
+                return None, None
+
         gt = batch_y  # batch_y: [batch_size, output_len, num_channels]
 
         return final_output, gt
@@ -81,12 +110,14 @@ class Experiment(Exp_Basic):
         
         all_metrics_filename = "all_test_metrics.json"
         final_filename = "final_test_result.json"
+        error_filename = "overall_error.json"
         
         criterion = self._select_criterion()
         loaders = self._get_data(flag='test')
 
         overall_running_loss = 0.0
         overall_total_samples = 0
+        overall_error = 0
 
         if self.args.filtered_samples is not None:
             filtered_samples = json.load(open(self.args.filtered_samples))
@@ -97,6 +128,7 @@ class Experiment(Exp_Basic):
         for info, loader in loaders.items():
             info_running_loss = 0.0
             info_total_samples = 0
+            info_error = 0
             
             if self.args.filtered_samples is not None:
                 filter_index = filtered_samples[info]
@@ -108,6 +140,12 @@ class Experiment(Exp_Basic):
                         print(f"[ Info ]: Testing on sample {i}, total: {len(filter_index)}")
 
                         output, gt = self._forward_step(iter_data)
+
+                        if output is None and gt is None:
+                            print(f"[ Warning ]: Model returned None for sample {i}. Skipping this sample.")
+                            info_error += 1
+                            overall_error += 1
+                            continue
                         
                         current_batch_size = gt.size(0)
                         loss = criterion(output, gt)
@@ -123,6 +161,12 @@ class Experiment(Exp_Basic):
                         print(f"[ Info ]: Testing on all samples")
 
                         output, gt = self._forward_step(iter_data)
+
+                        if output is None and gt is None:
+                            print(f"[ Warning ]: Model returned None for sample {i}. Skipping this sample.")
+                            info_error += 1
+                            overall_error += 1
+                            continue
                         
                         current_batch_size = gt.size(0)
                         loss = criterion(output, gt)
@@ -139,6 +183,8 @@ class Experiment(Exp_Basic):
             else:
                 print(f"Test loss for {info}: N/A (no samples processed)")
                 info_epoch_loss = None
+
+            print(f"Total Errors: {info_error}")
             
             # Save metrics
             try:
@@ -156,7 +202,12 @@ class Experiment(Exp_Basic):
 
         # Save results
         final_result = {"final_res": total_epoch_loss}
-        
         with open(os.path.join(path, final_filename), 'w') as f:
             json.dump(final_result, f, indent=4)
         print(f"Saved final result to {final_filename}")
+
+        # Save overall errors
+        overall_error_result = {"overall_error": overall_error}
+        with open(os.path.join(path, error_filename), 'w') as f:
+            json.dump(overall_error_result, f, indent=4)
+        print(f"Saved overall error info to {error_filename}")

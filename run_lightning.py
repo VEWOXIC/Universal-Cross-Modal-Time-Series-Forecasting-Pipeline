@@ -54,7 +54,15 @@ parser.add_argument('--test_after_epoch', action='store_true', help='Test after 
 # Testing
 parser.add_argument('--test', action='store_true', help='Test the model after training (if set, training will not be performed). need specify the last checkpoint')
 
+# env variables
+parser.add_argument('--hf_mirror', type=bool, default=False, help='Use Hugging Face mirror for downloading models')
+
+
 args = parser.parse_args()
+
+# Set environment variables for HuggingFace
+if args.hf_mirror:
+    os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 # make training faster
 torch.backends.cudnn.benchmark = True

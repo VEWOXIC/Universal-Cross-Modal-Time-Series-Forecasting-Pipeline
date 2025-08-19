@@ -88,6 +88,11 @@ class Model(nn.Module):
             for sample in samples:
                 serialized_prediction = sample["generated_text"].split("### Response:\n")[1]
                 dispersed_prediction = self.serializer.inverse_serialize(serialized_prediction)
+                
+                if dispersed_prediction.size == 0:
+                    print("Warning: Empty prediction array!")
+                    return None
+                
                 pred = self.discretizer.inverse_discretize(dispersed_prediction)
 
                 if len(pred) < min(remaining, self.max_pred_len):

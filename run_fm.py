@@ -32,6 +32,7 @@ parser.add_argument('--ahead', type=str, default=None, help='Shorthand for forec
 parser.add_argument('--output_len', type=int, default=1000, help='Output/prediction sequence length (number of time steps to forecast)')
 parser.add_argument('--input_len', type=int, default=1000, help='Input sequence length (number of historical time steps used for prediction)')
 parser.add_argument('--filtered_samples', type=str, default=None, help='filtered samples for testing')
+parser.add_argument('--individual', type=bool, default=True, help='Whether to train individual models for each channel (default is False, which trains a single model for all channels)')
 
 # optimization
 parser.add_argument('--num_workers', type=int, default=0, help='Number of subprocesses for data loading (0 means data is loaded in the main process)')

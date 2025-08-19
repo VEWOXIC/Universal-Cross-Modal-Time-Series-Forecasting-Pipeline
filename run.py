@@ -47,7 +47,15 @@ parser.add_argument('--gpu', type=int, default=0, help='GPU device ID to use whe
 parser.add_argument('--use_multi_gpu', action='store_true', help='Use multiple GPUs for distributed training', default=False)
 parser.add_argument('--devices', type=str, default='0,1,2,3', help='Comma-separated list of GPU device IDs to use for multi-GPU training')
 
+# env variables
+parser.add_argument('--hf_mirror', type=bool, default=False, help='Use Hugging Face mirror for downloading models')
+
+
 args = parser.parse_args()
+
+# Set environment variables for HuggingFace
+if args.hf_mirror:
+    os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 # preload the yamls
 with open(args.model_config, 'r') as f:
