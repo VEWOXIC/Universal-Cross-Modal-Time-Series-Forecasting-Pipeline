@@ -31,6 +31,7 @@ parser.add_argument('--downsample', type=int, default=None, help='number of augm
 parser.add_argument('--ahead', type=str, default=None, help='Shorthand for forecast horizon: "day", "week", or "month" (automatically sets input_len and output_len based on sampling_rate)')
 parser.add_argument('--output_len', type=int, default=1000, help='Output/prediction sequence length (number of time steps to forecast)')
 parser.add_argument('--input_len', type=int, default=1000, help='Input sequence length (number of historical time steps used for prediction)')
+parser.add_argument('--task', type=str, default='TSF', help='Task type: "TSF", "TGTSF"')
 
 # optimization
 parser.add_argument('--num_workers', type=int, default=0, help='Number of subprocesses for data loading (0 means data is loaded in the main process)')

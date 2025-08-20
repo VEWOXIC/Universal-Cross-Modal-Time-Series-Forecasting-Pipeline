@@ -20,6 +20,7 @@ def model_init(model_name, configs, all_args, is_LLM=False, is_FM=False):
     else:
         configs['seq_len'] = all_args.input_len
         configs['pred_len'] = all_args.output_len
+        configs['gpu'] = all_args.gpu if all_args.use_gpu else None
 
         data_configs = all_args.data_config
         try:
