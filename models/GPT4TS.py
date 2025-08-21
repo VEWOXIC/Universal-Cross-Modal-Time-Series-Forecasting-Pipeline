@@ -42,7 +42,7 @@ class Model(nn.Module):
                     param.requires_grad = False
 
         for layer in (self.gpt2, self.in_layer, self.out_layer):
-            layer.to(device=f"cuda:{configs.gpu}")
+            layer.to(device=f"cuda:{configs.gpu}") if configs.gpu is not None else layer.to(device='cpu')
             layer.train()
         
         self.cnt = 0
