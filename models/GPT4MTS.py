@@ -19,7 +19,7 @@ class Model(nn.Module):
         self.stride = configs.stride
         self.patch_num = (configs.seq_len - self.patch_size) // self.stride + 1
 
-        self.padding_patch_layer = nn.ReplicationPad1d((0, self.stride)) 
+        self.padding_patch_layer = nn.ReplicationPad1d((0, self.stride))
         self.patch_num += 1
 
         if configs.is_gpt:
@@ -36,7 +36,6 @@ class Model(nn.Module):
         self.in_layer = nn.Linear(configs.patch_size, configs.d_model)
         self.prompt_layer = nn.Linear(configs.d_model, configs.d_model)
         self.out_layer = nn.Linear(configs.d_model * (self.patch_num), configs.pred_len)
-        self.device = configs.device
         
         if configs.freeze and configs.pretrain:
             for i, (name, param) in enumerate(self.gpt2.named_parameters()):
@@ -46,10 +45,19 @@ class Model(nn.Module):
                     param.requires_grad = False
 
         for layer in (self.gpt2, self.in_layer, self.out_layer, self.prompt_layer):
-            layer.to(device=self.device)
+            layer.to(device=f"cuda:{configs.gpu}") if configs.gpu is not None else layer.to(device='cpu')
             layer.train()
         
         self.rev_in = RevIN(num_features=1) # channel independent
+
+    def move_to_device(self, batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel, device):
+        """
+        Custom move data to device
+        """
+        batch_x = batch_x.float().to(device)
+        batch_y = batch_y.float().to(device)
+        batch_x_hetero = batch_x_hetero.float().to(device)
+        return batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
 
     def get_emb(self, x, tokens=None):
         if tokens is None:
@@ -80,7 +88,7 @@ class Model(nn.Module):
         B, L, M = x.shape # 4, 512, 1
 
         if self.RevIN:
-            x = self.rev_in(x, 'norm').to(self.device)
+            x = self.rev_in(x, 'norm').to(f"cuda:{configs.gpu}") if configs.gpu is not None else self.rev_in(x, 'norm').to('cpu')
         else:
             means = x.mean(1, keepdim=True).detach()
             x = x - means
@@ -95,7 +103,7 @@ class Model(nn.Module):
         outputs = rearrange(outputs, '(b m) l -> b l m', b=B)
         
         if self.RevIN:
-            outputs = self.rev_in(outputs, 'denorm').to(self.device)
+            outputs = self.rev_in(outputs, 'denorm').to(f"cuda:{configs.gpu}") if configs.gpu is not None else self.rev_in(outputs, 'denorm').to('cpu')
         else:
             outputs = outputs * stdev
             outputs = outputs + means

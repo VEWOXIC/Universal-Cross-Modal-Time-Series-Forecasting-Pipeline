@@ -117,13 +117,14 @@ class Experiment(Exp_Basic):
                     epoch_loss += loss.item() * current_batch_size
                     total_samples += current_batch_size
 
-                    if iter_count % 20 == 0:
-                        speed = (time.time() - time_now) / iter_count
-                        left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
-                        pbar.set_postfix({'loss': f'{loss.item():.7f}', 'speed': f'{speed:.4f}s/iter', 'left time': f'{left_time:.4f}s'})
-                        pbar.update(20)
-                        iter_count = 0
-                        time_now = time.time()
+                    # if iter_count % 20 == 0:
+                    speed = (time.time() - time_now) / iter_count
+                    left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
+                    pbar.set_postfix({'loss': f'{loss.item():.7f}', 'speed': f'{speed:.4f}s/iter', 'left time': f'{left_time:.4f}s'})
+                    # pbar.update(20)
+                    pbar.update(1)
+                    iter_count = 0
+                    time_now = time.time()
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
             train_loss = epoch_loss / total_samples if total_samples > 0 else 0.0
             vali_loss = self.vali(vali_loader, criterion)

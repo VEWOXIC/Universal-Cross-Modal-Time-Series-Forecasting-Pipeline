@@ -6,3 +6,4 @@ patch_size: 16
 stride: 8
 d_model: 768
 gpt_layers: 6
+task: TSF

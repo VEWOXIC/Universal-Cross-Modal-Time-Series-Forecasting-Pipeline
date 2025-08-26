@@ -2,12 +2,15 @@ import os
 import numpy as np
 import pandas as pd
 import os
+import torch
 from torch.utils.data import Dataset
 from sklearn.preprocessing import StandardScaler
+from transformers import AutoTokenizer, AutoModel
 import warnings
 from .data_helper import timestamp_spliter, ratio_spliter, data_buffer
 import multiprocessing as mp
 from time import time
+from tqdm import tqdm
 import json
 from datetime import datetime
 from functools import partial
@@ -203,13 +206,16 @@ class Universal_Dataset(Dataset):
 
 
 class Heterogeneous_Dataset(Dataset):
-    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json', timezone=None, noise = 0.0, hetero_type='all_for_one', id_list=None):
+    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json', timezone=None, noise = 0.0, hetero_type='all_for_one', id_list=None, postemb=None, postemb_model=None, device='cpu'):
         super().__init__()
 
         self.hetero_type = hetero_type
         self.root_path = root_path
         self.formatter = formatter
         self.id_list = id_list
+        self.postemb = postemb
+        self.postemb_model = postemb_model
+        self.device = torch.device('cpu') if device == 'cpu' else torch.device(f'cuda:{device}')
 
         self.id_info = id_info
         self.static_path = static_path
@@ -232,44 +238,142 @@ class Heterogeneous_Dataset(Dataset):
         x = x / np.linalg.norm(x, axis=-1, keepdims=True)
         return x
 
+    def convert_plain_text_to_embeddings(self, text):
+        tokenizer = AutoTokenizer.from_pretrained(self.postemb_model)
+        model = AutoModel.from_pretrained(self.postemb_model).to(self.device)
+        model.eval()
+
+        encoded = tokenizer(text,
+                            padding=True,
+                            truncation=True,
+                            max_length=512,
+                            return_tensors='pt')
+
+        input_ids = encoded['input_ids'].to(self.device)
+        attention_mask = encoded['attention_mask'].to(self.device)
+
+        with torch.no_grad():
+            outputs = model(input_ids, attention_mask=attention_mask)
+            # [CLS]
+            text_embedding = outputs.last_hidden_state[:, 0, :].to('cpu')
+
+        return text_embedding
+
+    def convert_df_text_to_embeddings(self, df):
+        tokenizer = AutoTokenizer.from_pretrained(self.postemb_model)
+        model = AutoModel.from_pretrained(self.postemb_model).to(self.device)
+        model.eval()
+
+        df_time = df[['time']]
+        df_merged = df.drop('time', axis=1).astype(str).apply(''.join, axis=1)
+
+        batch_size = 200
+        ls_embeddings = []
+        
+        for i in tqdm(range(0, len(df), batch_size), desc="Processing post embedding batches", unit="batch"):
+            batch_texts = df_merged.iloc[i:i+batch_size].tolist()
+
+            encoded = tokenizer(batch_texts,
+                            padding=True,
+                            truncation=True,
+                            max_length=512,
+                            return_tensors='pt')
+
+            input_ids = encoded['input_ids'].to(self.device)
+            attention_mask = encoded['attention_mask'].to(self.device)
+
+            with torch.no_grad():
+                outputs = model(input_ids, attention_mask=attention_mask)
+                # [CLS]
+                batch_embeddings = outputs.last_hidden_state[:, 0, :].to('cpu')
+                ls_embeddings.extend(batch_embeddings)
+
+        df_time['embeddings'] = ls_embeddings
+
+        return df_time
+
     def load_data(self):
         self.dynamic_data = {}
+        if self.hetero_type == 'all_for_one':
+            if self.formatter.endswith('.json'):
+                file_paths = glob.glob(os.path.join(self.root_path, self.formatter))
+                for file_path in file_paths:
+                    json_data = json.load(open(file_path))
+                    self.dynamic_data.update(json_data)
 
-        if self.formatter.endswith('.json'):
-            file_paths = glob.glob(os.path.join(self.root_path, self.formatter))
-            for file_path in file_paths:
-                json_data = json.load(open(file_path))
-                self.dynamic_data.update(json_data)
+                self.dynamic_data = pd.DataFrame.from_dict(self.dynamic_data, orient='index')
+                self.dynamic_data.index = pd.to_datetime(self.dynamic_data.index)
+                # sort the index
+                self.dynamic_data.sort_index(inplace=True)
+                self.dynamic_data['time'] = self.dynamic_data.index
+                self.dynamic_data['time'] = self.dynamic_data['time'].dt.strftime('%Y%m%d%H%M%S')
+            elif self.formatter.endswith('.csv'):
+                file_paths = glob.glob(os.path.join(self.root_path, self.formatter))
+                df_list = []
+                for file_path in file_paths:
+                    df_list.append(pd.read_csv(file_path))
+                self.dynamic_data = pd.concat(df_list)
+                self.dynamic_data['time'] = pd.to_datetime(self.dynamic_data['time'])
+                self.dynamic_data.set_index('time', inplace=True)
+                self.dynamic_data.sort_index(inplace=True)
+                # self.dynamic_data['time'] = self.dynamic_data.index.strftime('%Y%m%d%H%M%S') # This line is now redundant
+            
+            print('[ info ] Successfully load the dynamic data from {}'.format(self.formatter))
 
-            self.dynamic_data = pd.DataFrame.from_dict(self.dynamic_data, orient='index')
-            self.dynamic_data.index = pd.to_datetime(self.dynamic_data.index)
-            # sort the index
-            self.dynamic_data.sort_index(inplace=True)
-            self.dynamic_data['time'] = self.dynamic_data.index
-            self.dynamic_data['time'] = self.dynamic_data['time'].dt.strftime('%Y%m%d%H%M%S')
-        elif self.formatter.endswith('.csv'):
-            file_paths = glob.glob(os.path.join(self.root_path, self.formatter))
-            for file_path in file_paths:
-                df = pd.read_csv(file_path)
-                self.dynamic_data[df['time']] = df
-            self.dynamic_data = pd.concat(self.dynamic_data.values())
-            self.dynamic_data['time'] = pd.to_datetime(self.dynamic_data['time'])
-            self.dynamic_data.set_index('time', inplace=True)
-            self.dynamic_data['time'] = self.dynamic_data['time'].dt.strftime('%Y%m%d%H%M%S')
+            if self.postemb is not None:
+                self.dynamic_data = self.convert_df_text_to_embeddings(self.dynamic_data)
+                print('[ info ] Successfully convert text to embeddings after loading the textual data')
+
+        elif self.hetero_type == 'each_subset':
+            print(f'[ info ] Found {len(self.id_list)} subset IDs. Starting to load data for each...')
+            for id in self.id_list:
+                file_path = os.path.join(self.root_path, str(id), self.formatter)
+                
+                if not os.path.exists(file_path):
+                    print(f'[ Warning ] Data file not found for id: {id} at path: {file_path}. Skipping.')
+                    continue
+
+                if self.formatter.endswith('.json'):
+                    json_data = json.load(open(file_path))
+                    df = pd.DataFrame.from_dict(json_data, orient='index')
+                    df.index = pd.to_datetime(df.index)
+                    df.sort_index(inplace=True)
+                    df['time'] = df.index.strftime('%Y%m%d%H%M%S')
+
+                elif self.formatter.endswith('.csv'):
+                    df = pd.read_csv(file_path)
+                    df['time'] = pd.to_datetime(df['time'])
+                    df.set_index('time', inplace=True)
+                    df.sort_index(inplace=True)
+
+                # Time zone processing for each subset
+                if df.index.tz is not None:
+                    if self.timezone is not None:
+                        df.index = df.index.tz_convert(self.timezone).tz_localize(None)
+                    else:
+                        df.index = df.index.tz_convert('UTC').tz_localize(None)
+                
+                self.dynamic_data[id] = df
+                print(f'[ info ] Successfully loaded data for id: {id}')
+                
+                if self.postemb is not None:
+                    df = self.convert_df_text_to_embeddings(df)
+                    self.dynamic_data[id] = df
+                    print('[ info ] Successfully convert text to embeddings after loading the textual data')
         
-        print('[ info ] Successfully load the dynamic data from {}'.format(self.formatter))
-        # TODO: static_data = {downtime_prompt: '', general_info: '', channel_info: {114514: '', 1919810: ''}}
+        else:
+            raise NotImplementedError('Only all_for_one and each_subset hetero type are supported, implement more if needed')
 
         if self.static_path is None:
-            print('[ Warning ] No static data is provided, use default static data!!!!')
+            print('[ Warning ] No static data is provided, use default static data!')
             self.static_data = {
                 'downtime_prompt': 'The sensor is down for unknown reasons.',
                 'general_info': 'The general information of the sensor',
                 'channel_info': {k: 'The information of the channel {}'.format(k) for k in self.id_info.keys()}
             }
-
         else:
             self.static_data = json.load(open(os.path.join(self.root_path, self.static_path)))
+            print('[ info ] Successfully load the static data from {}'.format(self.static_path))
     
     def load_embedding(self, id_list=None):
         if self.hetero_type == 'all_for_one':
@@ -285,9 +389,11 @@ class Heterogeneous_Dataset(Dataset):
                 for file_path in file_paths:
                     pkl_data = joblib.load(file_path)
                     self.embeddings.update(pkl_data)
-                self.static_data = joblib.load(os.path.join(self.root_path, self.static_path))
+                print('[ info ] Successfully load the dynamic data embedding from {}'.format(self.formatter))
+
             else:
                 raise NotImplementedError('Only .pkl data are supported, implement more if needed')
+            
             # fake dynamic data just for timestamp matching
             self.dynamic_data = pd.DataFrame.from_dict({k: 0 for k in self.embeddings.keys()}, orient='index')
             self.dynamic_data['time'] = self.dynamic_data.index
@@ -304,8 +410,6 @@ class Heterogeneous_Dataset(Dataset):
                 # print('[ info ] The index has timezone, converting to naive datetime, if need to keep timezone, please implement alignment using UDT')
                 # self.dynamic_data.index = self.dynamic_data.index.tz_convert('Europe/Berlin').tz_localize(None)
             self.dynamic_data.sort_index(inplace=True)
-
-            print('[ info ] Successfully load the dynamic data embedding from {}'.format(self.formatter))
 
         elif self.hetero_type == 'each_subset':
 
@@ -347,11 +451,12 @@ class Heterogeneous_Dataset(Dataset):
                 else:
                     raise NotImplementedError('Only .pkl data are supported for this structure.')
 
-                # Global static data
-                self.static_data = joblib.load(os.path.join(self.root_path, self.static_path))
-                
         else:
             raise NotImplementedError('Only all_for_one and each_subset hetero type are supported, implement more if needed')
+    
+        # Global static data
+        self.static_data = joblib.load(os.path.join(self.root_path, self.static_path))
+        print('[ info ] Successfully load the static data from {}'.format(self.static_path))
 
     def init_hetero_data(self, id):
         down_time = self.id_info[id]['sensor_downtime']
@@ -450,7 +555,12 @@ class Heterogeneous_Dataset(Dataset):
 
             else:
                 matched_dynamic = self.dynamic_data.loc[matched_times].copy()
-                matched_dynamic['note'] = np.where(is_downtime, downtime_prompt, '')
+
+                if self.postemb is None:
+                    matched_dynamic['note'] = np.where(is_downtime, downtime_prompt, '')
+                else:
+                    # todo: !!
+                    pass
 
                 matched_dynamic = matched_dynamic.to_dict(orient='records')
                 # remove the time from the dicts
@@ -459,7 +569,11 @@ class Heterogeneous_Dataset(Dataset):
                 if self.output_format == 'dict':
                     output_dynamic = matched_dynamic
                 elif self.output_format == 'json':
-                    output_dynamic = [json.dumps(record) for record in matched_dynamic]
+                    if self.postemb is None:
+                        output_dynamic = [json.dumps(record) for record in matched_dynamic]
+                    else:
+                        output_dynamic = torch.stack([matched_df['embeddings'] for matched_df in matched_dynamic], dim=0)
+                        
                 elif self.output_format == 'csv':
                     output_dynamic = matched_dynamic.to_csv(index=False)
                 else:
