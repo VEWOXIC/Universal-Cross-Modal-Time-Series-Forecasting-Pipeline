@@ -8,7 +8,7 @@ python -u criterias_lightning.py \
     --version "ligntning_20250809_02" \
     --data_config './data_configs/Bear_room/fullBear_hetero_ablation_TGTSF.yaml' \
     --batch_size 512 \
-    --device "cuda:4" \
+    --device "4" \
     --channel_wise True \
     --task "TGTSF" | tee -a ./logs/ablation.log
 done
@@ -24,5 +24,5 @@ python -u criterias_lightning.py \
     --output_len $output_len \
     --batch_size 512 \
     --channel_wise True \
-    --device "cuda:2" | tee -a ./logs/ablation.log
+    --device "2" | tee -a ./logs/ablation.log
 done

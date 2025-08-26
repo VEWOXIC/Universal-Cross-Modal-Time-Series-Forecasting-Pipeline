@@ -48,16 +48,16 @@ def get_reasoning_samples(lossdf, sampling_rate):
     
     return sample_pos, sample_neg
 
-def get_lossdf(dataset, model_TST, model_TGTSF, stride, config):
+def get_lossdf(dataset, model_TST, model_TGTSF, stride, config, device):
     losslist = {}
     for sample_num in tqdm(range(0, len(dataset), stride), desc="Processing samples"):
         with torch.no_grad():
             batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel = dataset[sample_num]
 
-            batch_x = torch.tensor(batch_x).unsqueeze(0).float().to(config.device)
-            batch_y = torch.tensor(batch_y).unsqueeze(0).float().to(config.device)
-            batch_y_hetero = torch.tensor(batch_y_hetero).unsqueeze(0).float().to(config.device)
-            hetero_channel = torch.tensor(hetero_channel).unsqueeze(0).float().to(config.device)
+            batch_x = torch.tensor(batch_x).unsqueeze(0).float().to(device)
+            batch_y = torch.tensor(batch_y).unsqueeze(0).float().to(device)
+            batch_y_hetero = torch.tensor(batch_y_hetero).unsqueeze(0).float().to(device)
+            hetero_channel = torch.tensor(hetero_channel).unsqueeze(0).float().to(device)
 
             output_TST = model_TST(x=batch_x)
             output_TST = output_TST[:, -config.output_len:, :]
@@ -89,7 +89,7 @@ if __name__ == "__main__":
     parser.add_argument('--sample_root', type=str, default='./sample_indexes', help="Root directory for saving samples")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
     parser.add_argument('--sampling_rate', type=float, default=0.1, help="Sampling rate for each subset")
-    parser.add_argument('--device', type=str, default='cuda:1', help="Device to use for training (e.g., 'cuda' or 'cpu')")
+    parser.add_argument('--device', type=str, default='0', help="Device to use for training (e.g., 'cuda' or 'cpu')")
     args = parser.parse_args()
 
     data = args.data
@@ -99,6 +99,13 @@ if __name__ == "__main__":
     output_len = args.output_len
     checkpoint_type = args.type
     ckpt_base = args.checkpoint_base
+
+    if torch.cuda.is_available():
+        device = torch.device(f"cuda:{args.device}")
+    else:
+        device = torch.device("cpu")
+        print("[Warning] CUDA is not available, use CPU instead.")
+    print(f"[Info] Running on device: {device}")
 
     ckpt_id = f'_{baseline_model}_{data}_{output_len}_{input_len}'
 
@@ -123,11 +130,10 @@ if __name__ == "__main__":
     config = dotdict(json.load(open(os.path.join(ckpt_path, 'args.json'))))
     config.model_config = dotdict(config.model_config)
     config.data_config = dotdict(config.data_config)
-
-    config.device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     config.batch_size = 1
+    config.devices = args.device
 
-    model_TST = model_init(config.model, config.model_config, config).to(config.device)
+    model_TST = model_init(config.model, config.model_config, config).to(device)
     # load the model
     ckpt = glob.glob(os.path.join(ckpt_path, 'checkpoint*'))[0]
     checkpoint = torch.load(ckpt)
@@ -169,11 +175,10 @@ if __name__ == "__main__":
     config = dotdict(json.load(open(os.path.join(ckpt_path, 'args.json'))))
     config.model_config = dotdict(config.model_config)
     config.data_config = dotdict(config.data_config)
-
-    config.device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     config.batch_size = 1
+    config.devices = args.device
 
-    model_TGTSF = model_init(config.model, config.model_config, config).to(config.device)
+    model_TGTSF = model_init(config.model, config.model_config, config).to(device)
     # load the model
     ckpt = glob.glob(os.path.join(ckpt_path, 'checkpoint*'))[0]
     checkpoint = torch.load(ckpt)
@@ -227,7 +232,7 @@ if __name__ == "__main__":
         dataset = fullsets[i]
         print(f"[Info] handling {i}")
 
-        lossdf = get_lossdf(dataset, model_TST, model_TGTSF, int(output_len / 2), config)
+        lossdf = get_lossdf(dataset, model_TST, model_TGTSF, int(output_len / 2), config, device)
         lossdf.to_csv(os.path.join(ckpt_path, f'lossdf_{i}.csv'))
 
         try:

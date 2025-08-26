@@ -14,7 +14,7 @@ from utils.tools import dotdict
 from utils.metrics import MAE, MSE
 
 
-def evaluate_full_dataset(loader, model, config, indexes):
+def evaluate_full_dataset(loader, model, config, device, indexes):
     """
     Evaluates all samples in a dataset using a DataLoader for efficient batch processing.
     Calculates the true MSE and MAE over the entire dataset.
@@ -28,10 +28,10 @@ def evaluate_full_dataset(loader, model, config, indexes):
         with torch.no_grad():
             batch_x, batch_y, _, _, _, y_hetero, _, _, _, hetero_channel = iter_data
 
-            batch_x = torch.tensor(batch_x).to(config.device)
-            batch_y = torch.tensor(batch_y).to(config.device)
-            y_hetero = torch.tensor(y_hetero).to(config.device)
-            hetero_channel = torch.tensor(hetero_channel).to(config.device)
+            batch_x = torch.tensor(batch_x).to(device)
+            batch_y = torch.tensor(batch_y).to(device)
+            y_hetero = torch.tensor(y_hetero).to(device)
+            hetero_channel = torch.tensor(hetero_channel).to(device)
 
             prediction = model(x=batch_x) if config.task == 'TSF' else model(x=batch_x, news=y_hetero, channel_description=hetero_channel)
             prediction = prediction[:, -config.output_len:, :]
@@ -63,7 +63,7 @@ def main():
     parser.add_argument('--data_config', type=str, default=None, help="Path to the data configuration YAML file (optional)")
     parser.add_argument('--task', type=str, default="TSF", choices=["TSF", "TGTSF"], help="Task type: Time Series Forecasting or Text-Grounded TSF")
     parser.add_argument('--filtered_samples', type=str, default=None, help='Path to a JSON file containing filtered sample indexes for evaluation')
-    parser.add_argument('--device', type=str, default="cuda:1" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
+    parser.add_argument('--device', type=str, default="0", help="Device to run the model on")
     
     args = parser.parse_args()
 
@@ -104,15 +104,20 @@ def main():
     config.data_config = dotdict(config.data_config) if args.data_config is None else dotdict(yaml.safe_load(open(args.data_config, 'r')))
     
     # Override config with runtime arguments
-    config.device = torch.device(args.device)
+    config.gpu = args.device
     config.num_workers = 0
     config.task = args.task
     config.batch_size = 1 if args.filtered_samples is not None else args.batch_size  # Must remain batch size = 1 for filtered testing
     
-    print(f"[Info] Running on device: {config.device}")
+    if torch.cuda.is_available():
+        device = torch.device(f"cuda:{args.device}")
+    else:
+        device = torch.device("cpu")
+        print("[Warning] CUDA is not available, use CPU instead.")
+    print(f"[Info] Running on device: {device}")
 
     # --- Initialize and Load Model ---
-    model = model_init(config.model, config.model_config, config).to(config.device)
+    model = model_init(config.model, config.model_config, config).to(device)
     
     # Find the checkpoint file (e.g., checkpoint.pth, model.ckpt)
     ckpt_file = glob.glob(os.path.join(ckpt_path, 'checkpoint*'))
@@ -121,7 +126,7 @@ def main():
     
     ckpt_file_path = ckpt_file[0]
     print(f"[Info] Loading model from: {ckpt_file_path}")
-    checkpoint = torch.load(ckpt_file_path, map_location=config.device)
+    checkpoint = torch.load(ckpt_file_path, map_location=device)
 
     # Handle different checkpoint formats (e.g., from PyTorch Lightning)
     if ckpt_file_path.endswith('.ckpt') and 'state_dict' in checkpoint:
@@ -158,7 +163,7 @@ def main():
             indexes = None
             print("[Info] Using all samples for testing.")
         
-        total_mse, total_mae, num_samples = evaluate_full_dataset(loader, model, config, indexes)
+        total_mse, total_mae, num_samples = evaluate_full_dataset(loader, model, config, device, indexes)
 
         if num_samples > 0:
             avg_mse = total_mse / num_samples if num_samples > 0 else 0

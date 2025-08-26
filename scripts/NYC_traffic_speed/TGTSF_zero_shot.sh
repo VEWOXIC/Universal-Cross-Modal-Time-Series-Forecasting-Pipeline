@@ -7,6 +7,6 @@ python -u criterias_lightning.py \
     --input_len 360 \
     --output_len $output_len \
     --task "TGTSF" \
-    --device "cuda:0" | tee -a ./logs/zero_shot.log
+    --device "0" | tee -a ./logs/zero_shot.log
 
 done

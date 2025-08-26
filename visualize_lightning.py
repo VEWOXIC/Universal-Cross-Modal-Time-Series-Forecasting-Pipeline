@@ -36,7 +36,7 @@ def plot_prediction(indate, input_data, outdate, output_data, prediction_data, d
     print(f"Prediction plot saved to {img_path}")
 
 
-def run_visualization(args, model, config, fullsets):
+def run_visualization(args, model, config, device, fullsets):
     
     subset_name = args.vis_subset
     sample_id = args.vis_sample_id
@@ -53,9 +53,9 @@ def run_visualization(args, model, config, fullsets):
 
     seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel = dataset_to_vis[sample_id]
 
-    input_tensor = torch.tensor(seq_x).to(config.device).float().unsqueeze(0)
-    y_hetero = torch.tensor(y_hetero).to(config.device).float().unsqueeze(0)
-    hetero_channel = torch.tensor(hetero_channel).to(config.device).float().unsqueeze(0)
+    input_tensor = torch.tensor(seq_x).to(device).float().unsqueeze(0)
+    y_hetero = torch.tensor(y_hetero).to(device).float().unsqueeze(0)
+    hetero_channel = torch.tensor(hetero_channel).to(device).float().unsqueeze(0)
 
     with torch.no_grad():
         prediction_tensor = model(x=input_tensor) if args.task == 'TSF' else model(x=input_tensor, news=y_hetero, channel_description=hetero_channel)
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     parser.add_argument('--type', type=str, default="ckpt", help="Type of model checkpoint")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
     parser.add_argument('--checkpoint_file', type=str, default="best", choices=["last", "best"], help="Specific checkpoint file to load (optional)")
-    parser.add_argument('--device', type=str, default="cuda:4" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
+    parser.add_argument('--device', type=str, default="0", help="Device to run the model on")
     parser.add_argument('--task', type=str, default='TGTSF', choices=['TSF', 'TGTSF'], help="Task type: TSF or TGTSF")
     
     parser.add_argument('--channel_id', type=str, default="all", help="'all' for all channels, or a specific channel number to visualize")
@@ -142,16 +142,19 @@ if __name__ == "__main__":
     config = dotdict(json.load(open(config_path)))
     config.model_config = dotdict(config.model_config)
     config.data_config = dotdict(config.data_config)
-    
-    config.device = torch.device(args.device)
-    config.batch_size = 1  # Remain batch size = 1
-    
     config.model = args.model
     config.data = args.data
+    config.batch_size = 1  # Remain batch size = 1
+    devices = args.device
 
-    print(f"[Info] Running on device: {config.device}")
+    if torch.cuda.is_available():
+        device = torch.device(f"cuda:{args.device}")
+    else:
+        device = torch.device("cpu")
+        print("[Warning] CUDA is not available, use CPU instead.")
+    print(f"[Info] Running on device: {device}")
 
-    model = model_init(config.model, config.model_config, config).to(config.device)
+    model = model_init(config.model, config.model_config, config).to(device)
     
     ckpt_file_pattern = os.path.join(ckpt_path, 'checkpoint*') if args.checkpoint_file == "best" else os.path.join(ckpt_path, 'last*')
     
@@ -161,7 +164,7 @@ if __name__ == "__main__":
     ckpt_file = ckpt_files[0]
     
     print(f"[Info] Loading model from: {ckpt_file}")
-    checkpoint = torch.load(ckpt_file, map_location=config.device)
+    checkpoint = torch.load(ckpt_file, map_location=device)
 
 
     if 'state_dict' in checkpoint:
@@ -182,4 +185,4 @@ if __name__ == "__main__":
     fullsets = id_data.get_test('set')
     print(f'[Info] Found {len(fullsets)} datasets to test: {list(fullsets.keys())}')
 
-    run_visualization(args, model, config, fullsets)
+    run_visualization(args, model, config, device, fullsets)

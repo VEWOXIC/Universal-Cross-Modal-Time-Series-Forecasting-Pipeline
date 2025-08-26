@@ -13,7 +13,7 @@ import glob
 import sys
 
 
-def run_test(loader, model, config, indexes, channel_wise):
+def run_test(loader, model, config, device, indexes, channel_wise):
     
     total_mse, total_mae = 0.0, 0.0
     num_samples = 0
@@ -28,10 +28,10 @@ def run_test(loader, model, config, indexes, channel_wise):
         with torch.no_grad():
             batch_x, batch_y, _, _, _, y_hetero, _, _, _, hetero_channel = iter_data
 
-            batch_x = torch.tensor(batch_x).to(config.device)
-            batch_y = torch.tensor(batch_y).to(config.device)
-            y_hetero = torch.tensor(y_hetero).to(config.device)
-            hetero_channel = torch.tensor(hetero_channel).to(config.device)
+            batch_x = torch.tensor(batch_x).to(device)
+            batch_y = torch.tensor(batch_y).to(device)
+            y_hetero = torch.tensor(y_hetero).to(device)
+            hetero_channel = torch.tensor(hetero_channel).to(device)
 
             prediction = model(x=batch_x) if config.task == 'TSF' else model(x=batch_x, news=y_hetero, channel_description=hetero_channel)
             prediction = prediction[:, -config.output_len:, :]  # [B, L, C]
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     parser.add_argument('--type', type=str, default="ckpt", help="Type of model checkpoint")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
     parser.add_argument('--batch_size', type=int, default=256, help="Batch size for testing")
-    parser.add_argument('--device', type=str, default="cuda:1" if torch.cuda.is_available() else "cpu", help="Device to run the model on")
+    parser.add_argument('--device', type=str, default="0", help="Device to run the model on")
     parser.add_argument('--filtered_samples', type=str, default=None, help='filtered samples for testing')
     parser.add_argument('--channel_wise', type=bool, default=False, help='Channel wise testing')
 
@@ -122,17 +122,19 @@ if __name__ == "__main__":
     config = dotdict(json.load(open(config_path)))
     config.model_config = dotdict(config.model_config)
     config.data_config = dotdict(config.data_config) if args.data_config is None else dotdict(yaml.safe_load(open(args.data_config, 'r')))
-    
-    config.device = torch.device(args.device)
+    config.devices = args.device
     config.num_workers = 0
     config.batch_size = 1 if args.filtered_samples is not None else args.batch_size  # Must remain batch size = 1 for filtered testing
-
     config.task = args.task
 
-    print(f"[Info] Running on device: {config.device}")
+    if torch.cuda.is_available():
+        device = torch.device(f"cuda:{args.device}")
+    else:
+        device = torch.device("cpu")
+        print("[Warning] CUDA is not available, use CPU instead.")
+    print(f"[Info] Running on device: {device}")
 
-
-    model = model_init(config.model, config.model_config, config).to(config.device)
+    model = model_init(config.model, config.model_config, config).to(device)
     
     ckpt_file = glob.glob(os.path.join(ckpt_path, 'checkpoint*'))
     if not ckpt_file:
@@ -140,7 +142,7 @@ if __name__ == "__main__":
     ckpt_file = ckpt_file[0]
     
     print(f"[Info] Loading model from: {ckpt_file}")
-    checkpoint = torch.load(ckpt_file, map_location=config.device)
+    checkpoint = torch.load(ckpt_file, map_location=device)
 
 
     if ckpt_file.endswith('.ckpt'):
@@ -182,7 +184,7 @@ if __name__ == "__main__":
             indexes = None
             print("[Info] Using all samples for testing.")
         
-        result = run_test(loader, model, config, indexes, args.channel_wise)
+        result = run_test(loader, model, config, device, indexes, args.channel_wise)
         if args.channel_wise:
             channel_mse, channel_mae, channel_counts = result
             if sum(channel_counts) == 0:

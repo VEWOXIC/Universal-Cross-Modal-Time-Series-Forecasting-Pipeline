@@ -10,6 +10,6 @@ python -u run_lightning.py \
     --batch_size 256 \
     --patience 5 \
     --train_epochs 50 \
-    --devices '0,1,4' | tee -a ./logs/IATSF.log
+    --devices '0,1,4' #| tee -a ./logs/IATSF.log
 
 done

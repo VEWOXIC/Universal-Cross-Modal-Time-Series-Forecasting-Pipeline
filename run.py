@@ -31,7 +31,6 @@ parser.add_argument('--downsample', type=int, default=None, help='number of augm
 parser.add_argument('--ahead', type=str, default=None, help='Shorthand for forecast horizon: "day", "week", or "month" (automatically sets input_len and output_len based on sampling_rate)')
 parser.add_argument('--output_len', type=int, default=1000, help='Output/prediction sequence length (number of time steps to forecast)')
 parser.add_argument('--input_len', type=int, default=1000, help='Input sequence length (number of historical time steps used for prediction)')
-parser.add_argument('--task', type=str, default='TSF', help='Task type: "TSF", "TGTSF"')
 
 # optimization
 parser.add_argument('--num_workers', type=int, default=0, help='Number of subprocesses for data loading (0 means data is loaded in the main process)')
@@ -50,13 +49,16 @@ parser.add_argument('--devices', type=str, default='0,1,2,3', help='Comma-separa
 
 # env variables
 parser.add_argument('--hf_mirror', type=bool, default=False, help='Use Hugging Face mirror for downloading models')
-
+parser.add_argument('--hf_offline', type=bool, default=False, help='Run in offline mode (no internet access for model downloading)')
 
 args = parser.parse_args()
 
 # Set environment variables for HuggingFace
 if args.hf_mirror:
     os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+if args.hf_offline:
+    os.environ['TRANSFORMERS_OFFLINE'] = '1'
+    os.environ['HF_DATASETS_OFFLINE'] = '1'
 
 # preload the yamls
 with open(args.model_config, 'r') as f:

@@ -45,9 +45,15 @@ def visualize_main(args):
     config = dotdict(json.load(open(os.path.join(ckpt_path, 'args.json'))))
     config.model_config = dotdict(config.model_config)
     config.data_config = dotdict(config.data_config)
-
-    config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    config.gpu = args.device
     config.batch_size = 1
+
+    if torch.cuda.is_available():
+        device = torch.device(f"cuda:{args.device}")
+    else:
+        device = torch.device("cpu")
+        print("[Warning] CUDA is not available, use CPU instead.")
+    print(f"[Info] Running on device: {device}")
 
     # --- Load data ---
     D = Data_Provider(config)
@@ -55,17 +61,17 @@ def visualize_main(args):
     # print(len(test_set["1"]))
 
     # --- Initialize and load model ---
-    model = model_init(config.model, config.model_config, config).to(config.device)
-    model.load_state_dict(torch.load(os.path.join(ckpt_path, 'checkpoint.pth'), map_location=config.device))
+    model = model_init(config.model, config.model_config, config).to(device)
+    model.load_state_dict(torch.load(os.path.join(ckpt_path, 'checkpoint.pth'), map_location=device))
     model.eval()
 
     print(f"--- Perform on ID {args.data_id}, sample {args.sample_id} ---")
     seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel = test_set[args.data_id][args.sample_id]
 
-    input_tensor = torch.tensor(seq_x).to(config.device).float().unsqueeze(0)
-    output_tensor = torch.tensor(seq_y).to(config.device).float().unsqueeze(0)
-    y_hetero = torch.tensor(y_hetero).to(config.device).float().unsqueeze(0)
-    hetero_channel = torch.tensor(hetero_channel).to(config.device).float().unsqueeze(0)
+    input_tensor = torch.tensor(seq_x).to(device).float().unsqueeze(0)
+    output_tensor = torch.tensor(seq_y).to(device).float().unsqueeze(0)
+    y_hetero = torch.tensor(y_hetero).to(device).float().unsqueeze(0)
+    hetero_channel = torch.tensor(hetero_channel).to(device).float().unsqueeze(0)
 
     with torch.inference_mode():
         with torch.no_grad():
@@ -116,6 +122,7 @@ if __name__ == '__main__':
     parser.add_argument('--sample_id', type=int, default=10, help='The sample index to visualize')
     parser.add_argument('--img_path', type=str, default='./imgs', help='Path to save the prediction visualization image')
     parser.add_argument('--task', type=str, default='TSF', choices=['TSF', 'TGTSF'], help='Task type: TSF or TGTSF')
+    parser.add_argument('--device', type=str, default="0", help='device for visualization')
 
     parser.add_argument('--data', type=str, default='ETT', help='Dataset name')
     parser.add_argument('--model', type=str, default='DLinear', help='Model name (e.g., DLinear)')

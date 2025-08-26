@@ -8,5 +8,5 @@ python -u criterias_lightning.py \
     --input_len 288 \
     --output_len $output_len \
     --batch_size 512 \
-    --device "cuda:2" | tee -a ./logs/test_trans.log
+    --device "2" | tee -a ./logs/test_trans.log
 done

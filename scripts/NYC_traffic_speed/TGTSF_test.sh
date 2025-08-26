@@ -9,5 +9,5 @@ python -u criterias_lightning.py \
     --input_len 360 \
     --output_len $output_len \
     --batch_size 128 \
-    --device "cuda:4" | tee -a ./logs/test_IATSF.log
+    --device "4" | tee -a ./logs/test_IATSF.log
 done
