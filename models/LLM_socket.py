@@ -21,6 +21,10 @@ class LLM_Socket():
         self.retry = configs.retry
         self.force_retry = configs.force_retry
 
+        self.streaming = configs.get('streaming', False)
+        self.enable_thinking = configs.get('enable_thinking', False)
+        self.include_usage = configs.get('include_usage', False)
+
         self.client = openai.OpenAI(api_key=self.api_key, base_url=self.url)
 
         # self.check_url_avaliability()
@@ -72,30 +76,39 @@ class LLM_Socket():
         return pred
     
     def call_openai(self, messages):
-        # try:
-        response = self.client.chat.completions.create(
-                                model=self.model,
-                                messages=messages,
-                                temperature=self.temperature,
-                                timeout=1200,
-                                seed=int(np.random.choice([114,514,1919,810])),
-                            ) # .choices[0].message.content
-        # print(f"[DEBUG] Response: {response}")
-        response = response.choices[0].message.content
-        # print(f"[DEBUG] Response: {response}")
+        """
+        Dynamically construct parameters based on the configuration and handle streaming/non-streaming calls.
+        """
+        api_params = {
+            'model': self.model,
+            'messages': messages,
+            'temperature': self.temperature,
+            'timeout': 1200,
+            'seed': int(np.random.choice([114, 514, 1919, 810])),
+            'stream': self.streaming
+        }
 
-        # except openai.APITimeoutError:
-        #     # sleep for a while and retry
-        #     print("API Timeout Error: Retrying...")
-        #     sleep(10)
+        # Add streaming-specific parameters only in streaming mode
+        if self.streaming:
+            if self.include_usage:
+                api_params['stream_options'] = {"include_usage": True}
             
-        #     response = self.call_openai(messages)
-        # except openai.BadRequestError as e:
-        #     print(f"Bad Request Error: {e}")
-        #     sleep(10)
-        #     response = self.call_openai(messages)
+            if self.enable_thinking is not None:
+                api_params['extra_body'] = {'enable_thinking': self.enable_thinking}
+        
+        response = self.client.chat.completions.create(**api_params)
 
-        return response
+        # Return different results based on whether it is streaming
+        if self.streaming:
+            # In streaming mode, concatenate all content chunks
+            full_content = ""
+            for chunk in response:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    full_content += chunk.choices[0].delta.content
+            return full_content
+        else:
+            # In non-streaming mode, return the content directly
+            return response.choices[0].message.content
     
     def process_instance(self, instance):
         # instance: seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
@@ -120,11 +133,11 @@ class LLM_Socket():
 
         return x_table, x_dy_table, channel_info, dataset_info, y_timestamp, y_dy_table, y_table
 
-    def __call__(self, instance):
+    def __call__(self, data_instance):
         retry = self.retry  # create a local copy to ensure self.retry remains unchanged
         # instance: ts_x, ts_y, tm_x, tm_y, (dy_tm_x, general, channel, [dy_x]), (dy_tm_y, general, channel, [dy_y])
 
-        x_table, x_dy_table, channel_info, dataset_info, y_timestamp, y_dy_table, y_table = self.process_instance(instance)
+        x_table, x_dy_table, channel_info, dataset_info, y_timestamp, y_dy_table, y_table = self.process_instance(data_instance)
 
         system_prompt=self.system_prompt.format(dataset_info=dataset_info)
         y_timestamp = [[y_timestamp[i], f'<your_prediction_value[{i}]>'] for i in range(len(y_timestamp))]
@@ -215,6 +228,3 @@ class LLM_Socket():
                 'y_dy_table': y_dy_table,
                 'y_table': y_table,}
         return result, messages
-
-        
-    
