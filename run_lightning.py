@@ -81,7 +81,7 @@ data_configs = dotdict(data_configs)
 args.data_config = data_configs
 
 # get current time
-current_time = 'lightning_' + time.strftime("%Y%m%d_%H", time.localtime())
+current_time = 'lightning_' + time.strftime("%m-%d-%H%M", time.localtime())
 
 # setting record of experiment
 if args.ahead is not None:

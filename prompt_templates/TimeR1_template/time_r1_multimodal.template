@@ -1,0 +1,26 @@
+Dataset Info: {hetero_general}. Subset and channel Info: {hetero_channel}.
+I will now give you data for the past {seq_len} recorded timestamps:
+```
+{x}
+```
+I will also give you the weather report for the historical time period:
+```
+{batch_x_hetero}
+```
+and the weather forecast for the future time period:
+```
+{batch_y_hetero}
+```
+Please refer to the historical input data, as well as the possible impact of the weather, give me the complete data for the next {pred_len} recorded timestamps, remember to give me the complete data.
+You must first conduct reasoning inside <think> ...</think>.
+When you have the final answer, you can output the answer inside <answer>...</answer>.
+Output format for your answer is :
+<think>
+...
+</think>
+<answer>
+```
+...
+```
+</answer>
+Please obey the format strictly.

@@ -10,5 +10,4 @@ python -u run.py \
     --hf_offline True \
     --gpu 7 \
     --batch_size 256 | tee -a ./logs/RPLLM.log
-    
 done

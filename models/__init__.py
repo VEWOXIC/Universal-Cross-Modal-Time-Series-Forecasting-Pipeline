@@ -2,11 +2,12 @@ import importlib
 import yaml
 from utils.tools import dotdict
 from .LLM_socket import LLM_Socket
+from .Time_R1_socket import Time_R1_socket
 
 def model_init(model_name, configs, all_args, is_LLM=False, is_FM=False):
 
     if is_LLM:
-        return LLM_Socket(configs)
+        return Time_R1_socket(configs) if model_name.startwith("Time-R1") else LLM_Socket(configs)
 
     elif is_FM:
         configs['hist_len'] = all_args.input_len

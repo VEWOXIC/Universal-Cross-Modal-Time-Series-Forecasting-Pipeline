@@ -63,7 +63,7 @@ class Experiment(Exp_Basic):
                 if self.args.task == 'TSF':
                     channel_output = self.model.forward(x=channel_x)  # channel_output: [batch_size, output_len, 1]
                 elif self.args.task == 'TGTSF':
-                    channel_output = self.model.forward(x=channel_x, context=batch_y_hetero+hetero_general+hetero_general)
+                    channel_output = self.model.forward(x=channel_x, batch_y_hetero=batch_y_hetero, hetero_general=hetero_general, hetero_channel=hetero_channel)
                 else:
                     raise ValueError(f"Unsupported task type: {self.args.task}")
                 
@@ -71,7 +71,7 @@ class Experiment(Exp_Basic):
                     print(f"[ Warning ]: Model returned None for channel {c}.")
                     return None, None
                 elif torch.isnan(channel_output).any():
-                    print(f"[ Warning ]: NaN detected in model output")
+                    print(f"[ Warning ]: NaN detected in channel {c} output")
                     return None, None
                 else:
                     channel_output = channel_output.unsqueeze(-1)
@@ -83,14 +83,14 @@ class Experiment(Exp_Basic):
         
         else:
             if self.args.task == 'TSF':
-                final_output = self.model.forward(x=batch_x)
+                final_output = self.model.forward(x = batch_x)
             elif self.args.task == 'TGTSF':
-                final_output = self.model.forward(x=batch_x, context=batch_y_hetero+hetero_general+hetero_general)
+                final_output = self.model.forward(x=channel_x, batch_y_hetero=batch_y_hetero, hetero_general=hetero_general, hetero_channel=hetero_channel)
             else:
                 raise ValueError(f"Unsupported task type: {self.args.task}")
             
             if final_output is None:
-                print(f"[ Warning ]: Model returned None for channel {c}.")
+                print(f"[ Warning ]: Model returned None.")
                 return None, None
             elif torch.isnan(channel_output).any():
                 print(f"[ Warning ]: NaN detected in model output")

@@ -55,7 +55,7 @@ class Model(nn.Module):
         """
         return batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
 
-    def forward(self, x, context=None):
+    def forward(self, x, batch_y_hetero, hetero_general, hetero_channel):
         if self.hist_len is None or self.pred_len is None:
             raise ValueError("hist_len and pred_len must be specified before prediction")
 
@@ -63,6 +63,9 @@ class Model(nn.Module):
         series = x
         prediction_list = []
         remaining = self.pred_len
+
+        context = hetero_general + hetero_channel + batch_y_hetero
+        # print(context)
 
         while remaining > 0:
             dispersed_series = self.discretizer.discretize(series)
