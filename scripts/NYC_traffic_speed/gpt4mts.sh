@@ -3,12 +3,12 @@ do
 python -u run.py \
     --model 'GPT4MTS' \
     --model_config 'model_configs/general/GPT4MTS.yaml' \
-    --data Germany_Renewable_Power_Grid \
-    --data_config './data_configs/Germany_Renewable_Power_Grid/fullGRPG_hetero_RPLLM_H.yaml' \
+    --data NYC_traffic_speed \
+    --data_config './data_configs/NYC_traffic_speed/fullNYCTS_H.yaml' \
     --input_len 360 \
     --output_len $output_len \
     --hf_offline True \
-    --gpu 1 \
-    --batch_size 256 | tee -a ./logs/RPLLM1.log
+    --gpu 4 \
+    --batch_size 256 | tee -a ./logs/RPLLM4.log
     
 done

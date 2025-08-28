@@ -206,16 +206,22 @@ class Universal_Dataset(Dataset):
 
 
 class Heterogeneous_Dataset(Dataset):
-    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json', timezone=None, noise = 0.0, hetero_type='all_for_one', id_list=None, postemb=None, postemb_model=None, device='cpu'):
+    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json', timezone=None, noise = 0.0, hetero_type='all_for_one', id_list=None, postemb=None, postemb_model=None, postemb_max_len=None, postemb_d=None, postemb_batch_size=200, device='cpu'):
         super().__init__()
 
         self.hetero_type = hetero_type
         self.root_path = root_path
         self.formatter = formatter
         self.id_list = id_list
+        self.device = torch.device('cpu') if device == 'cpu' else torch.device(f'cuda:{device}')
         self.postemb = postemb
         self.postemb_model = postemb_model
-        self.device = torch.device('cpu') if device == 'cpu' else torch.device(f'cuda:{device}')
+        self.postemb_max_len = int(postemb_max_len)
+        self.postemb_d = int(postemb_d)
+        self.postemb_batch_size = int(postemb_batch_size)
+
+        self.tokenizer = AutoTokenizer.from_pretrained(self.postemb_model) if postemb is not None else None
+        self.model = AutoModel.from_pretrained(self.postemb_model).to(self.device) if postemb is not None else None
 
         self.id_info = id_info
         self.static_path = static_path
@@ -239,8 +245,8 @@ class Heterogeneous_Dataset(Dataset):
         return x
 
     def convert_plain_text_to_embeddings(self, text):
-        tokenizer = AutoTokenizer.from_pretrained(self.postemb_model)
-        model = AutoModel.from_pretrained(self.postemb_model).to(self.device)
+        tokenizer = self.tokenizer
+        model = self.model
         model.eval()
 
         encoded = tokenizer(text,
@@ -260,14 +266,14 @@ class Heterogeneous_Dataset(Dataset):
         return text_embedding
 
     def convert_df_text_to_embeddings(self, df):
-        tokenizer = AutoTokenizer.from_pretrained(self.postemb_model)
-        model = AutoModel.from_pretrained(self.postemb_model).to(self.device)
+        tokenizer = self.tokenizer
+        model = self.model
         model.eval()
 
         df_time = df[['time']]
         df_merged = df.drop('time', axis=1).astype(str).apply(''.join, axis=1)
 
-        batch_size = 200
+        batch_size = self.postemb_batch_size
         ls_embeddings = []
         
         for i in tqdm(range(0, len(df), batch_size), desc="Processing post embedding batches", unit="batch"):
@@ -294,6 +300,7 @@ class Heterogeneous_Dataset(Dataset):
 
     def load_data(self):
         self.dynamic_data = {}
+        self.dynamic_embed = {}
         if self.hetero_type == 'all_for_one':
             if self.formatter.endswith('.json'):
                 file_paths = glob.glob(os.path.join(self.root_path, self.formatter))
@@ -321,7 +328,7 @@ class Heterogeneous_Dataset(Dataset):
             print('[ info ] Successfully load the dynamic data from {}'.format(self.formatter))
 
             if self.postemb is not None:
-                self.dynamic_data = self.convert_df_text_to_embeddings(self.dynamic_data)
+                self.dynamic_embed = self.convert_df_text_to_embeddings(self.dynamic_data)
                 print('[ info ] Successfully convert text to embeddings after loading the textual data')
 
         elif self.hetero_type == 'each_subset':
@@ -358,7 +365,7 @@ class Heterogeneous_Dataset(Dataset):
                 
                 if self.postemb is not None:
                     df = self.convert_df_text_to_embeddings(df)
-                    self.dynamic_data[id] = df
+                    self.dynamic_embed[id] = df
                     print('[ info ] Successfully convert text to embeddings after loading the textual data')
         
         else:
@@ -554,30 +561,60 @@ class Heterogeneous_Dataset(Dataset):
                     output_dynamic = self.__addnoise__(output_dynamic)
 
             else:
-                matched_dynamic = self.dynamic_data.loc[matched_times].copy()
+                # matched_dynamic = self.dynamic_data.loc[matched_times].copy()
 
-                if self.postemb is None:
+                # # handling downtime
+                # if self.postemb is None:
+                #     matched_dynamic['note'] = np.where(is_downtime, downtime_prompt, '')
+                # else:
+                #     # todo: !!
+                #     pass
+
+                # matched_dynamic = matched_dynamic.to_dict(orient='records')
+                # # remove the time from the dicts
+                # for record in matched_dynamic:
+                #     record.pop('time', None)
+                
+                # handling postemb
+                if self.postemb is not None:
+                    matched_dynamic = self.dynamic_data.loc[matched_times].copy()
+                    matched_embed = self.dynamic_embed.loc[matched_times].copy() # .to_dict(orient='records')
+                    print(matched_dynamic.head())
+                    print(matched_embed.head())
+                    print(is_downtime)
+                    # downtime_indices = np.where(is_downtime)[0]
+                    downtime_indices = [1]
+                    print(downtime_indices)
+                    for i in downtime_indices:
+                        row_data = matched_dynamic.iloc[i].drop('time')
+                        concatenated_row = ' '.join(str(x) for x in row_data.values) + " " + downtime_prompt
+                        embedding_add_downtime = convert_plain_text_to_embeddings(concatenated_row)
+                        print(embedding_add_downtime)
+
+                    # np.where(is_downtime, downtime_prompt, '')
+
+                    output_dynamic = torch.stack([matched_df['embeddings'] for matched_df in matched_dynamic], dim=0)
+                    if output_dynamic.size(0) < self.postemb_max_len:
+                        padding_output = torch.zeros(self.postemb_max_len, self.postemb_d)
+                        padding_output[:output_dynamic.size(0)] = output_dynamic
+                        output_dynamic = padding_output
+                    elif output_dynamic.size(0) > self.postemb_max_len:
+                        output_dynamic = output_dynamic[:self.postemb_max_len]
+                else:
+                    matched_dynamic = self.dynamic_data.loc[matched_times].copy()
                     matched_dynamic['note'] = np.where(is_downtime, downtime_prompt, '')
-                else:
-                    # todo: !!
-                    pass
-
-                matched_dynamic = matched_dynamic.to_dict(orient='records')
-                # remove the time from the dicts
-                for record in matched_dynamic:
-                    record.pop('time', None)
-                if self.output_format == 'dict':
-                    output_dynamic = matched_dynamic
-                elif self.output_format == 'json':
-                    if self.postemb is None:
+                    matched_dynamic = matched_dynamic.to_dict(orient='records')
+                    # remove the time from the dicts
+                    for record in matched_dynamic:
+                        record.pop('time', None)
+                    if self.output_format == 'dict':
+                        output_dynamic = matched_dynamic
+                    elif self.output_format == 'json':
                         output_dynamic = [json.dumps(record) for record in matched_dynamic]
+                    elif self.output_format == 'csv':
+                        output_dynamic = matched_dynamic.to_csv(index=False)
                     else:
-                        output_dynamic = torch.stack([matched_df['embeddings'] for matched_df in matched_dynamic], dim=0)
-                        
-                elif self.output_format == 'csv':
-                    output_dynamic = matched_dynamic.to_csv(index=False)
-                else:
-                    raise NotImplementedError('Output format is not implemented yet')
+                        raise NotImplementedError('Output format is not implemented yet')
 
             matched_times = matched_times.strftime('%Y%m%d%H%M%S').tolist()
             return matched_times, general_info, channel_info, output_dynamic
@@ -606,20 +643,38 @@ class Heterogeneous_Dataset(Dataset):
                     output_dynamic = self.__addnoise__(output_dynamic)
             else:
                 matched_dynamic = self.dynamic_data[id].loc[matched_times].copy()
-                matched_dynamic['note'] = np.where(is_downtime, downtime_prompt, '')
+
+                # handling downtime
+                if self.postemb is None:
+                    matched_dynamic['note'] = np.where(is_downtime, downtime_prompt, '')
+                else:
+                    # todo: !!
+                    pass
 
                 matched_dynamic = matched_dynamic.to_dict(orient='records')
+                
                 # remove the time from the dicts
                 for record in matched_dynamic:
                     record.pop('time', None)
-                if self.output_format == 'dict':
-                    output_dynamic = matched_dynamic
-                elif self.output_format == 'json':
-                    output_dynamic = [json.dumps(record) for record in matched_dynamic]
-                elif self.output_format == 'csv':
-                    output_dynamic = matched_dynamic.to_csv(index=False)
+                
+                # handling postemb
+                if self.postemb is None:
+                    output_dynamic = torch.stack([matched_df['embeddings'] for matched_df in matched_dynamic], dim=0)
+                    if output_dynamic.size(0) < self.postemb_max_len:
+                        padding_output = torch.zeros(self.postemb_max_len, self.postemb_d)
+                        padding_output[:output_dynamic.size(0)] = output_dynamic
+                        output_dynamic = padding_output
+                    elif output_dynamic.size(0) > self.postemb_max_len:
+                        output_dynamic = output_dynamic[:self.postemb_max_len]
                 else:
-                    raise NotImplementedError('Output format is not implemented yet')
+                    if self.output_format == 'dict':
+                        output_dynamic = matched_dynamic
+                    elif self.output_format == 'json':
+                        output_dynamic = [json.dumps(record) for record in matched_dynamic]
+                    elif self.output_format == 'csv':
+                        output_dynamic = matched_dynamic.to_csv(index=False)
+                    else:
+                        raise NotImplementedError('Output format is not implemented yet')
 
             matched_times = matched_times.strftime('%Y%m%d%H%M%S').tolist()
             return matched_times, general_info, channel_info, output_dynamic

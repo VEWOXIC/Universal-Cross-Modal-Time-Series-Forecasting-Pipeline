@@ -1,6 +1,7 @@
-
 import argparse
 import os
+import sys
+
 import torch
 # from exp.exp_uni import Exp_uni
 from exp.exp_llm import Experiment
@@ -36,7 +37,7 @@ parser.add_argument('--preload_hetero', default=False, action='store_true', help
 parser.add_argument('--noise', type=float, default=0.0, help='Noise level for data augmentation')
 
 # forecasting task
-parser.add_argument('--ahead', type=str, default='day', help='day/week/month ahead forecasting')
+parser.add_argument('--ahead', type=str, default=None, help='day/week/month ahead forecasting')
 parser.add_argument('--output_len', type=int, default=1000, help='output sequence length or "ntp" for next token prediction')
 parser.add_argument('--input_len', type=int, default=1000, help='output sequence length or "ntp" for next token prediction')
 parser.add_argument('--sample_step', type=int, default=24, help='sampling step of dataset')
@@ -66,12 +67,12 @@ args = parser.parse_args()
 print(torch.cuda.device_count())
 
 # preload the yamls
-with open(args.model_config, 'r') as f:
+with open(args.model_config, 'r', encoding='utf-8') as f:
     model_configs = yaml.safe_load(f)
 model_configs = dotdict(model_configs)
 args.model_config = model_configs
 
-with open(args.data_config, 'r') as f:
+with open(args.data_config, 'r', encoding='utf-8') as f:
     data_configs = yaml.safe_load(f)
 data_configs = dotdict(data_configs)
 args.data_config = data_configs
@@ -103,7 +104,3 @@ if not os.path.exists(os.path.join(args.checkpoints,setting)):
     os.makedirs(os.path.join(args.checkpoints,setting))
 exp = Experiment(args)
 exp.test(savepath=os.path.join(args.checkpoints,setting), valiset=args.valisets)
-
-
-
-

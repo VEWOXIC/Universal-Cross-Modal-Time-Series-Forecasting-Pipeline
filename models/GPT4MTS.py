@@ -87,6 +87,10 @@ class Model(nn.Module):
 
         B, L, M = x.shape # 4, 512, 1
 
+        # handling multivariate
+        if M > 1:
+            historical_events = historical_events.repeat_interleave(M, dim=0)  # [B*M, 3, d_model]
+
         if self.RevIN:
             x = self.rev_in(x, 'norm').to(f"cuda:{configs.gpu}") if configs.gpu is not None else self.rev_in(x, 'norm').to('cpu')
         else:
