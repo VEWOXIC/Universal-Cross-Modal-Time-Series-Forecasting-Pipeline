@@ -1,14 +1,13 @@
-for output_len in 24 # 168 336 720
+for output_len in 12 144 288 576
 do
 python -u run.py \
     --model 'GPT4MTS' \
     --model_config 'model_configs/general/GPT4MTS.yaml' \
     --data Bear_room \
-    --data_config './data_configs/Bear_room/fullBear_hetero_LLM.yaml' \
-    --input_len 360 \
+    --data_config './data_configs/Bear_room/fullBear_hetero_RPLLM.yaml' \
+    --input_len 288 \
     --output_len $output_len \
     --hf_offline True \
-    --gpu 1 \
-    --batch_size 1 # | tee -a ./logs/Linear.log
-    
+    --gpu 7 \
+    --batch_size 256 | tee -a ./logs/RPLLM5.log
 done
