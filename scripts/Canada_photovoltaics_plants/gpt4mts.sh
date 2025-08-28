@@ -1,4 +1,4 @@
-for output_len in 24 # 168 336 720
+for output_len in 24 168 336 720
 do
 python -u run.py \
     --model 'GPT4MTS' \
@@ -8,6 +8,6 @@ python -u run.py \
     --input_len 360 \
     --output_len $output_len \
     --hf_offline True \
-    --gpu 0 \
-    --batch_size 256 # | tee -a ./logs/RPLLM0.log
+    --gpu 4 \
+    --batch_size 256 | tee -a ./logs/RPLLM0.log
 done

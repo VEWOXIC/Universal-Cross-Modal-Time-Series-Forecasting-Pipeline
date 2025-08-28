@@ -206,7 +206,7 @@ class Universal_Dataset(Dataset):
 
 
 class Heterogeneous_Dataset(Dataset):
-    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json', timezone=None, noise = 0.0, hetero_type='all_for_one', id_list=None, postemb=None, postemb_model=None, postemb_max_len=None, postemb_d=None, postemb_batch_size=200, device='cpu'):
+    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json', timezone=None, noise = 0.0, hetero_type='all_for_one', id_list=None, postemb=None, postemb_model=None, postemb_max_len=None, postemb_d=None, postemb_batch_size=200, postemb_handle_downtime=None, device='cpu'):
         super().__init__()
 
         self.hetero_type = hetero_type
@@ -219,6 +219,7 @@ class Heterogeneous_Dataset(Dataset):
         self.postemb_max_len = int(postemb_max_len)
         self.postemb_d = int(postemb_d)
         self.postemb_batch_size = int(postemb_batch_size)
+        self.postemb_handle_downtime = postemb_handle_downtime
 
         self.tokenizer = AutoTokenizer.from_pretrained(self.postemb_model) if postemb is not None else None
         self.model = AutoModel.from_pretrained(self.postemb_model).to(self.device) if postemb is not None else None
@@ -263,7 +264,7 @@ class Heterogeneous_Dataset(Dataset):
             # [CLS]
             text_embedding = outputs.last_hidden_state[:, 0, :].to('cpu')
 
-        return text_embedding
+        return text_embedding[0]
 
     def convert_df_text_to_embeddings(self, df):
         tokenizer = self.tokenizer
@@ -561,39 +562,20 @@ class Heterogeneous_Dataset(Dataset):
                     output_dynamic = self.__addnoise__(output_dynamic)
 
             else:
-                # matched_dynamic = self.dynamic_data.loc[matched_times].copy()
-
-                # # handling downtime
-                # if self.postemb is None:
-                #     matched_dynamic['note'] = np.where(is_downtime, downtime_prompt, '')
-                # else:
-                #     # todo: !!
-                #     pass
-
-                # matched_dynamic = matched_dynamic.to_dict(orient='records')
-                # # remove the time from the dicts
-                # for record in matched_dynamic:
-                #     record.pop('time', None)
-                
-                # handling postemb
                 if self.postemb is not None:
                     matched_dynamic = self.dynamic_data.loc[matched_times].copy()
                     matched_embed = self.dynamic_embed.loc[matched_times].copy() # .to_dict(orient='records')
-                    print(matched_dynamic.head())
-                    print(matched_embed.head())
-                    print(is_downtime)
-                    # downtime_indices = np.where(is_downtime)[0]
-                    downtime_indices = [1]
-                    print(downtime_indices)
-                    for i in downtime_indices:
-                        row_data = matched_dynamic.iloc[i].drop('time')
-                        concatenated_row = ' '.join(str(x) for x in row_data.values) + " " + downtime_prompt
-                        embedding_add_downtime = convert_plain_text_to_embeddings(concatenated_row)
-                        print(embedding_add_downtime)
-
-                    # np.where(is_downtime, downtime_prompt, '')
-
-                    output_dynamic = torch.stack([matched_df['embeddings'] for matched_df in matched_dynamic], dim=0)
+                    # handling downtime
+                    if self.postemb_handle_downtime is not None:
+                        downtime_indices = np.where(is_downtime)[0]
+                        for i in downtime_indices:
+                            row_data = matched_dynamic.iloc[i].drop('time')
+                            concatenated_row = ' '.join(str(x) for x in row_data.values) + " " + downtime_prompt
+                            embedding_add_downtime = self.convert_plain_text_to_embeddings(concatenated_row)
+                            matched_embed.iloc[i, matched_embed.columns.get_loc('embeddings')] = embedding_add_downtime
+                    matched_embed = matched_embed.to_dict(orient='records')
+                    output_dynamic = torch.stack([matched_df['embeddings'] for matched_df in matched_embed], dim=0)
+                    # handling different length
                     if output_dynamic.size(0) < self.postemb_max_len:
                         padding_output = torch.zeros(self.postemb_max_len, self.postemb_d)
                         padding_output[:output_dynamic.size(0)] = output_dynamic
@@ -607,6 +589,7 @@ class Heterogeneous_Dataset(Dataset):
                     # remove the time from the dicts
                     for record in matched_dynamic:
                         record.pop('time', None)
+                    
                     if self.output_format == 'dict':
                         output_dynamic = matched_dynamic
                     elif self.output_format == 'json':
@@ -642,24 +625,21 @@ class Heterogeneous_Dataset(Dataset):
                 if self.noise > 0:
                     output_dynamic = self.__addnoise__(output_dynamic)
             else:
-                matched_dynamic = self.dynamic_data[id].loc[matched_times].copy()
-
-                # handling downtime
-                if self.postemb is None:
-                    matched_dynamic['note'] = np.where(is_downtime, downtime_prompt, '')
-                else:
-                    # todo: !!
-                    pass
-
-                matched_dynamic = matched_dynamic.to_dict(orient='records')
-                
-                # remove the time from the dicts
-                for record in matched_dynamic:
-                    record.pop('time', None)
-                
                 # handling postemb
-                if self.postemb is None:
-                    output_dynamic = torch.stack([matched_df['embeddings'] for matched_df in matched_dynamic], dim=0)
+                if self.postemb is not None:
+                    matched_dynamic = self.dynamic_data[id].loc[matched_times].copy()
+                    matched_embed = self.dynamic_embed[id].loc[matched_times].copy() # .to_dict(orient='records')
+                    # handling downtime
+                    if self.postemb_handle_downtime is not None:
+                        downtime_indices = np.where(is_downtime)[0]
+                        for i in downtime_indices:
+                            row_data = matched_dynamic.iloc[i].drop('time')
+                            concatenated_row = ' '.join(str(x) for x in row_data.values) + " " + downtime_prompt
+                            embedding_add_downtime = self.convert_plain_text_to_embeddings(concatenated_row)
+                            matched_embed.iloc[i, matched_embed.columns.get_loc('embeddings')] = embedding_add_downtime
+                    matched_embed = matched_embed.to_dict(orient='records')
+                    output_dynamic = torch.stack([matched_df['embeddings'] for matched_df in matched_embed], dim=0)
+                    # handling different length
                     if output_dynamic.size(0) < self.postemb_max_len:
                         padding_output = torch.zeros(self.postemb_max_len, self.postemb_d)
                         padding_output[:output_dynamic.size(0)] = output_dynamic
@@ -667,6 +647,13 @@ class Heterogeneous_Dataset(Dataset):
                     elif output_dynamic.size(0) > self.postemb_max_len:
                         output_dynamic = output_dynamic[:self.postemb_max_len]
                 else:
+                    matched_dynamic = self.dynamic_data[id].loc[matched_times].copy()
+                    matched_dynamic['note'] = np.where(is_downtime, downtime_prompt, '')
+                    matched_dynamic = matched_dynamic.to_dict(orient='records')
+                    # remove the time from the dicts
+                    for record in matched_dynamic:
+                        record.pop('time', None)
+                    
                     if self.output_format == 'dict':
                         output_dynamic = matched_dynamic
                     elif self.output_format == 'json':

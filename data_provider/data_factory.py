@@ -53,6 +53,7 @@ class Data_Provider(object):
                                                         postemb_max_len=hetero_info.postemb_max_len, 
                                                         postemb_d=hetero_info.postemb_d, 
                                                         postemb_batch_size=hetero_info.postemb_batch_size, 
+                                                        postemb_handle_downtime=hetero_info.postemb_handle_downtime, 
                                                         device=self.args.gpu if self.args.use_gpu else 'cpu')
 
     def get_spliter(self):

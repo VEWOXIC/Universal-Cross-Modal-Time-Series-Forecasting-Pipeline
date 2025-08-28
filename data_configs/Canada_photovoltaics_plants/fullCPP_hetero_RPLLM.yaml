@@ -23,5 +23,6 @@ hetero_info:
   postemb_max_len: 16
   postemb_d: 768
   postemb_batch_size: 200
+  # postemb_handle_downtime: True
   input_format: json
   static_path: static_info.json

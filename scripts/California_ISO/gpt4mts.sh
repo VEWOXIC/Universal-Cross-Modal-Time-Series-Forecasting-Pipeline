@@ -8,7 +8,7 @@ python -u run.py \
     --input_len 360 \
     --output_len $output_len \
     --hf_offline True \
-    --gpu 2 \
+    --gpu 5 \
     --batch_size 50 | tee -a ./logs/RPLLM2.log
     
 done
