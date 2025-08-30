@@ -70,7 +70,9 @@ class Universal_Dataset(Dataset):
             elif self.task == 'TSF':
                 self.custom_input = ['seq_x', 'seq_y', 'x_time', 'y_time']
             elif self.task == 'TGTSF':
-                self.custom_input = ['seq_x', 'seq_y', 'x_time', 'y_time', 'hetero_y_time', 'y_hetero', 'hetero_channel']
+                self.custom_input = ['seq_x', 'seq_y', 'x_time', 'y_time', 'hetero_y_time', 'y_hetero', 'hetero_general', 'hetero_channel']
+            elif self.task == 'MTSF':
+                self.custom_input = ['seq_x', 'seq_y', 'x_time', 'y_time', 'hetero_x_time', 'x_hetero', 'hetero_general', 'hetero_channel']
             elif self.task == 'Reasoning' or 'all':
                 self.custom_input = ['seq_x', 'seq_y', 'x_time', 'y_time', 'hetero_x_time', 'x_hetero', 'hetero_y_time', 'y_hetero', 'hetero_general', 'hetero_channel']
             else:
@@ -367,7 +369,7 @@ class Heterogeneous_Dataset(Dataset):
                 if self.postemb is not None:
                     df = self.convert_df_text_to_embeddings(df)
                     self.dynamic_embed[id] = df
-                    print('[ info ] Successfully convert text to embeddings after loading the textual data')
+                    print(f'[ info ] Successfully convert text to embeddings after loading the textual data for id: {id}')
         
         else:
             raise NotImplementedError('Only all_for_one and each_subset hetero type are supported, implement more if needed')

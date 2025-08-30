@@ -83,6 +83,8 @@ class Model(nn.Module):
         historical_events = self.padding_patch_layer(historical_events) # [b, 768, 19] 
         historical_events = historical_events.unfold(dimension=-1, size=self.patch_size, step=self.stride) # [b, 768, 3, 8]
         historical_events = historical_events.mean(dim=-1).squeeze() # [b, 768, 3]
+        if len(historical_events.shape) == 2:
+            historical_events = historical_events.unsqueeze(0)  # add [b] if batch size = 1
         historical_events = rearrange(historical_events, 'b l m -> b m l') # [b, 3, 768]
 
         B, L, M = x.shape # 4, 512, 1

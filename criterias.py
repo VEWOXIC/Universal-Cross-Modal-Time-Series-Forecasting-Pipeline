@@ -26,14 +26,24 @@ def evaluate_full_dataset(loader, model, config, device, indexes):
         if indexes is not None and i not in indexes:
             continue
         with torch.no_grad():
-            batch_x, batch_y, _, _, _, y_hetero, _, _, _, hetero_channel = iter_data
+            batch_x, batch_y, _, _, x_hetero, y_hetero, _, _, _, hetero_channel = iter_data
 
             batch_x = torch.tensor(batch_x).to(device)
             batch_y = torch.tensor(batch_y).to(device)
-            y_hetero = torch.tensor(y_hetero).to(device)
-            hetero_channel = torch.tensor(hetero_channel).to(device)
-
-            prediction = model(x=batch_x) if config.task == 'TSF' else model(x=batch_x, news=y_hetero, channel_description=hetero_channel)
+            
+            if config.task == 'TSF':
+                prediction = model(x=batch_x)
+            elif config.task == 'TGTSF':
+                y_hetero = torch.tensor(y_hetero).to(device)
+                hetero_channel = torch.tensor(hetero_channel).to(device)
+                prediction = model(x=batch_x, news=y_hetero, channel_description=hetero_channel)
+            elif config.task == 'MTSF':
+                x_hetero = torch.tensor(x_hetero).to(device)
+                prediction = model(x=batch_x, historical_events=x_hetero)
+            else:
+                # todo
+                pass
+            
             prediction = prediction[:, -config.output_len:, :]
 
             mse_loss = torch.nn.MSELoss()(prediction, batch_y)
@@ -61,7 +71,7 @@ def main():
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
     parser.add_argument('--batch_size', type=int, default=128, help="Batch size for testing")
     parser.add_argument('--data_config', type=str, default=None, help="Path to the data configuration YAML file (optional)")
-    parser.add_argument('--task', type=str, default="TSF", choices=["TSF", "TGTSF"], help="Task type: Time Series Forecasting or Text-Grounded TSF")
+    parser.add_argument('--task', type=str, default="TSF", choices=["TSF", "TGTSF", "MTSF"], help="Task type: Time Series Forecasting or Text-Grounded TSF")
     parser.add_argument('--filtered_samples', type=str, default=None, help='Path to a JSON file containing filtered sample indexes for evaluation')
     parser.add_argument('--device', type=str, default="0", help="Device to run the model on")
     
