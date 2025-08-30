@@ -332,17 +332,22 @@ def train_lightning_model(args, setting):
     if not args.test:
         trainer.fit(model, data_module)
     
-    # Final test - run it once with all dataloaders together
-    print(f'>>>>>>>final testing : {setting}>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+    # Get the path to the best model saved by the checkpoint callback
+    best_model_path = checkpoint_callback.best_model_path
+    if not best_model_path or not os.path.exists(best_model_path):
+        print("Could not find best model path. Using last model for testing.")
+        # Fallback to the last saved model if best is not found
+        best_model_path = checkpoint_callback.last_model_path 
+    
+    # Final test using the best model checkpoint
+    print(f'>>>>>>>final testing on best model: {best_model_path}>>>>>>>>>>>>>>>>>>>>>>>>>>>')
     data_module.setup(stage='test')
     test_loaders = data_module.test_dataloader()
-
-    ## ！！！！！！！！！！！！！！！！！！！fuck you！！！！！！！！！！！！！！！！！！！！！！
 
     info_results = {}
     for i, (subset_id, loader) in enumerate(test_loaders.items()):
         print(f"Testing {subset_id}...")
-        trainer.test(model, dataloaders=loader)
+        trainer.test(model, dataloaders=loader, ckpt_path=best_model_path)
         print(f"Test loss for {subset_id}: {trainer.callback_metrics['test_loss'].item():.7f}")
         info_results[subset_id] = trainer.callback_metrics['test_loss'].item()
     
@@ -356,8 +361,5 @@ def train_lightning_model(args, setting):
             json.dump({'average loss of all subsets': np.mean(list(info_results.values()))}, f)
     if args.test:
         return
-    
-    # Load best model and return
-    best_model_path = checkpoint_callback.best_model_path
     
     return best_model_path  # Return the wrapped model for compatibility

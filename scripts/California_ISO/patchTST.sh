@@ -8,6 +8,6 @@ python -u run_lightning.py \
     --input_len 360 \
     --output_len $output_len \
     --batch_size 256 \
-    --devices '3' | tee -a ./logs/Trans.log
+    --devices '0' | tee -a ./logs/abliso.log
 
 done

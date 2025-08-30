@@ -10,6 +10,6 @@ python -u run_lightning.py \
     --batch_size 128 \
     --patience 6 \
     --train_epochs 50 \
-    --devices '0,1,2' | tee -a ./logs/IATSFiso.log
+    --devices '0,1,2' | tee -a ./logs/abliso.log
 
 done

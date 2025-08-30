@@ -5,8 +5,8 @@ split_info: # "7:1:2"
   - '2021-01-01'
   - '2022-01-01'
 timestamp_col: Time
-target: all
-  # - "Current_demand"
+target: # all
+  - "Current demand"
 id_info: id_info_except_battery.json
 id:   
   - "all_except_battery"  # "all"
