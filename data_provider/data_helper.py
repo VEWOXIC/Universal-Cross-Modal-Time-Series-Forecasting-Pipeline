@@ -70,10 +70,12 @@ def timestamp_spliter(split = ['2020-01-01', '2020-02-01'], seq_len=0, df=None, 
         split = [pd.to_datetime(x) for x in split]
     else:
         raise ValueError("Split should be a list of strings")
-    if len(split) == 3:
+    if len(split) == 4:
         print(f'[ info ] Discarding the data before {split[0]}')
         df = df[df[timestamp_col] >= split[0]]
-        split = split[1:]
+        print(f'[ info ] Discarding the data after {split[3]}')
+        df = df[df[timestamp_col] <= split[3]]
+        split = split[1:3]
     train_data = df[df[timestamp_col] < split[0]]
     val_data = df[(df[timestamp_col] >= split[0]) & (df[timestamp_col] < split[1])]
     test_data = df[df[timestamp_col] >= split[1]]

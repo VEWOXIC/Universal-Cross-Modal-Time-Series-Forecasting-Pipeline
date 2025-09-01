@@ -1,0 +1,8 @@
+You are a helpful data selection helper. Now I have a dataset that contains the temperature, power and flow information of 80 rooms in the same building. The building has four floors in total. The distribution of each room on each floor is shown in the figure. The rooms close to the exterior of the building are by the window, while the others are not by the window.
+In order to retain as much information as possible while reducing the size of the computation, you need to select a subset evenly and fairly. The following is the specific process:
+1. The rooms on the first floor are rather special. Only Room 108 is truly by the window, so you should choose it. For the other rooms on the first floor, please divide them into four areas: northwest, northeast, southwest and southeast. For each area, you need to selected one room. So a total of five rooms were selected on the first floor.
+2. The distribution patterns of the rooms on the second, third and fourth floors are very similar. For these three floors, them into four areas: northwest, northeast, southwest and southeast. Then select two room within each direction, one by the window and another one not by the window.
+After the selection process, You need to return the result in the following json format. There are two keys in total, and the value corresponding to each key is a list:
+{
+    room selected: [room_1, room_2, ...]
+}

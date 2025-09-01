@@ -1,0 +1,17 @@
+bash scripts/Bear_room/itrans_on_samples.sh
+bash scripts/Bear_room/patchTST_on_samples.sh
+
+bash scripts/California_ISO/itrans_on_samples.sh
+bash scripts/California_ISO/patchTST_on_samples.sh
+
+bash scripts/Canada_photovoltaics_plants/itrans_on_samples.sh
+bash scripts/Canada_photovoltaics_plants/patchTST_on_samples.sh
+
+bash scripts/Germany_Renewable_Power_Grid/itrans_on_samples.sh
+bash scripts/Germany_Renewable_Power_Grid/patchTST_on_samples.sh
+
+bash scripts/Jena_Atmospheric_Physics/itrans_on_samples.sh
+bash scripts/Jena_Atmospheric_Physics/patchTST_on_samples.sh
+
+bash scripts/NYC_traffic_speed/itrans_on_samples.sh
+bash scripts/NYC_traffic_speed/patchTST_on_samples.sh

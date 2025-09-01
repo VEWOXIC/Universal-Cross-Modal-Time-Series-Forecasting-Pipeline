@@ -1,0 +1,22 @@
+root_path: ./data/Jena_Atmospheric_Physics/time_series
+spliter: timestamp
+# spliter: ratio
+split_info: # "7:1:2"
+  - '2021-01-01'
+  - '2022-01-01'
+timestamp_col: Date Time
+target: all
+  # - value
+id_info: id_info.json
+id: all
+formatter: '{i}.parquet'
+downsample: 6
+sampling_rate: 1h
+base_T: 24
+hetero_info:
+  hetero_type: all_for_one  # all_for_one, each_subset
+  root_path: ./data/Jena_Atmospheric_Physics/weather/report_embedding/formal_report
+  formatter: wm_messages_v1.pkl
+  matching: backward
+  input_format: embedding
+  static_path: static_info_embeddings.pkl

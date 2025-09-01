@@ -210,7 +210,7 @@ def main():
     
     # Step 1: Generate synthetic data
     print("Step 1: Generating synthetic data...")
-    data_dir = generate_synthetic_data(num_stations=3, days=365, save_dir="example_data")
+    data_dir = generate_synthetic_data(num_stations=3, days=365, save_dir="./data/example_data")
     
     # Step 2: Create data configuration
     print("\nStep 2: Creating data configuration...")

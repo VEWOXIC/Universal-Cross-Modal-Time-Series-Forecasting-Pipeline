@@ -1,0 +1,17 @@
+bash scripts/Bear_room/dlinear_on_samples.sh
+bash scripts/Bear_room/FITS_on_samples.sh
+
+bash scripts/California_ISO/dlinear_on_samples.sh
+bash scripts/California_ISO/FITS_on_samples.sh
+
+bash scripts/Canada_photovoltaics_plants/dlinear_on_samples.sh
+bash scripts/Canada_photovoltaics_plants/FITS_on_samples.sh
+
+bash scripts/Germany_Renewable_Power_Grid/dlinear_on_samples.sh
+bash scripts/Germany_Renewable_Power_Grid/FITS_on_samples.sh
+
+bash scripts/Jena_Atmospheric_Physics/dlinear_on_samples.sh
+bash scripts/Jena_Atmospheric_Physics/FITS_on_samples.sh
+
+bash scripts/NYC_traffic_speed/dlinear_on_samples.sh
+bash scripts/NYC_traffic_speed/FITS_on_samples.sh

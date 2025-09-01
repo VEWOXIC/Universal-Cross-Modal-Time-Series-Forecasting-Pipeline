@@ -13,40 +13,51 @@ import argparse, glob
 import random
 
 
-def get_reasoning_samples(lossdf):
+def get_reasoning_samples(lossdf, sampling_rate):
 
     lossdf_ok = lossdf[lossdf.loss_mutual > -10]
     lossdf_pos = lossdf_ok[lossdf_ok.loss_mutual > 0]
     lossdf_neg = lossdf_ok[lossdf_ok.loss_mutual < 0]
+    
     prob_pos = lossdf_pos['loss_mutual']
     prob_neg = lossdf_neg['loss_mutual'].abs()
-    sample_num_pos = int(len(lossdf_pos) * 0.1)
-    sample_num_neg = int(len(lossdf_neg) * 0.1)
+    
+    sample_num_pos = int(len(lossdf_pos) * sampling_rate)
+    sample_num_neg = int(len(lossdf_neg) * sampling_rate)
+    
+    sample_num_pos = min(sample_num_pos, len(lossdf_pos))
+    sample_num_neg = min(sample_num_neg, len(lossdf_neg))
+    
+    if sample_num_pos > 0:
+        sample_pos = lossdf_pos.sample(
+            n=sample_num_pos, 
+            weights='loss_mutual', 
+            replace=False  # Without replacement
+        ).index.tolist()
+    else:
+        sample_pos = []
+    
+    if sample_num_neg > 0:
+        sample_neg = lossdf_neg.sample(
+            n=sample_num_neg, 
+            weights=prob_neg, 
+            replace=False  # Without replacement
+        ).index.tolist()
+    else:
+        sample_neg = []
+    
+    return sample_pos, sample_neg
 
-
-    while True:
-
-        weights_pos = prob_pos.tolist()
-        weights_neg = prob_neg.tolist()
-
-        # Use random.choices for sampling
-        sample_pos = random.choices(lossdf_pos.index.tolist(), weights=weights_pos, k=sample_num_pos)
-        sample_neg = random.choices(lossdf_neg.index.tolist(), weights=weights_neg, k=sample_num_neg)
-        break
-
-    samples = np.concatenate((sample_pos, sample_neg))
-    return samples.tolist()
-
-def get_lossdf(dataset, model_TST, model_TGTSF, stride, config):
+def get_lossdf(dataset, model_TST, model_TGTSF, stride, config, device):
     losslist = {}
     for sample_num in tqdm(range(0, len(dataset), stride), desc="Processing samples"):
         with torch.no_grad():
             batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel = dataset[sample_num]
 
-            batch_x = torch.tensor(batch_x).unsqueeze(0).float().to(config.device)
-            batch_y = torch.tensor(batch_y).unsqueeze(0).float().to(config.device)
-            batch_y_hetero = torch.tensor(batch_y_hetero).unsqueeze(0).float().to(config.device)
-            hetero_channel = torch.tensor(hetero_channel).unsqueeze(0).float().to(config.device)
+            batch_x = torch.tensor(batch_x).unsqueeze(0).float().to(device)
+            batch_y = torch.tensor(batch_y).unsqueeze(0).float().to(device)
+            batch_y_hetero = torch.tensor(batch_y_hetero).unsqueeze(0).float().to(device)
+            hetero_channel = torch.tensor(hetero_channel).unsqueeze(0).float().to(device)
 
             output_TST = model_TST(x=batch_x)
             output_TST = output_TST[:, -config.output_len:, :]
@@ -69,49 +80,34 @@ def get_lossdf(dataset, model_TST, model_TGTSF, stride, config):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Filter reasoning samples")
-    parser.add_argument('--data', type=str, required=True, help="Dataset name (e.g., 'solar')")
-    parser.add_argument('--ahead', type=str, required=True, help="Prediction horizon (e.g., 'day')")
-    parser.add_argument('--stride', type=int, required=True, help="Prediction horizon (e.g., 'day')")
+    parser.add_argument('--data', type=str, default="Canada_photovoltaics_plants", help="Dataset name (e.g., 'solar')")
+    parser.add_argument('--baseline_model', type=str, default="PatchTST", help="Model name (e.g., 'PatchTST')")
+    parser.add_argument('--version', type=str, default="latest", help="Model version (e.g., 'latest'; 'oldest'; or a specific version string)")
+    parser.add_argument('--input_len', type=int, default=360, help="Input length (e.g., 360)")
+    parser.add_argument('--output_len', type=int, default=24, help="Prediction horizon (e.g., 168)")
+    parser.add_argument('--type', type=str, default="ckpt", help="Type of model checkpoint (e.g., 'ckpt')")
+    parser.add_argument('--sample_root', type=str, default='./sample_indexes', help="Root directory for saving samples")
+    parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
+    parser.add_argument('--sampling_rate', type=float, default=0.1, help="Sampling rate for each subset")
+    parser.add_argument('--device', type=str, default='0', help="Device to use for training (e.g., 'cuda' or 'cpu')")
     args = parser.parse_args()
 
     data = args.data
-    ahead = args.ahead
-    stride = int(args.stride)
+    baseline_model = args.baseline_model
+    version = args.version
+    input_len = args.input_len
+    output_len = args.output_len
+    checkpoint_type = args.type
+    ckpt_base = args.checkpoint_base
 
-    model = 'PatchTST'
-    version = 'latest'
-    ckpt_base = './checkpoints/'+data
-
-    ckpt_id = f'_{model}_{data}_{ahead}_ahead'
-
-    if version == 'latest':
-        # find all the path that end with the ckpt_id
-        ckpt_paths = [os.path.join(ckpt_base, i) for i in os.listdir(ckpt_base) if i.endswith(ckpt_id)]
-        # the path is in format of yyyy-mm-dd{ckpt_id}, now find the latest one
-        ckpt_paths.sort()
-        ckpt_path = ckpt_paths[-1]
+    if torch.cuda.is_available():
+        device = torch.device(f"cuda:{args.device}")
     else:
-        ckpt_path = version + ckpt_id
+        device = torch.device("cpu")
+        print("[Warning] CUDA is not available, use CPU instead.")
+    print(f"[Info] Running on device: {device}")
 
-    config = dotdict(json.load(open(os.path.join(ckpt_path, 'args.json'))))
-    config.model_config = dotdict(config.model_config)
-    config.data_config = dotdict(config.data_config)
-
-    config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    config.batch_size = 1
-
-    model_TST = model_init(config.model, config.model_config, config).to(config.device)
-    # load the model
-    model_TST.load_state_dict(torch.load(os.path.join(ckpt_path, 'checkpoint.pth'))) 
-    model_TST.eval()
-
-    ################################
-
-    model = 'TGTSF'
-    version = 'latest'#'04-16-0316'#'latest'
-    ckpt_base = './checkpoints/'+data
-
-    ckpt_id = f'_{model}_{data}_{ahead}_ahead'
+    ckpt_id = f'_{baseline_model}_{data}_{output_len}_{input_len}'
 
     if version == 'latest':
         # find all the path that end with the ckpt_id
@@ -119,26 +115,76 @@ if __name__ == "__main__":
         # the path is in format of yyyy-mm-dd{ckpt_id}, now find the latest one
         ckpt_paths.sort()
         ckpt_path = ckpt_paths[-1]
+    elif version == 'oldest':
+        # find all the path that end with the ckpt_id
+        ckpt_paths = [os.path.join(ckpt_base, i) for i in os.listdir(ckpt_base) if ckpt_id in i]
+        # the path is in format of yyyy-mm-dd{ckpt_id}, now find the oldest one
+        ckpt_paths.sort()
+        ckpt_path = ckpt_paths[0]
     else:
         ckpt_path = version + ckpt_id
         ckpt_path = os.path.join(ckpt_base, ckpt_path)
 
+    print(f'[Info] Using checkpoint path: {ckpt_path}')
+
     config = dotdict(json.load(open(os.path.join(ckpt_path, 'args.json'))))
     config.model_config = dotdict(config.model_config)
     config.data_config = dotdict(config.data_config)
-
-    config.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config.batch_size = 1
-    print(ckpt_path)
+    config.devices = args.device
 
-    model_TGTSF = model_init(config.model, config.model_config, config).to(config.device)
+    model_TST = model_init(config.model, config.model_config, config).to(device)
     # load the model
     ckpt = glob.glob(os.path.join(ckpt_path, 'checkpoint*'))[0]
     checkpoint = torch.load(ckpt)
 
     # Fix the state_dict by removing the "model." prefix
     if ckpt.endswith('.ckpt'):
-        
+        state_dict = {key.replace("model.model.", "model."): value for key, value in checkpoint['state_dict'].items()}
+    else:
+        state_dict = checkpoint
+
+    model_TST.load_state_dict(state_dict) 
+    model_TST.eval()
+
+    print(f'[Info] Using model: {config.model}')
+
+    ################################
+
+    TG_model = 'TGTSF'
+    ckpt_id = f'_{TG_model}_{data}_{output_len}_{input_len}'
+
+    if version == 'latest':
+        # find all the path that end with the ckpt_id
+        ckpt_paths = [os.path.join(ckpt_base, i) for i in os.listdir(ckpt_base) if ckpt_id in i]
+        # the path is in format of yyyy-mm-dd{ckpt_id}, now find the latest one
+        ckpt_paths.sort()
+        ckpt_path = ckpt_paths[-1]
+    elif version == 'oldest':
+        # find all the path that end with the ckpt_id
+        ckpt_paths = [os.path.join(ckpt_base, i) for i in os.listdir(ckpt_base) if ckpt_id in i]
+        # the path is in format of yyyy-mm-dd{ckpt_id}, now find the oldest one
+        ckpt_paths.sort()
+        ckpt_path = ckpt_paths[0]
+    else:
+        ckpt_path = version + ckpt_id
+        ckpt_path = os.path.join(ckpt_base, ckpt_path)
+
+    print(f'[Info] Using checkpoint path: {ckpt_path}')
+
+    config = dotdict(json.load(open(os.path.join(ckpt_path, 'args.json'))))
+    config.model_config = dotdict(config.model_config)
+    config.data_config = dotdict(config.data_config)
+    config.batch_size = 1
+    config.devices = args.device
+
+    model_TGTSF = model_init(config.model, config.model_config, config).to(device)
+    # load the model
+    ckpt = glob.glob(os.path.join(ckpt_path, 'checkpoint*'))[0]
+    checkpoint = torch.load(ckpt)
+
+    # Fix the state_dict by removing the "model." prefix
+    if ckpt.endswith('.ckpt'):
         state_dict = {key.replace("model.", ""): value for key, value in checkpoint['state_dict'].items()}
     else:
         state_dict = checkpoint
@@ -147,12 +193,25 @@ if __name__ == "__main__":
     model_TGTSF.load_state_dict(state_dict)
     model_TGTSF.eval()
 
+    print(f'[Info] Using model: {config.model}')
+
     id_data = Data_Provider(config)
     fullsets = id_data.get_test('set')
-    print(fullsets.keys())
+    print(f'[Info] fullset keys: {fullsets.keys()}')
+
+    if output_len == 24:
+        ahead = 'day'
+    elif output_len == 168:
+        ahead = 'week'
+    elif output_len == 12:
+        ahead = 'hour'
+    elif output_len == 144:
+        ahead = 'half_a_day'
+    else:
+        ahead = 'none'
 
     try:
-        existing = os.path.join(f'./{data}_sample_{ahead}.json')
+        existing = os.path.join(args.sample_root, f'{data}_sample_{ahead}.json')
         existing = json.load(open(existing))
         existing = existing.keys()
     except:
@@ -160,24 +219,44 @@ if __name__ == "__main__":
 
     # set the seed
 
-    np.random.seed(114514)
+    np.random.seed(114514)  # pandas also use np.random if "random" in ".sample" is not set
     random.seed(114514)
 
     sample_dict = {}
+    total_pos_samples, total_neg_samples = 0, 0
+
     for i in fullsets.keys():
         if i in existing:
-            
             continue
+        
         dataset = fullsets[i]
-        print(i)
-        lossdf = get_lossdf(dataset, model_TST, model_TGTSF, stride, config)
+        print(f"[Info] handling {i}")
+
+        lossdf = get_lossdf(dataset, model_TST, model_TGTSF, int(output_len / 2), config, device)
         lossdf.to_csv(os.path.join(ckpt_path, f'lossdf_{i}.csv'))
+
         try:
-            samples = get_reasoning_samples(lossdf)
+            sample_pos, sample_neg = get_reasoning_samples(lossdf, args.sampling_rate)
+            
+            print(f"[Info]: selected {len(sample_pos)} pos samples and {len(sample_neg)} neg samples insubset {i}")
+            total_pos_samples += len(sample_pos)
+            total_neg_samples += len(sample_neg)
+
+            samples = sample_pos + sample_neg
+
         except:
-            print(f'error on {i}')
+            print(f'[Error] on {i}')
             continue
-        print(samples)
+
+        print(f"[Info] generated: {samples}")
+
         sample_dict[i] = samples
-        with open(os.path.join(f'./{data}_sample_{ahead}.json'), 'w') as f:
+        with open(os.path.join(args.sample_root, f'{data}_sample_{ahead}.json'), 'w') as f:
             json.dump(sample_dict, f)
+
+    print("\n" + "="*50)
+    print("Final Statistics Summary")
+    print("="*50)
+    print(f"Total Positive Candidates Across All Processed Subsets: {total_pos_samples}")
+    print(f"Total Negative Candidates Across All Processed Subsets: {total_neg_samples}")
+    print("="*50)

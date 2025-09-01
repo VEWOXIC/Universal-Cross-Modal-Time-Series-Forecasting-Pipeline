@@ -1,0 +1,21 @@
+We now predict the sensor reading for {channel_info}. The historical data is as follows:
+
+{x_table}
+
+The historical weather condition is as follows:
+
+{x_dy_table}
+
+We now have the weather forecasting for the following days:
+
+{y_dy_table}
+
+Please format your forecasting in json format in [forecast_timestamp, predicted_value] pair. **The shape/length of the predicted_value must strictly match the shape/length of a data point in the historical data. If a historical data point is a single number, the predicted_value must also be a single number. If a historical data point is a list, the predicted_value must be a list of the exact same shape**. **Use the timestamp yyyymmddHHMMSS**. The predicted_value should be non-negative float, it can be 0 when no data generate or the sensor/system is shutdown. Forecast 0 if the sensor is down, don't think too much about this. The json format is as follows with timestamp to forecast prefilled:
+
+```json
+
+{y_timestamp}
+
+```
+
+Now do the analysis step by step. Finally, MAKE SURE YOUR FINAL PREDICTION ALIGNS WITH YOUR ANALYSIS.

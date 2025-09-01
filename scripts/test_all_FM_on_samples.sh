@@ -1,0 +1,23 @@
+bash scripts/Bear_room/chronos_on_samples.sh
+bash scripts/Bear_room/time_moe_on_samples.sh
+bash scripts/Bear_room/sundial_on_samples.sh
+
+bash scripts/California_ISO/chronos_on_samples.sh
+bash scripts/California_ISO/time_moe_on_samples.sh
+bash scripts/California_ISO/sundial_on_samples.sh
+
+bash scripts/Canada_photovoltaics_plants/chronos_on_samples.sh
+bash scripts/Canada_photovoltaics_plants/time_moe_on_samples.sh
+bash scripts/Canada_photovoltaics_plants/sundial_on_samples.sh
+
+bash scripts/Germany_Renewable_Power_Grid/chronos_on_samples.sh
+bash scripts/Germany_Renewable_Power_Grid/time_moe_on_samples.sh
+bash scripts/Germany_Renewable_Power_Grid/sundial_on_samples.sh
+
+bash scripts/Jena_Atmospheric_Physics/chronos_on_samples.sh
+bash scripts/Jena_Atmospheric_Physics/time_moe_on_samples.sh
+bash scripts/Jena_Atmospheric_Physics/sundial_on_samples.sh
+
+bash scripts/NYC_traffic_speed/chronos_on_samples.sh
+bash scripts/NYC_traffic_speed/time_moe_on_samples.sh
+bash scripts/NYC_traffic_speed/sundial_on_samples.sh

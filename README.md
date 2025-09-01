@@ -116,6 +116,8 @@ python run_lightning.py --model DLinear --data_config data_configs/fullsolar.yam
 python run_lightning.py --model DLinear --data_config data_configs/fullsolar.yaml --model_config model_configs/general/DLinear.yaml --input_len 96 --output_len 96 --use_multi_gpu --devices 0,1,2,3
 ```
 
+> Please Do not run the FITS model with pytorch lightning, as the loss will explode. It is speculated that there might still be problems with the communication optimization of complex number computation.
+
 ## Features
 
 - **DLinear-like Pipeline**: Familiar, easy-to-use and adaptable pipeline for various time series forecasting task.
@@ -565,4 +567,3 @@ Checkpoints are saved in `./checkpoints/{setting_name}/`, including:
 - `checkpoint.pth`: Best model based on validation loss
 - `args.json`: Command-line arguments used for training
 - TensorBoard logs (for Lightning): `./checkpoints/tb_logs/{setting_name}/`
-

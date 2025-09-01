@@ -1,0 +1,28 @@
+root_path: ./data/NYC_traffic_speed/time_series_short_new
+spliter: timestamp
+# spliter: ratio
+split_info: # "7:1:2"
+  - '2022-01-01'
+  - '2022-01-01'
+timestamp_col: DATA_AS_OF
+target:
+  - SPEED
+id_info: id_info_imputed_short_new.json
+id: all
+formatter: 'id_{i}.parquet'
+downsample: 12
+sampling_rate: 1h
+base_T: 24
+hetero_info:
+  hetero_type: all_for_one
+  sampling_rate: 1day
+  root_path: ./data/NYC_traffic_speed/weather
+  formatter: merged_fast_general_weather_forecast.json
+  matching: single
+  postemb: True
+  postemb_model: /home/lcm/caiwanxu/bert-base-uncased
+  postemb_max_len: 16
+  postemb_d: 768
+  postemb_batch_size: 200
+  input_format: json
+  static_path: static_info_short_new.json

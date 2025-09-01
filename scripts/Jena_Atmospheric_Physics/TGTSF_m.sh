@@ -1,0 +1,15 @@
+for output_len in 144 1008 2016 4320
+do
+python -u run_lightning.py \
+    --model 'TGTSF' \
+    --model_config 'model_configs/general/TGTSF.yaml' \
+    --data Jena_Atmospheric_Physics \
+    --data_config './data_configs/Jena_Atmospheric_Physics/fullJAP_hetero_TGTSF.yaml' \
+    --input_len 2160 \
+    --output_len $output_len \
+    --batch_size 256 \
+    --patience 5 \
+    --train_epochs 50 \
+    --devices '0,1,4' | tee -a ./logs/IATSF.log
+
+done

@@ -1,0 +1,57 @@
+root_path: ./data/Bear_room/time_series
+spliter: timestamp
+# spliter: ratio
+split_info: # "7:1:2"
+  - '2020-06-01'  # Discard the data before 06-01
+  - '2020-09-01'
+  - '2020-10-01'
+  - '2020-10-20'  # Discard the data after 10-20
+timestamp_col: Timestamp
+target: all
+id_info: id_info.json
+id: # all
+  - '104'
+  - '107'
+  - '108'
+  - '120'
+  - '122'
+  - '208'
+  - '216'
+  - '229'
+  - '248'
+  - '252'
+  - '261'
+  - '281'
+  - '288'
+  - '304'
+  - '317'
+  - '329'
+  - '345'
+  - '348'
+  - '362'
+  - '380'
+  - '387'
+  - '403'
+  - '417'
+  - '428'
+  - '445'
+  - '450'
+  - '461'
+  - '470'
+  - '484'
+formatter: '{i}.parquet'
+sampling_rate: 5min
+base_T: 288
+hetero_info:
+  hetero_type: all_for_one  # all_for_one, each_subset
+  sampling_rate: 1day
+  root_path: ./data/Bear_room/hetero/weather/weather_report/formal_report
+  formatter: wm_messages_v1.json
+  matching: single
+  postemb: True
+  postemb_model: /home/lcm/caiwanxu/bert-base-uncased
+  postemb_max_len: 16
+  postemb_d: 768
+  postemb_batch_size: 200
+  input_format: json
+  static_path: static_info.json

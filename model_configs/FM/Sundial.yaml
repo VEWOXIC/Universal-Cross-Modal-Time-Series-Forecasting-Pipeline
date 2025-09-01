@@ -1,0 +1,3 @@
+model_name: thuml/sundial-base-128m
+num_samples: 10
+task: TSF

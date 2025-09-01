@@ -38,7 +38,23 @@ class Data_Provider(object):
             if hetero_info.root_path is None:
                 hetero_info.root_path = args.data_config.root_path
             
-            self.hetero_dataset = Heterogeneous_Dataset(root_path=hetero_info.root_path, formatter=hetero_info.formatter, id_info=self.id_info, matching=hetero_info.matching, output_format=hetero_info.input_format, static_path=hetero_info.static_path, timezone=self.dataset_config.time_zone, noise=self.args.noise)
+            self.hetero_dataset = Heterogeneous_Dataset(root_path=hetero_info.root_path, 
+                                                        formatter=hetero_info.formatter, 
+                                                        id_info=self.id_info, 
+                                                        matching=hetero_info.matching, 
+                                                        output_format=hetero_info.input_format, 
+                                                        static_path=hetero_info.static_path, 
+                                                        timezone=self.dataset_config.time_zone, 
+                                                        noise=self.args.noise, 
+                                                        hetero_type=hetero_info.hetero_type, 
+                                                        id_list=self.id_list, 
+                                                        postemb=hetero_info.postemb, 
+                                                        postemb_model=hetero_info.postemb_model, 
+                                                        postemb_max_len=hetero_info.postemb_max_len, 
+                                                        postemb_d=hetero_info.postemb_d, 
+                                                        postemb_batch_size=hetero_info.postemb_batch_size, 
+                                                        postemb_handle_downtime=hetero_info.postemb_handle_downtime, 
+                                                        device=self.args.gpu if self.args.use_gpu else 'cpu')
 
     def get_spliter(self):
         if self.dataset_config.spliter == 'timestamp':

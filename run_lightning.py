@@ -32,8 +32,8 @@ parser.add_argument('--output_len', type=int, default=1000, help='Output/predict
 parser.add_argument('--input_len', type=int, default=1000, help='Input sequence length (number of historical time steps used for prediction)')
 
 # optimization
-parser.add_argument('--num_workers', type=int, default=8, help='Number of subprocesses for data loading (0 means data is loaded in the main process)')
-parser.add_argument('--train_epochs', type=int, default=50, help='Maximum number of training epochs')
+parser.add_argument('--num_workers', type=int, default=4, help='Number of subprocesses for data loading (0 means data is loaded in the main process)')
+parser.add_argument('--train_epochs', type=int, default=30, help='Maximum number of training epochs')
 parser.add_argument('--batch_size', type=int, default=96, help='Batch size for training (per GPU when using multi-GPU)')
 parser.add_argument('--patience', type=int, default=3, help='Early stopping patience: training stops if validation loss does not improve for this many epochs')
 parser.add_argument('--learning_rate', type=float, default=5e-4, help='Initial learning rate for optimizer')
@@ -43,8 +43,8 @@ parser.add_argument('--lradj', type=str, default='type3', help='Learning rate ad
 # GPU
 parser.add_argument('--use_gpu', type=bool, default=True, help='Whether to use GPU for training (if available)')
 parser.add_argument('--gpu', type=int, default=0, help='GPU device ID to use when not using multi-GPU')
-parser.add_argument('--use_multi_gpu', action='store_true', help='Use multiple GPUs for distributed training with DDP', default=False)
-parser.add_argument('--devices', type=str, default='0,1,2,3', help='Comma-separated list of GPU device IDs to use for multi-GPU training')
+parser.add_argument('--use_multi_gpu', action='store_true', help='Use multiple GPUs for distributed training with DDP', default=True)
+parser.add_argument('--devices', type=str, default='3', help='Comma-separated list of GPU device IDs to use for multi-GPU training')
 
 # PyTorch Lightning specific
 parser.add_argument('--precision', type=str, default='32', help='Numerical precision for training: "32" (float32), "16" (float16/half), or "bf16" (bfloat16)')
@@ -54,7 +54,15 @@ parser.add_argument('--test_after_epoch', action='store_true', help='Test after 
 # Testing
 parser.add_argument('--test', action='store_true', help='Test the model after training (if set, training will not be performed). need specify the last checkpoint')
 
+# env variables
+parser.add_argument('--hf_mirror', type=bool, default=False, help='Use Hugging Face mirror for downloading models')
+
+
 args = parser.parse_args()
+
+# Set environment variables for HuggingFace
+if args.hf_mirror:
+    os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
 
 # make training faster
 torch.backends.cudnn.benchmark = True
@@ -73,7 +81,7 @@ data_configs = dotdict(data_configs)
 args.data_config = data_configs
 
 # get current time
-current_time = 'ligntning_' + time.strftime("%Y%m%d_%H", time.localtime())
+current_time = 'lightning_' + time.strftime("%m-%d-%H%M", time.localtime())
 
 # setting record of experiment
 if args.ahead is not None:

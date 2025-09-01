@@ -1,0 +1,9 @@
+modal: GPT4TS
+is_gpt: True
+pretrain: True
+freeze: True
+patch_size: 16
+stride: 8
+d_model: 768
+gpt_layers: 6
+task: TSF

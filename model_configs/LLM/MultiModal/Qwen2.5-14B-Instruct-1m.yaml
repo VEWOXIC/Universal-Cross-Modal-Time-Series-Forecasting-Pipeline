@@ -1,0 +1,12 @@
+model: qwen2.5-14b-instruct-1m
+system_prompt: prompt_templates/general_template_MM/system.template
+first_prompt: prompt_templates/general_template_MM/firstattempt.template
+retry_prompt: prompt_templates/general_template_MM/retry.template
+merge_system: True
+temperature: 0.6
+base_url: 
+api_key: 
+retry: 3
+force_retry: False
+queue_len: 2
+task: Reasoning

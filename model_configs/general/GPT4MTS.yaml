@@ -1,0 +1,10 @@
+modal: GPT4MTS
+is_gpt: True
+pretrain: True
+freeze: True
+patch_size: 6
+stride: 3
+revin: True
+d_model: 768
+gpt_layers: 6
+task: all  # MTSF  # MTSF is now available

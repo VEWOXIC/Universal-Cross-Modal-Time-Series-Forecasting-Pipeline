@@ -1,0 +1,22 @@
+root_path: ./data/NYC_traffic_speed/time_series_short_new
+spliter: timestamp
+# spliter: ratio
+split_info: # "7:1:2"
+  - '2022-01-01'
+  - '2022-01-01'
+timestamp_col: DATA_AS_OF
+target:
+  - SPEED
+id_info: id_info_imputed_short_new.json
+id: all
+formatter: 'id_{i}.parquet'
+downsample: 12
+sampling_rate: 1h
+base_T: 24
+hetero_info:
+  hetero_type: all_for_one  # all_for_one, each_subset
+  root_path: ./data/NYC_traffic_speed/weather/merged_report_embedding
+  formatter: fast_general_formal_embeddings_????.pkl
+  matching: backward
+  input_format: embedding
+  static_path: static_info_embeddings_short_new.pkl

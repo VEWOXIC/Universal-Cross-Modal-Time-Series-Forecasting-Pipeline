@@ -30,12 +30,22 @@ class TimeSeriesLightningModel(pl.LightningModule):
         self.model = model_init(self.args.model, self.args.model_config, self.args)
         
         # Loss function
+        # --- MODIFICATION START ---
+        # The criterion itself is correct (reduction='mean' is fine for training steps).
+        # The error was in how the results were aggregated during testing.
         self.criterion = self._select_criterion()
+        # --- MODIFICATION END ---
         
         # Configure automatic optimization if needed
         self.automatic_optimization = True
 
-        self.test_loss = []
+        # --- MODIFICATION START ---
+        # We need to store both the total loss and the number of samples for each batch 
+        # to calculate the correct average loss at the end of the test epoch.
+        # Storing just the average loss of each batch (loss.item()) is incorrect.
+        self.test_total_loss = []
+        self.test_total_samples = []
+        # --- MODIFICATION END ---
         
     def _select_criterion(self):
         """Select the loss function."""
@@ -98,9 +108,12 @@ class TimeSeriesLightningModel(pl.LightningModule):
         loss = self.criterion(output, gt)
         
         # Log metrics
+        # Pytorch-Lightning's default on_epoch=True aggregation is a weighted average, which is correct.
+        # So no change is needed here. The error was in the manual test loops.
         self.log('val_loss', loss, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
         
         return loss
+
     def on_validation_epoch_end(self):
         """After validation completes, run test on all subsets."""
         # Only run test during training, not during sanity check
@@ -123,33 +136,53 @@ class TimeSeriesLightningModel(pl.LightningModule):
         self.model.eval()
         test_loaders = self.trainer.datamodule.test_dataloader()
         
-        # Track losses
+        # --- MODIFICATION START ---
+        # Track total loss and total samples to calculate the true average loss,
+        # avoiding the "mean of means" error.
         subset_losses = {}
-        all_losses = []
+        overall_total_loss = 0.0
+        overall_total_samples = 0
+        # --- MODIFICATION END ---
         
         with torch.no_grad():
             for subset_id, loader in test_loaders.items():
-                subset_batch_losses = []
+                # --- MODIFICATION START ---
+                subset_total_loss = 0.0
+                subset_total_samples = 0
+                # --- MODIFICATION END ---
                 
                 # Process each batch
                 for i, batch in tqdm(enumerate(loader), total=len(loader), desc=f"Testing {subset_id}"):
                     output, gt = self.forward(batch)
                     loss = self.criterion(output, gt)
-                    subset_batch_losses.append(loss.item())
+                    
+                    # --- MODIFICATION START ---
+                    # The criterion calculates the mean loss for the batch. To get the total
+                    # loss for the batch, we multiply by the number of elements.
+                    num_samples_in_batch = gt.numel()
+                    total_batch_loss = loss.item() * num_samples_in_batch
+                    
+                    subset_total_loss += total_batch_loss
+                    subset_total_samples += num_samples_in_batch
+                    # --- MODIFICATION END ---
                 
                 # Calculate average for this subset
-                if subset_batch_losses:
-                    avg_loss = np.mean(subset_batch_losses)
+                # --- MODIFICATION START ---
+                if subset_total_samples > 0:
+                    avg_loss = subset_total_loss / subset_total_samples
                     subset_losses[subset_id] = avg_loss
-                    all_losses.extend(subset_batch_losses)
+                    overall_total_loss += subset_total_loss
+                    overall_total_samples += subset_total_samples
                     print(f"Test loss for {subset_id}: {avg_loss:.7f}")
+                # --- MODIFICATION END ---
         
         # Calculate overall average
-        if all_losses:
-            overall_avg = np.mean(all_losses)
+        # --- MODIFICATION START ---
+        if overall_total_samples > 0:
+            overall_avg = overall_total_loss / overall_total_samples
             print(f"Overall test loss: {overall_avg:.7f}")
+        # --- MODIFICATION END ---
             
-        
         print("---------------------------------------\n")
         
         # Restore model state
@@ -159,17 +192,34 @@ class TimeSeriesLightningModel(pl.LightningModule):
         """Test step."""
         output, gt = self.forward(batch)
         loss = self.criterion(output, gt)
-        # Log metrics
-        self.test_loss.append(loss.item())
+        
+        # --- MODIFICATION START ---
+        # Instead of appending the mean batch loss, we append the total loss
+        # and the number of samples for correct aggregation later.
+        num_samples = gt.numel()
+        self.test_total_loss.append(loss.item() * num_samples)
+        self.test_total_samples.append(num_samples)
+        # --- MODIFICATION END ---
 
     def on_test_epoch_end(self):
         """After test completes, log average test loss."""
-        # print('!!!!!!!!!!!!in on_test_epoch_end')
-        avg_loss = np.mean(self.test_loss)
+        # --- MODIFICATION START ---
+        # Calculate the true average loss: sum of all total batch losses divided
+        # by the sum of all batch sample counts.
+        total_loss = np.sum(self.test_total_loss)
+        total_samples = np.sum(self.test_total_samples)
+
+        if total_samples > 0:
+            avg_loss = total_loss / total_samples
+        else:
+            avg_loss = 0.0 # Handle case with no test data
+
         self.log('test_loss', avg_loss, on_epoch=True, prog_bar=True, logger=True, sync_dist=True)
         
-        # Reset test loss for next epoch
-        self.test_loss = []
+        # Reset lists for the next potential test run (e.g., in a new training session)
+        self.test_total_loss = []
+        self.test_total_samples = []
+        # --- MODIFICATION END ---
 
 
     def configure_optimizers(self):
@@ -282,34 +332,34 @@ def train_lightning_model(args, setting):
     if not args.test:
         trainer.fit(model, data_module)
     
-    # Final test - run it once with all dataloaders together
-    print(f'>>>>>>>final testing : {setting}>>>>>>>>>>>>>>>>>>>>>>>>>>>')
+    # Get the path to the best model saved by the checkpoint callback
+    best_model_path = checkpoint_callback.best_model_path
+    if not best_model_path or not os.path.exists(best_model_path):
+        print("Could not find best model path. Using last model for testing.")
+        # Fallback to the last saved model if best is not found
+        best_model_path = checkpoint_callback.last_model_path 
+    
+    # Final test using the best model checkpoint
+    print(f'>>>>>>>final testing on best model: {best_model_path}>>>>>>>>>>>>>>>>>>>>>>>>>>>')
     data_module.setup(stage='test')
     test_loaders = data_module.test_dataloader()
 
     info_results = {}
     for i, (subset_id, loader) in enumerate(test_loaders.items()):
         print(f"Testing {subset_id}...")
-        trainer.test(model, dataloaders=loader)
+        trainer.test(model, dataloaders=loader, ckpt_path=best_model_path)
         print(f"Test loss for {subset_id}: {trainer.callback_metrics['test_loss'].item():.7f}")
         info_results[subset_id] = trainer.callback_metrics['test_loss'].item()
     
-
-    # # Print results for each dataset
-    # for i, result in enumerate(results):
-    #     dataset_id = dataset_ids[i] if i < len(dataset_ids) else f"unknown_{i}"
-    #     print(f"Test results for {dataset_id}:")
-    #     print(f"- Loss: {result[f'test_loss_dataloader_{i}']:.7f}")
-    #     info_results[dataset_id] = result[f'test_loss_dataloader_{i}']
     print(info_results)
     if trainer.is_global_zero:  # Only the main process writes the file
         print(info_results)
         with open(os.path.join(checkpoint_path, 'test_results.json'), 'w') as f:
             json.dump(info_results, f)
+        with open(os.path.join(checkpoint_path, 'test_results_average.json'), 'w') as f:
+            # average loss of all subsets
+            json.dump({'average loss of all subsets': np.mean(list(info_results.values()))}, f)
     if args.test:
         return
     
-    # Load best model and return
-    best_model_path = checkpoint_callback.best_model_path
-    
-    return best_model_path  # Return the wrapped model for compatibility 
+    return best_model_path  # Return the wrapped model for compatibility

@@ -2,14 +2,26 @@ import importlib
 import yaml
 from utils.tools import dotdict
 from .LLM_socket import LLM_Socket
+from .Time_R1_socket import Time_R1_socket
 
-def model_init(model_name, configs, all_args, is_LLM=False):
+def model_init(model_name, configs, all_args, is_LLM=False, is_FM=False):
 
     if is_LLM:
-        return LLM_Socket(configs)
-    else:
-        configs['seq_len']=all_args.input_len
+        return Time_R1_socket(configs) if model_name.startwith("Time-R1") else LLM_Socket(configs)
+
+    elif is_FM:
+        configs['hist_len'] = all_args.input_len
         configs['pred_len'] = all_args.output_len
+        configs['gpu'] = all_args.gpu if all_args.use_gpu else None
+
+        module = importlib.import_module(f'models.{model_name}')
+        model_class = getattr(module, 'Model')
+        return model_class(configs)
+    
+    else:
+        configs['seq_len'] = all_args.input_len
+        configs['pred_len'] = all_args.output_len
+        configs['gpu'] = all_args.gpu if all_args.use_gpu else None
 
         data_configs = all_args.data_config
         try:

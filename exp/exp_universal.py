@@ -93,7 +93,9 @@ class Experiment(Exp_Basic):
 
         for epoch in range(self.args.train_epochs):
             iter_count = 0
-            train_loss = []
+
+            epoch_loss = 0.0
+            total_samples = 0
 
             self.model.train()
             epoch_time = time.time()
@@ -111,17 +113,20 @@ class Experiment(Exp_Basic):
 
                     model_optim.step()
 
-                    train_loss.append(loss.item())
+                    current_batch_size = gt.size(0)
+                    epoch_loss += loss.item() * current_batch_size
+                    total_samples += current_batch_size
 
-                    if iter_count % 20 == 0:
-                        speed = (time.time() - time_now) / iter_count
-                        left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
-                        pbar.set_postfix({'loss': f'{loss.item():.7f}', 'speed': f'{speed:.4f}s/iter', 'left time': f'{left_time:.4f}s'})
-                        pbar.update(20)
-                        iter_count = 0
-                        time_now = time.time()
+                    # if iter_count % 20 == 0:
+                    speed = (time.time() - time_now) / iter_count
+                    left_time = speed * ((self.args.train_epochs - epoch) * train_steps - i)
+                    pbar.set_postfix({'loss': f'{loss.item():.7f}', 'speed': f'{speed:.4f}s/iter', 'left time': f'{left_time:.4f}s'})
+                    # pbar.update(20)
+                    pbar.update(1)
+                    iter_count = 0
+                    time_now = time.time()
             print("Epoch: {} cost time: {}".format(epoch + 1, time.time() - epoch_time))
-            train_loss = np.average(train_loss)
+            train_loss = epoch_loss / total_samples if total_samples > 0 else 0.0
             vali_loss = self.vali(vali_loader, criterion)
             test_loss = self.test(test_loader, criterion)
 
@@ -143,47 +148,68 @@ class Experiment(Exp_Basic):
         """
         Validate the model on the validation dataset.
         """
-        total_loss = []
+        running_loss = 0.0
+        total_samples = 0
+
         self.model.eval()
 
         with torch.inference_mode():
             with torch.no_grad():
-                for i, iter in tqdm(enumerate(loader), total=len(loader), desc=f"Validating..."):
+                for i, iter_data in tqdm(enumerate(loader), total=len(loader), desc=f"Validating..."):
                     
-                    output, gt = self._forward_step(iter)
+                    output, gt = self._forward_step(iter_data)
+
+                    current_batch_size = gt.size(0)
 
                     loss = criterion(output, gt)
-                    total_loss.append(loss.item())
 
-        total_loss = np.average(total_loss)
+                    running_loss += loss.item() * current_batch_size
+                    
+                    total_samples += current_batch_size
+
+        epoch_loss = running_loss / total_samples if total_samples > 0 else 0.0
+        
         self.model.train()
-        return total_loss
+        return epoch_loss
     
     def test(self, loaders, criterion, valinum='full'):
         """
         Validate the model on the validation dataset.
         """
-        total_loss = []
+        overall_running_loss = 0.0
+        overall_total_samples = 0
         self.model.eval()
-        for info, loader in loaders.items():
-            info_loss=[]
-            with torch.inference_mode():
-                with torch.no_grad():
-                    for i, iter in tqdm(enumerate(loader), total=len(loader), desc=f"Testing {info}"):
-                        
-                        output, gt = self._forward_step(iter)
 
-                        loss = criterion(output, gt)
-                        total_loss.append(loss.item())
-                        info_loss.append(loss.item())
-                        ######
-                        if valinum == 'full':
-                            pass
-                        else:
-                            if i == valinum:
-                                break # only sample 2 batches for faster validation
-                        ######
-            print(f"Test loss for {info}: {np.average(info_loss)}")
-        total_loss = np.average(total_loss)
+        for info, loader in loaders.items():
+            info_running_loss = 0.0
+            info_total_samples = 0
+            
+            with torch.inference_mode():
+                for i, iter_data in tqdm(enumerate(loader), total=len(loader), desc=f"Testing {info}"):
+                    
+                    output, gt = self._forward_step(iter_data)
+                    
+                    current_batch_size = gt.size(0)
+                    loss = criterion(output, gt)
+
+                    info_running_loss += loss.item() * current_batch_size
+                    info_total_samples += current_batch_size
+                    
+                    overall_running_loss += loss.item() * current_batch_size
+                    overall_total_samples += current_batch_size
+                    
+                    if valinum != 'full':
+                        # The original logic `i == valinum` processes `valinum` batches (indices 0 to valinum-1).
+                        if i + 1 >= valinum:
+                            break
+            
+            if info_total_samples > 0:
+                info_epoch_loss = info_running_loss / info_total_samples
+                print(f"Test loss for {info}: {info_epoch_loss:.7f}")
+            else:
+                print(f"Test loss for {info}: N/A (no samples processed)")
+
+        total_epoch_loss = overall_running_loss / overall_total_samples if overall_total_samples > 0 else 0.0
+        
         self.model.train()
-        return total_loss
+        return total_epoch_loss

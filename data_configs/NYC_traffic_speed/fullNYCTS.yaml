@@ -1,0 +1,14 @@
+root_path: ./data/NYC_traffic_speed/time_series
+spliter: timestamp
+# spliter: ratio
+split_info: # "7:1:2"
+  - '2021-01-01'
+  - '2022-01-01'
+timestamp_col: DATA_AS_OF
+target:
+  - SPEED
+id_info: id_info_imputed.json
+id: all
+formatter: 'id_{i}.parquet'
+sampling_rate: 5min
+base_T: 288
