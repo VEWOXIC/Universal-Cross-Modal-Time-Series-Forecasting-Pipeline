@@ -218,9 +218,9 @@ class Heterogeneous_Dataset(Dataset):
         self.device = torch.device('cpu') if device == 'cpu' else torch.device(f'cuda:{device}')
         self.postemb = postemb
         self.postemb_model = postemb_model
-        self.postemb_max_len = int(postemb_max_len)
-        self.postemb_d = int(postemb_d)
-        self.postemb_batch_size = int(postemb_batch_size)
+        self.postemb_max_len = int(postemb_max_len) if postemb_max_len is not None else postemb_max_len
+        self.postemb_d = int(postemb_d) if postemb_d is not None else postemb_d
+        self.postemb_batch_size = int(postemb_batch_size) if postemb_batch_size is not None else postemb_batch_size
         self.postemb_handle_downtime = postemb_handle_downtime
 
         self.tokenizer = AutoTokenizer.from_pretrained(self.postemb_model) if postemb is not None else None

@@ -1,17 +1,17 @@
-# bash scripts/Bear_room/gpt4ts_on_samples.sh
-# bash scripts/Bear_room/gpt4mts_on_samples.sh
+bash scripts/Bear_room/gpt4ts_on_samples.sh
+bash scripts/Bear_room/gpt4mts_on_samples.sh
 
-# bash scripts/California_ISO/gpt4ts_on_samples.sh
+bash scripts/California_ISO/gpt4ts_on_samples.sh
 bash scripts/California_ISO/gpt4mts_on_samples.sh
 
-# bash scripts/Canada_photovoltaics_plants/gpt4ts_on_samples.sh
+bash scripts/Canada_photovoltaics_plants/gpt4ts_on_samples.sh
 bash scripts/Canada_photovoltaics_plants/gpt4mts_on_samples.sh
 
-# bash scripts/Germany_Renewable_Power_Grid/gpt4ts_on_samples.sh
+bash scripts/Germany_Renewable_Power_Grid/gpt4ts_on_samples.sh
 bash scripts/Germany_Renewable_Power_Grid/gpt4mts_on_samples.sh
 
-# bash scripts/Jena_Atmospheric_Physics/gpt4ts_on_samples.sh
+bash scripts/Jena_Atmospheric_Physics/gpt4ts_on_samples.sh
 bash scripts/Jena_Atmospheric_Physics/gpt4mts_on_samples.sh
 
-# bash scripts/NYC_traffic_speed/gpt4ts_on_samples.sh
-# bash scripts/NYC_traffic_speed/gpt4mts_on_samples.sh
+bash scripts/NYC_traffic_speed/gpt4ts_on_samples.sh
+bash scripts/NYC_traffic_speed/gpt4mts_on_samples.sh

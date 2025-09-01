@@ -14,14 +14,14 @@ from utils.tools import dotdict
 from utils.metrics import MAE, MSE
 
 
-def evaluate_full_dataset(loader, model, config, device, indexes):
+def evaluate_full_dataset(loader, model, config, device, indexes, channel_wise): # MODIFIED: Added channel_wise parameter
     """
     Evaluates all samples in a dataset using a DataLoader for efficient batch processing.
-    Calculates the true MSE and MAE over the entire dataset.
+    Calculates the true MSE and MAE over the entire dataset, with an option for channel-wise evaluation.
     """
-    total_mse, total_mae = 0.0, 0.0
-    num_samples = 0
-    
+    total_mse, total_mae, num_samples = 0.0, 0.0, 0
+    channel_mse, channel_mae, channel_counts = None, None, None
+
     for i, iter_data in tqdm(enumerate(loader), total=len(loader), desc="Running tests"):
         if indexes is not None and i not in indexes:
             continue
@@ -46,14 +46,29 @@ def evaluate_full_dataset(loader, model, config, device, indexes):
             
             prediction = prediction[:, -config.output_len:, :]
 
-            mse_loss = torch.nn.MSELoss()(prediction, batch_y)
-            mae_loss = torch.nn.L1Loss()(prediction, batch_y)
+            if channel_wise:
+                if channel_mse is None:
+                    C = prediction.shape[2]
+                    channel_mse = [0.0] * C
+                    channel_mae = [0.0] * C
+                    channel_counts = [0] * C
+                for k in range(prediction.shape[2]):
+                    mse_loss = torch.nn.MSELoss()(prediction[:, :, k], batch_y[:, :, k])
+                    mae_loss = torch.nn.L1Loss()(prediction[:, :, k], batch_y[:, :, k])
+                    channel_mse[k] += mse_loss.item() * batch_y.size(0)
+                    channel_mae[k] += mae_loss.item() * batch_y.size(0)
+                    channel_counts[k] += batch_y.size(0)
+            else:
+                mse_loss = torch.nn.MSELoss()(prediction, batch_y)
+                mae_loss = torch.nn.L1Loss()(prediction, batch_y)
+                total_mae += mae_loss.item() * batch_y.size(0)
+                total_mse += mse_loss.item() * batch_y.size(0)
+                num_samples += batch_y.size(0)
 
-            total_mae += mae_loss.item() * batch_y.size(0)
-            total_mse += mse_loss.item() * batch_y.size(0)
-            num_samples += batch_y.size(0)
-    
-    return total_mse, total_mae, num_samples
+    if channel_wise:
+        return channel_mse, channel_mae, channel_counts
+    else:
+        return total_mse, total_mae, num_samples
 
 
 def main():
@@ -74,6 +89,7 @@ def main():
     parser.add_argument('--task', type=str, default="TSF", choices=["TSF", "TGTSF", "MTSF"], help="Task type: Time Series Forecasting or Text-Grounded TSF")
     parser.add_argument('--filtered_samples', type=str, default=None, help='Path to a JSON file containing filtered sample indexes for evaluation')
     parser.add_argument('--device', type=str, default="0", help="Device to run the model on")
+    parser.add_argument('--channel_wise', type=bool, default=False, help='Channel wise testing')
     
     args = parser.parse_args()
 
@@ -81,14 +97,12 @@ def main():
     ckpt_pattern = f'_{args.model}_{args.data}_{args.output_len}_{args.input_len}'
     
     if args.version == 'latest':
-        # Find all matching checkpoint directories and sort them to get the latest one
         ckpt_paths = [os.path.join(args.checkpoint_base, d) for d in os.listdir(args.checkpoint_base) if ckpt_pattern in d]
         if not ckpt_paths:
             raise FileNotFoundError(f"No checkpoint found with pattern: *{ckpt_pattern}")
         ckpt_paths.sort()
         ckpt_path = ckpt_paths[-1]
     elif args.version == 'oldest':
-        # Find all matching checkpoint directories and sort them to get the oldest one
         ckpt_paths = [os.path.join(args.checkpoint_base, d) for d in os.listdir(args.checkpoint_base) if ckpt_pattern in d]
         if not ckpt_paths:
             raise FileNotFoundError(f"No checkpoint found with pattern: *{ckpt_pattern}")
@@ -113,11 +127,10 @@ def main():
     config.model_config = dotdict(config.model_config)
     config.data_config = dotdict(config.data_config) if args.data_config is None else dotdict(yaml.safe_load(open(args.data_config, 'r')))
     
-    # Override config with runtime arguments
     config.gpu = args.device
     config.num_workers = 0
     config.task = args.task
-    config.batch_size = 1 if args.filtered_samples is not None else args.batch_size  # Must remain batch size = 1 for filtered testing
+    config.batch_size = 1 if args.filtered_samples is not None else args.batch_size
     
     if torch.cuda.is_available():
         device = torch.device(f"cuda:{args.device}")
@@ -129,7 +142,6 @@ def main():
     # --- Initialize and Load Model ---
     model = model_init(config.model, config.model_config, config).to(device)
     
-    # Find the checkpoint file (e.g., checkpoint.pth, model.ckpt)
     ckpt_file = glob.glob(os.path.join(ckpt_path, 'checkpoint*'))
     if not ckpt_file:
         raise FileNotFoundError(f"No checkpoint file (e.g., 'checkpoint.pth') found in {ckpt_path}")
@@ -138,7 +150,6 @@ def main():
     print(f"[Info] Loading model from: {ckpt_file_path}")
     checkpoint = torch.load(ckpt_file_path, map_location=device)
 
-    # Handle different checkpoint formats (e.g., from PyTorch Lightning)
     if ckpt_file_path.endswith('.ckpt') and 'state_dict' in checkpoint:
         state_dict = {key.replace("model.", ""): value for key, value in checkpoint['state_dict'].items()}
     else:
@@ -153,10 +164,14 @@ def main():
     fullloader = data_provider.get_test("loader")
 
     # --- Run Evaluation ---
-    
-    all_mae = 0.0
-    all_mse = 0.0
-    all_sample_num = 0
+    if args.channel_wise:
+        all_mae = {}
+        all_mse = {}
+        all_sample_num = {}
+    else:
+        all_mae = 0.0
+        all_mse = 0.0
+        all_sample_num = 0
 
     if args.filtered_samples is not None:
         filtered_samples = json.load(open(args.filtered_samples))
@@ -166,31 +181,64 @@ def main():
         print(f"\n[Info] Testing on dataset: {name}")
 
         if args.filtered_samples is not None:
-            indexes = filtered_samples[name]
+            indexes = filtered_samples.get(name, []) # Use .get for safety
             print(f"[Info] Using {len(indexes)} filtered samples for testing.")
             print(f"[Info] Sample indexes: {indexes}")
         else:
             indexes = None
             print("[Info] Using all samples for testing.")
         
-        total_mse, total_mae, num_samples = evaluate_full_dataset(loader, model, config, device, indexes)
+        result = evaluate_full_dataset(loader, model, config, device, indexes, args.channel_wise)
 
-        if num_samples > 0:
-            avg_mse = total_mse / num_samples if num_samples > 0 else 0
-            avg_mae = total_mae / num_samples if num_samples > 0 else 0
-            print(f"-> Results for '{name}': MSE = {avg_mse:.7f}, MAE = {avg_mae:.7f}")
-
-            all_mse += total_mse
-            all_mae += total_mae
-            all_sample_num += num_samples
-        
+        if args.channel_wise:
+            channel_mse, channel_mae, channel_counts = result
+            if channel_mse is None or sum(channel_counts) == 0:
+                print(f"-> No valid samples found in '{name}'")
+            else:
+                all_mse[name] = channel_mse
+                all_mae[name] = channel_mae
+                all_sample_num[name] = channel_counts
+                avg_ch_mse = [m / count if count > 0 else 0 for m, count in zip(channel_mse, channel_counts)]
+                avg_ch_mae = [m / count if count > 0 else 0 for m, count in zip(channel_mae, channel_counts)]
+                print(f"-> Results for '{name}': Channel-wise MSE = {avg_ch_mse}, Channel-wise MAE = {avg_ch_mae}")
+                print(f"-> Results for '{name}': Overall Channel MSE = {sum(avg_ch_mse) / len(avg_ch_mse):.7f}, Overall Channel MAE = {sum(avg_ch_mae) / len(avg_ch_mae):.7f}")
         else:
-            print(f"-> No index found in '{name}'")
+            total_mse, total_mae, num_samples = result
+            if num_samples > 0:
+                avg_mse = total_mse / num_samples
+                avg_mae = total_mae / num_samples
+                print(f"-> Results for '{name}': MSE = {avg_mse:.7f}, MAE = {avg_mae:.7f}")
 
+                all_mse += total_mse
+                all_mae += total_mae
+                all_sample_num += num_samples
+            else:
+                print(f"-> No valid samples found in '{name}'")
 
     print("\n" + "="*50)
     print(" " * 15 + "Overall Test Summary")
-    print(f"-> Results for all subsets: MSE = {all_mse / all_sample_num:.7f}, MAE = {all_mae / all_sample_num:.7f}")
+
+    if args.channel_wise:
+        # Check if there are any results to summarize
+        if not all_mse:
+            print("-> No results to summarize.")
+        else:
+            sum_mse = [sum(m) for m in zip(*all_mse.values())]
+            sum_mae = [sum(m) for m in zip(*all_mae.values())]
+            sum_counts = [sum(c) for c in zip(*all_sample_num.values())]
+            overall_mse_list = [m / c if c > 0 else 0 for m, c in zip(sum_mse, sum_counts)]
+            overall_mae_list = [m / c if c > 0 else 0 for m, c in zip(sum_mae, sum_counts)]
+            print(f"-> Overall Results (All Subsets): Channel-wise MSE = {overall_mse_list}, Channel-wise MAE = {overall_mae_list}")
+            overall_mse = sum(overall_mse_list) / len(overall_mse_list) if overall_mse_list else 0
+            overall_mae = sum(overall_mae_list) / len(overall_mae_list) if overall_mae_list else 0
+            print(f"-> Overall Results (All Subsets): MSE = {overall_mse:.7f}, MAE = {overall_mae:.7f}")
+
+    else:
+        if all_sample_num > 0:
+            print(f"-> Overall Results (All Subsets): MSE = {all_mse / all_sample_num:.7f}, MAE = {all_mae / all_sample_num:.7f}")
+        else:
+            print("-> No samples were processed.")
+    
     print("="*50)
 
 
