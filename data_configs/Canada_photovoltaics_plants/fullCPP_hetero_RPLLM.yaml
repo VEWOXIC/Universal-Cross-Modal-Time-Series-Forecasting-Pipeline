@@ -19,7 +19,7 @@ hetero_info:
   formatter: fast_general_weather_forecast_????.json
   matching: single
   postemb: True
-  postemb_model: /home/lcm/caiwanxu/bert-base-uncased
+  postemb_model: /bert-base-uncased
   postemb_max_len: 16
   postemb_d: 768
   postemb_batch_size: 200
