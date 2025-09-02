@@ -92,7 +92,7 @@ class Model(nn.Module):
 
         x = self.TS_encoder(x)    # x: [bs x nvars x d_model x patch_num]
 
-        t = self.text_encoder(news, description) # t: [bs, l, nvars, d_model] # 添加positional embedding!
+        t = self.text_encoder(news, description) # t: [bs, l, nvars, d_model] # add positional embedding
 
         x, mix_weights = self.mixer(t, x) # x: [bs, patch_num, nvars, d_model]
 
