@@ -17,17 +17,63 @@ from utils.tools import general_move_to_device
 
 
 class Experiment(Exp_Basic):
+    """
+    Experiment orchestrator for Foundation Model (FM) based time series forecasting.
+    
+    This class specializes the base experiment framework for pre-trained foundation models
+    that have been designed for time series forecasting tasks. Foundation models leverage
+    large-scale pre-training on diverse time series data to provide strong generalization
+    capabilities across different domains and datasets.
+    
+    Key Features:
+        - Foundation model initialization with pre-trained weights
+        - Efficient fine-tuning and adaptation workflows
+        - Memory-optimized device management for large models
+        - Support for cross-modal and heterogeneous data inputs
+        - Specialized inference procedures for foundation models
+    
+    Args:
+        args: Configuration object containing FM-specific parameters including:
+            - model_config: Foundation model architecture and parameter settings
+            - fine_tuning: Adaptation strategy and learning rate schedules
+            - inference: Batch processing and memory optimization settings
+            - data: Cross-modal data configuration and preprocessing
+    
+    Example:
+        ```python
+        exp = Experiment(args)
+        model = exp.train(setting='fm_adaptation_v1') 
+        results = exp.test(setting='fm_adaptation_v1')
+        ```
+    """
     
     def __init__(self, args):
         super(Experiment, self).__init__(args)
         
     def _build_model(self):
+        """
+        Constructs and returns a Foundation Model for time series forecasting.
+        
+        Initializes pre-trained foundation models with specialized configurations
+        for time series forecasting tasks. The model is built with FM-specific
+        optimizations and adaptation capabilities.
+        
+        Returns:
+            torch.nn.Module: Initialized foundation model configured for time series forecasting
+        """
         model = model_init(self.args.model, self.args.model_config, self.args, is_FM=True)
         return model
 
     def _get_data(self, flag, return_type='loader'):
         """
-        Get the data for training, validation, or testing.
+        Retrieves data in the specified format for foundation model experiments.
+        
+        Args:
+            flag (str): Dataset split identifier ('train', 'val', 'test')
+            return_type (str): Format of returned data ('loader', 'set', 'both')
+        
+        Returns:
+            DataLoader/Dataset/tuple: Data in requested format for foundation model training/inference
         """
         if flag == 'train':
             data_loader = self.data_provider.get_train(return_type=return_type)
@@ -40,7 +86,17 @@ class Experiment(Exp_Basic):
 
     def _forward_step(self, iter):
         """
-        Forward step for the model.
+        Executes a single forward pass for foundation model inference.
+        
+        Handles device placement and data formatting specific to foundation models,
+        which may have different memory requirements and optimization strategies
+        compared to standard models.
+        
+        Args:
+            iter: Data batch containing time series and cross-modal information
+        
+        Returns:
+            tuple: (predictions, ground_truth) for foundation model evaluation
         """
         # iteration: seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
 

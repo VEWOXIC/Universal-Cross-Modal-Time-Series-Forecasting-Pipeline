@@ -202,14 +202,40 @@ class Universal_Dataset(Dataset):
 
 
     def __preload_hetero__(self):
+        """
+        Preloads all heterogeneous data into memory for efficient batch processing.
+        
+        When enabled, this method loads the complete heterogeneous dataset at initialization
+        time rather than loading data on-demand during training. This improves training
+        speed at the cost of increased memory usage.
+        """
         if self.preload_hetero:
             print('[ info ] Preloading the full heterogeneous data')
             _ = time()
             self.hetero_time, self.hetero_general, self.hetero_channel, self.full_hetero = self.hetero_data_getter(self.timestamp)
             print('[ info ] Preload the full heterogeneous data successfully, cost time: {:.2f}s'.format(time() - _))
             del self.hetero_data_getter
-    # @profile
     def __getitem__(self, index):
+        """
+        Retrieves a single data sample with all associated modalities.
+        
+        Constructs a complete training/inference sample containing time series data,
+        timestamps, and corresponding heterogeneous cross-modal information. Handles
+        both preloaded and on-demand heterogeneous data loading based on configuration.
+        
+        Args:
+            index (int): Sample index in the dataset
+        
+        Returns:
+            tuple: Complete data sample containing:
+                - seq_x: Input time series sequence (seq_len, features)
+                - seq_y: Target time series sequence (pred_len, features)  
+                - x_time, y_time: Corresponding timestamps
+                - x_hetero, y_hetero: Heterogeneous data (text, events, etc.)
+                - hetero_x_time, hetero_y_time: Heterogeneous data timestamps
+                - hetero_general: General heterogeneous information
+                - hetero_channel: Channel-specific heterogeneous information
+        """
         
         s_begin = index
         s_end = s_begin + self.seq_len
@@ -258,14 +284,80 @@ class Universal_Dataset(Dataset):
         return seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
 
     def __len__(self):
+        """
+        Returns the total number of valid samples in the dataset.
+        
+        Calculates the number of complete sequences that can be generated
+        given the sequence length and prediction length constraints.
+        
+        Returns:
+            int: Number of valid data samples
+        """
         return len(self.data) - self.seq_len - self.pred_len + 1
 
     def inverse_transform(self, data):
+        """
+        Reverses the normalization transformation applied to data.
+        
+        Converts normalized data back to original scale using the fitted scaler.
+        Essential for interpreting model predictions in their original units.
+        
+        Args:
+            data (np.ndarray): Normalized data to transform back
+        
+        Returns:
+            np.ndarray: Data in original scale
+        """
         return self.scaler.inverse_transform(data)
 
 
 
 class Heterogeneous_Dataset(Dataset):
+    """
+    Specialized dataset for managing heterogeneous cross-modal data sources.
+    
+    This class handles diverse data types including text (news, events), images, 
+    and other modalities that complement time series forecasting. It provides
+    efficient data loading, temporal alignment, and embedding generation for
+    cross-modal forecasting tasks.
+    
+    Key Features:
+        - Support for multiple heterogeneous data formats (JSON, text, images)
+        - Temporal alignment between time series and heterogeneous data
+        - Positional embeddings for temporal relationships
+        - Memory-efficient data loading and caching
+        - Flexible matching strategies (nearest, interpolation, etc.)
+    
+    Args:
+        root_path (str): Root directory for heterogeneous data files
+        formatter (str): File naming pattern for data files
+        id_info (dict): Mapping of dataset IDs to metadata
+        static_path (str, optional): Path to static/constant heterogeneous data
+        matching (str): Strategy for temporal alignment ('nearest', 'interpolate')
+        output_format (str): Format for heterogeneous data output ('json', 'text')
+        timezone (str, optional): Timezone for timestamp alignment
+        noise (float): Noise level for data augmentation
+        hetero_type (str): Type of heterogeneous data handling strategy
+        id_list (list, optional): Specific IDs to process
+        postemb (str, optional): Positional embedding configuration
+        postemb_model (str, optional): Model for generating positional embeddings
+        postemb_max_len (int, optional): Maximum sequence length for embeddings
+        postemb_d (int, optional): Dimensionality of positional embeddings
+        postemb_batch_size (int): Batch size for embedding generation
+        postemb_handle_downtime (str, optional): Strategy for handling data gaps
+        device (str): Computing device ('cpu' or cuda device id)
+    
+    Example:
+        ```python
+        hetero_dataset = Heterogeneous_Dataset(
+            root_path='./data/news',
+            formatter='news_{i}.json',
+            id_info=dataset_ids,
+            matching='nearest',
+            output_format='json'
+        )
+        ```
+    """
     def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json', timezone=None, noise = 0.0, hetero_type='all_for_one', id_list=None, postemb=None, postemb_model=None, postemb_max_len=None, postemb_d=None, postemb_batch_size=200, postemb_handle_downtime=None, device='cpu'):
         super().__init__()
 
