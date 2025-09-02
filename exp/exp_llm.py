@@ -20,7 +20,32 @@ from data_provider.data_factory import Data_Provider
 warnings.filterwarnings('ignore')
 
 def log_error_to_file(log_path, info, index, error_type, message, stack_trace=""):
-    """Appends a formatted error record to a specified log file."""
+    """
+    Logs detailed error information to a specified file for debugging and monitoring.
+    
+    Creates structured error logs with timestamps for tracking issues during
+    large-scale language model experiments, particularly useful for batch processing
+    and identifying patterns in model failures.
+    
+    Args:
+        log_path (str): Path to the log file where errors will be appended
+        info (str): Dataset or context information where error occurred
+        index (int/str): Specific index or identifier of the failed item
+        error_type (str): Type of error (e.g., 'ValueError', 'RuntimeError')
+        message (str): Detailed error message
+        stack_trace (str, optional): Full stack trace for debugging
+    
+    Example:
+        ```python
+        log_error_to_file(
+            './errors.log', 
+            'stock_data.csv', 
+            batch_idx=42,
+            'CUDA Error',
+            'Out of memory during forward pass'
+        )
+        ```
+    """
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_entry = f"""--- ERROR LOG [{timestamp}] ---
 Dataset: {info}
@@ -36,15 +61,58 @@ Message: {message}
         f.write(log_entry)
 
 class Experiment(Exp_Basic):
+    """
+    Experiment orchestrator for Large Language Model (LLM) based time series forecasting.
+    
+    This class specializes the base experiment framework for LLM-based forecasting models
+    that leverage natural language processing capabilities for time series prediction.
+    It handles the unique requirements of LLM models including memory management,
+    inference optimization, and error handling for large-scale experiments.
+    
+    Key Features:
+        - Specialized LLM model initialization and management
+        - Memory-efficient inference for large language models
+        - Robust error handling and logging for debugging
+        - Batch processing optimization for LLM experiments
+        - Support for text-guided and cross-modal forecasting
+    
+    Args:
+        args: Configuration object containing LLM-specific parameters including:
+            - model_config: LLM architecture and parameter settings
+            - inference settings: batch size, sequence lengths, sampling parameters
+            - memory management: VRAM optimization, gradient checkpointing
+            - error handling: logging paths, retry mechanisms
+    
+    Example:
+        ```python
+        exp = Experiment(args)
+        # LLM experiments typically focus on inference rather than training
+        results = exp.inference(setting='llm_forecast_v1')
+        ```
+    """
     
     def __init__(self, args):
-        """Initializes the experiment, building the model and data provider."""
+        """
+        Initializes the LLM experiment with specialized model building.
+        
+        Args:
+            args: Configuration object with LLM-specific settings
+        """
         self.args = args
         self.model = self._build_model()
         self.data_provider = Data_Provider(args, buffer=(not args.disable_buffer))
 
     def _build_model(self):
-        """Builds and returns the large language model based on provided arguments."""
+        """
+        Constructs and returns a Large Language Model for time series forecasting.
+        
+        Initializes LLM-based models with specialized configurations for handling
+        time series data and cross-modal inputs. The model is built with LLM-specific
+        optimizations and memory management considerations.
+        
+        Returns:
+            torch.nn.Module: Initialized LLM model configured for time series forecasting
+        """
         model = model_init(self.args.model, self.args.model_config, self.args, is_LLM=True)
         return model
 

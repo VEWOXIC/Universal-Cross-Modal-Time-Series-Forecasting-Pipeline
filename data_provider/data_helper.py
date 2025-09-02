@@ -4,10 +4,41 @@ import os, torch
 from torch.utils.data.dataloader import default_collate
 
 class data_buffer():
+    """
+    In-memory caching system for data files to optimize I/O performance.
+    
+    This class provides a buffer mechanism that caches loaded data files in memory
+    to avoid repeated file system operations during training. Particularly useful
+    when working with multiple datasets or when data needs to be accessed repeatedly.
+    
+    Attributes:
+        buffer (dict): Internal dictionary storing file_path -> DataFrame mappings
+    
+    Example:
+        ```python
+        buffer = data_buffer()
+        df = buffer('path/to/data.csv')  # Loads and caches
+        df2 = buffer('path/to/data.csv')  # Returns cached version
+        buffer.clear()  # Clears all cached data
+        ```
+    """
     def __init__(self):
         self.buffer = {}
 
     def __call__(self, file_path, force_reload=False):
+        """
+        Loads data from file with optional caching.
+        
+        Args:
+            file_path (str): Path to the data file (.csv or .parquet)
+            force_reload (bool): If True, reloads file even if cached
+        
+        Returns:
+            pd.DataFrame: Loaded data (copy to prevent accidental modification)
+        
+        Raises:
+            NotImplementedError: If file format is not .csv or .parquet
+        """
         if force_reload:
             print(f'Force reloading data from {file_path}')
             if file_path.endswith('.csv'):
@@ -34,11 +65,41 @@ class data_buffer():
             print(f'[ info ] Add data {file_path} to buffer')
             return df_raw
     def clear(self):
+        """
+        Clears all cached data from memory buffer.
+        
+        This method is useful for freeing memory when switching between different
+        datasets or when the cached data is no longer needed.
+        """
         self.buffer = {}
         print('[ info ] Buffer cleared')
         
 
 def ratio_spliter(split=(7,1,2),seq_len=0, df=None):
+    """
+    Splits time series data into train/validation/test sets based on proportional ratios.
+    
+    This function divides the input data according to specified ratios while ensuring
+    that sequence overlap is maintained between splits for proper time series modeling.
+    
+    Args:
+        split (tuple/list/str): Split ratios in format (train, val, test) or "x:y:z"
+            Default (7,1,2) means 70% train, 10% validation, 20% test
+        seq_len (int): Sequence length for overlap between splits to maintain continuity
+        df (pd.DataFrame): Input DataFrame to split
+    
+    Returns:
+        tuple: (train_data, val_data, test_data) as pandas DataFrames
+    
+    Example:
+        ```python
+        train, val, test = ratio_spliter(split=(8,1,1), seq_len=24, df=data)
+        # Results in 80% train, 10% val, 10% test with 24-point overlap
+        ```
+    
+    Raises:
+        ValueError: If split format is invalid or doesn't contain exactly 3 components
+    """
     
     # check if split is string it should be in format "x:y:z"
     if isinstance(split, str):
@@ -65,6 +126,39 @@ def ratio_spliter(split=(7,1,2),seq_len=0, df=None):
     return train_data, val_data, test_data
 
 def timestamp_spliter(split = ['2020-01-01', '2020-02-01'], seq_len=0, df=None, timestamp_col='timestamp'):
+    """
+    Splits time series data into train/validation/test sets based on timestamp boundaries.
+    
+    This function provides precise temporal splitting by using specific dates/times as
+    boundaries between different data splits. Supports optional data filtering by
+    providing start and end timestamps.
+    
+    Args:
+        split (list): List of timestamp strings defining split boundaries:
+            - 2 elements: [val_start, test_start] 
+            - 4 elements: [data_start, val_start, test_start, data_end]
+        seq_len (int): Not used in timestamp splitting (maintained for API compatibility)
+        df (pd.DataFrame): Input DataFrame with timestamp column
+        timestamp_col (str): Name of the timestamp column
+    
+    Returns:
+        tuple: (train_data, val_data, test_data) as pandas DataFrames
+    
+    Example:
+        ```python
+        # Simple split: train before 2020-01-01, val until 2020-02-01, test after
+        train, val, test = timestamp_spliter(['2020-01-01', '2020-02-01'], df=data)
+        
+        # With data filtering: only use data from 2019-01-01 to 2021-01-01
+        train, val, test = timestamp_spliter(
+            ['2019-01-01', '2020-01-01', '2020-02-01', '2021-01-01'], 
+            df=data
+        )
+        ```
+    
+    Raises:
+        ValueError: If split timestamps are not provided as strings
+    """
     
     if isinstance(split[0], str):
         split = [pd.to_datetime(x) for x in split]
