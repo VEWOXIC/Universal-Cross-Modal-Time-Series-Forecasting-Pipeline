@@ -18,10 +18,45 @@ from tqdm import tqdm
 warnings.filterwarnings('ignore')
 
 class Experiment(Exp_Basic):
+    """
+    Main experiment orchestrator for universal time series forecasting models.
+    
+    This class extends Exp_Basic to provide a complete experiment framework for training,
+    validating, and testing time series forecasting models. It supports both traditional
+    and cross-modal forecasting approaches with comprehensive model management, training
+    optimization, and evaluation capabilities.
+    
+    Key Features:
+        - Multi-GPU training support via DataParallel
+        - Early stopping and learning rate scheduling
+        - Cross-modal data handling (text, events, etc.)
+        - Comprehensive model checkpointing
+        - Progress tracking with detailed metrics
+    
+    Args:
+        args: Configuration object inherited from Exp_Basic containing all experiment
+              parameters including model config, data config, training settings, etc.
+    
+    Example:
+        ```python
+        exp = Experiment(args)
+        model = exp.train(setting='experiment_1')
+        test_results = exp.test(setting='experiment_1')
+        ```
+    """
     def __init__(self, args):
         super(Experiment, self).__init__(args)
 
     def _build_model(self):
+        """
+        Constructs the forecasting model with optional multi-GPU support.
+        
+        Initializes the model using the model factory based on configuration,
+        then wraps it with DataParallel if multi-GPU training is enabled.
+        
+        Returns:
+            torch.nn.Module: Configured model (potentially wrapped with DataParallel)
+        """
         model = model_init(self.args.model, self.args.model_config, self.args)
         if self.args.use_multi_gpu and self.args.use_gpu:
             model = nn.DataParallel(model, device_ids=self.args.device_ids)
@@ -29,7 +64,14 @@ class Experiment(Exp_Basic):
 
     def _get_data(self, flag):
         """
-        Get the data for training, validation, or testing.
+        Retrieves data loaders for the specified dataset split.
+        
+        Args:
+            flag (str): Dataset split identifier ('train', 'val', 'test')
+        
+        Returns:
+            DataLoader or dict: Data loader(s) for the specified split.
+                               May return dict of loaders if multiple datasets are configured.
         """
         if flag == 'train':
             data_loader = self.data_provider.get_train(return_type='loader')
@@ -42,7 +84,26 @@ class Experiment(Exp_Basic):
 
     def _forward_step(self, iter):
         """
-        Forward step for the model.
+        Executes a single forward pass through the model with cross-modal data handling.
+        
+        This method processes a batch of data containing both time series and heterogeneous
+        cross-modal information (text, events, etc.), performs device movement optimization,
+        and executes the forward pass to generate predictions.
+        
+        Args:
+            iter: Data batch tuple containing:
+                - batch_x: Input time series sequences
+                - batch_y: Target time series sequences  
+                - timestamp_x, timestamp_y: Corresponding timestamps
+                - batch_x_hetero, batch_y_hetero: Heterogeneous data (text, events)
+                - hetero_x_time, hetero_y_time: Heterogeneous data timestamps
+                - hetero_general: General heterogeneous information
+                - hetero_channel: Channel-specific heterogeneous information
+        
+        Returns:
+            tuple: (predictions, ground_truth) both as torch tensors
+                  - predictions: Model output for the prediction horizon
+                  - ground_truth: True target values for comparison
         """
         # iteration: seq_x, seq_y, x_time, y_time, x_hetero, y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
 
@@ -64,7 +125,32 @@ class Experiment(Exp_Basic):
 
     def train(self, setting):
         """
-        Train the model.
+        Executes the complete model training pipeline with comprehensive monitoring.
+        
+        This method orchestrates the entire training process including data loading,
+        model optimization, validation monitoring, early stopping, and checkpointing.
+        Supports advanced features like learning rate scheduling and progress tracking.
+        
+        Args:
+            setting (str): Experiment identifier used for checkpoint directory naming
+                          and configuration saving
+        
+        Returns:
+            torch.nn.Module: Trained model loaded from the best checkpoint
+        
+        Training Features:
+            - Automatic early stopping based on validation loss
+            - Learning rate scheduling with multiple strategies  
+            - Progress bars with detailed metrics (loss, speed, time estimates)
+            - Model checkpointing with best model preservation
+            - Memory optimization with buffer clearing
+            - Comprehensive logging of training/validation/test performance
+        
+        Example:
+            ```python
+            exp = Experiment(args)
+            trained_model = exp.train(setting='stock_forecast_v1')
+            ```
         """
         train_loader = self._get_data(flag='train')
         vali_loader = self._get_data(flag='val')
@@ -146,7 +232,18 @@ class Experiment(Exp_Basic):
 
     def vali(self, loader, criterion):
         """
-        Validate the model on the validation dataset.
+        Validates the model on the validation dataset and computes average loss.
+        
+        Performs inference on the validation set without gradient computation
+        to evaluate model performance during training. Used for early stopping
+        and learning rate scheduling decisions.
+        
+        Args:
+            loader: Validation data loader (can be single loader or dict of loaders)
+            criterion: Loss function for evaluation
+        
+        Returns:
+            float: Average validation loss across all validation samples
         """
         running_loss = 0.0
         total_samples = 0

@@ -20,6 +20,53 @@ import joblib, torch
 warnings.filterwarnings('ignore')
 
 class Universal_Dataset(Dataset):
+    """
+    PyTorch Dataset for universal time series forecasting with cross-modal data support.
+    
+    This dataset class handles both traditional time series data and heterogeneous cross-modal
+    information (text, events, etc.) for enhanced forecasting. It supports multiple task types
+    including standard time series forecasting (TSF), text-guided forecasting (TGTSF), and 
+    multi-modal forecasting (MTSF).
+    
+    Args:
+        root_path (str): Root directory path containing data files
+        flag (str): Dataset split identifier ('train', 'val', 'test')
+        data_path (str): Relative path to the specific data file (e.g., 'ETTh1.csv')
+        seq_len (int): Length of input sequences for modeling
+        pred_len (int): Length of prediction/forecast sequences  
+        spliter (callable): Function to split data into train/val/test sets
+        timestamp_col (str): Name of the timestamp column in the data
+        target (str): Target column name(s) for prediction. Use 'all' for all columns
+        scale (bool): Whether to apply z-score normalization to the data
+        data_buffer (data_buffer, optional): Buffer object for caching loaded data
+        hetero_data_getter (callable, optional): Function to retrieve heterogeneous data
+        preload_hetero (bool): Whether to preload all heterogeneous data into memory
+        hetero_stride (int): Stride for heterogeneous data alignment
+        task (str, optional): Task type ('TSF', 'TGTSF', 'MTSF', 'Reasoning')
+        custom_input (str, optional): Custom input specification overriding task defaults
+        timezone (str, optional): Timezone for timestamp conversion
+        downsample (int, optional): Downsampling factor for data reduction
+    
+    Attributes:
+        data: Processed time series data as numpy array
+        timestamp: Processed timestamps as numpy array
+        scaler: StandardScaler for data normalization
+        custom_input: List of input components to include in batches
+    
+    Example:
+        ```python
+        dataset = Universal_Dataset(
+            root_path='./data',
+            data_path='stock_data.csv',
+            flag='train',
+            seq_len=96,
+            pred_len=24,
+            target='close_price',
+            scale=True,
+            task='TSF'
+        )
+        ```
+    """
     def __init__(self, root_path, flag='train', data_path='ETTh1.csv',
                  seq_len=24, pred_len=24, spliter=ratio_spliter, timestamp_col='date',
                  target='OT', scale=True, data_buffer=None, hetero_data_getter=None, preload_hetero=False, hetero_stride=1, task=None, custom_input=None, timezone=None, downsample=None):
@@ -58,6 +105,17 @@ class Universal_Dataset(Dataset):
         self.__input_format_parser__()
 
     def __input_format_parser__(self):
+        """
+        Parses and configures the input format based on task type or custom specification.
+        
+        Different tasks require different input components:
+        - TSF: Basic time series forecasting (seq_x, seq_y, x_time, y_time)
+        - TGTSF: Text-guided forecasting (adds future heterogeneous data)
+        - MTSF: Multi-modal forecasting (adds historical heterogeneous data)
+        - Reasoning/all: Full multi-modal input with all components
+        
+        Sets self.custom_input to list of required input component names.
+        """
         if self.custom_input is not None:
             print('[ warning ] Custom input set, overriding task defined input as: {}'.format(self.custom_input))
             self.custom_input = self.custom_input.strip().split(',')

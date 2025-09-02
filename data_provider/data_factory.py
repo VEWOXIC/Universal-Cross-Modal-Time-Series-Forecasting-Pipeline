@@ -8,6 +8,40 @@ from .data_helper import timestamp_spliter, ratio_spliter, data_buffer
 from tqdm import tqdm
 
 class Data_Provider(object):
+    """
+    Central data management class for the Universal Cross-Modal Time Series Forecasting Pipeline.
+    
+    This class orchestrates data loading, preprocessing, and provides unified access to training,
+    validation, and test datasets. It supports both traditional time series data and heterogeneous
+    cross-modal data sources (text, events, etc.) for enhanced forecasting capabilities.
+    
+    Args:
+        args: Configuration object containing all data and model parameters including:
+            - data_config: Dataset configuration with root_path, id_info, target, etc.
+            - batch_size: Batch size for data loaders
+            - input_len: Length of input sequences
+            - output_len: Length of prediction sequences
+            - scale: Whether to apply standardization
+            - noise: Noise injection settings
+            - num_workers: Number of workers for data loading
+            - prefetch_factor: Prefetch factor for data loaders
+        buffer (bool): Whether to enable data buffering for improved performance.
+            When True, loaded data files are cached in memory to avoid repeated I/O.
+    
+    Attributes:
+        id_list: List of dataset IDs to process
+        formatter: String formatter for dataset file naming (e.g., 'id_{i}.parquet')
+        spliter: Function for splitting data into train/val/test sets
+        data_buffer: Optional data buffer for caching
+        hetero_dataset: Heterogeneous dataset handler for cross-modal data
+    
+    Example:
+        ```python
+        data_provider = Data_Provider(args, buffer=True)
+        train_loader = data_provider.get_train(return_type='loader')
+        val_loader = data_provider.get_val(return_type='loader')
+        ```
+    """
     def __init__(self, args, buffer=False):
         self.args = args
         self.buffer = buffer
@@ -57,6 +91,17 @@ class Data_Provider(object):
                                                         device=self.args.gpu if self.args.use_gpu else 'cpu')
 
     def get_spliter(self):
+        """
+        Creates and returns a data splitting function based on configuration.
+        
+        Supports two splitting strategies:
+        - 'timestamp': Split data based on specific timestamp boundaries
+        - 'ratio': Split data based on proportional ratios (e.g., 7:1:2 for train:val:test)
+        
+        Returns:
+            callable: Configured splitting function that takes a DataFrame and returns
+                     (train_data, val_data, test_data) tuple
+        """
         if self.dataset_config.spliter == 'timestamp':
             spliter = partial(timestamp_spliter, split=self.dataset_config.split_info, seq_len=self.args.input_len, timestamp_col=self.dataset_config.timestamp_col)
         elif self.dataset_config.spliter == 'ratio':
@@ -67,6 +112,18 @@ class Data_Provider(object):
         return spliter
     
     def get_train(self, return_type='loader'):
+        """
+        Creates and returns training data in the specified format.
+        
+        Args:
+            return_type (str): Format of returned data. Options:
+                - 'set': Returns dataset objects only
+                - 'loader': Returns DataLoader objects only  
+                - 'both': Returns tuple of (dataset, dataloader)
+        
+        Returns:
+            Dataset/DataLoader/tuple: Training data in requested format
+        """
         assert return_type in ['set', 'loader', 'both'], 'return type not supported, only support set, loader, both'
         self.train_dataset=self.get_datasets('train')
         if return_type == 'set':
@@ -77,6 +134,18 @@ class Data_Provider(object):
             return self.train_dataset, self.get_dataloader(self.train_dataset, True, True, True)
     
     def get_val(self, return_type='loader'):
+        """
+        Creates and returns validation data in the specified format.
+        
+        Args:
+            return_type (str): Format of returned data. Options:
+                - 'set': Returns dataset objects only
+                - 'loader': Returns DataLoader objects only  
+                - 'both': Returns tuple of (dataset, dataloader)
+        
+        Returns:
+            Dataset/DataLoader/tuple: Validation data in requested format
+        """
         self.val_dataset = self.get_datasets('val')
         if return_type == 'set':
             return self.val_dataset
@@ -87,6 +156,18 @@ class Data_Provider(object):
 
     
     def get_test(self, return_type='loader'):
+        """
+        Creates and returns test data in the specified format.
+        
+        Args:
+            return_type (str): Format of returned data. Options:
+                - 'set': Returns dataset objects only
+                - 'loader': Returns DataLoader objects only  
+                - 'both': Returns tuple of (dataset, dataloader)
+        
+        Returns:
+            Dataset/DataLoader/tuple: Test data in requested format
+        """
         self.test_dataset = self.get_datasets('test')
         if return_type == 'set':
             return self.test_dataset
@@ -96,6 +177,15 @@ class Data_Provider(object):
             return self.test_dataset, self.get_dataloader(self.test_dataset, False, False, False)
 
     def get_datasets(self, flag):
+        """
+        Creates Universal_Dataset instances for all configured data IDs.
+        
+        Args:
+            flag (str): Dataset split identifier ('train', 'val', 'test')
+        
+        Returns:
+            dict: Dictionary mapping data IDs to their corresponding Universal_Dataset instances
+        """
         datasets = {}
         for i in tqdm(self.id_list, desc=f"Loading {flag} datasets"):
             if self.args.data_config.hetero_info is not None:
@@ -116,6 +206,20 @@ class Data_Provider(object):
         return datasets
 
     def get_dataloader(self, datasets, shuffle, drop_last, concat=False):
+        """
+        Creates PyTorch DataLoader instances from datasets.
+        
+        Args:
+            datasets (dict): Dictionary of dataset instances mapped by ID
+            shuffle (bool): Whether to shuffle data during loading
+            drop_last (bool): Whether to drop the last incomplete batch
+            concat (bool): Whether to concatenate all datasets into a single loader
+                          or return separate loaders for each dataset
+        
+        Returns:
+            DataLoader or dict: Single DataLoader if concat=True, 
+                               dict of DataLoaders mapped by ID if concat=False
+        """
         if concat:
             data_set = torch.utils.data.ConcatDataset([datasets[i] for i in datasets.keys()])
             data_loader = DataLoader(data_set,
