@@ -61,8 +61,21 @@ parser.add_argument('--devices', type=str, default='0,1,2,3', help='device ids o
 
 parser.add_argument('--amlt', default=False, action='store_true', help='if running on amlt')
 
+# env variables
+parser.add_argument('--hf_mirror', type=bool, default=False, help='Use Hugging Face mirror for downloading models')
+parser.add_argument('--hf_offline', type=bool, default=False, help='Run in offline mode (no internet access for model downloading)')
+
+# API or local inference
+parser.add_argument('--eval_mode', type=str, default="API", choices=["API", "local"], help='evaluation mode to choose')
 
 args = parser.parse_args()
+
+# Set environment variables for HuggingFace
+if args.hf_mirror:
+    os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+if args.hf_offline:
+    os.environ['TRANSFORMERS_OFFLINE'] = '1'
+    os.environ['HF_DATASETS_OFFLINE'] = '1'
 
 print(torch.cuda.device_count())
 

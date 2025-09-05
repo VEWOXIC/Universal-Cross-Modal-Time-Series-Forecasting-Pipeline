@@ -6,7 +6,7 @@ import numpy as np
 import openai
 from time import sleep
 
-class LLM_Socket():
+class LLM_API_Socket():
     def __init__(self, configs):
         self.url = configs.base_url
         self.api_key = configs.api_key

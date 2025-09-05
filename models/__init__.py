@@ -1,13 +1,16 @@
 import importlib
 import yaml
 from utils.tools import dotdict
-from .LLM_socket import LLM_Socket
-from .Time_R1_socket import Time_R1_socket
+from .LLM_API_Socket import LLM_API_Socket
+from .vllm_Socket import vllm_Socket
 
-def model_init(model_name, configs, all_args, is_LLM=False, is_FM=False):
+def model_init(model_name, configs, all_args, is_LLM_API=False, is_FM=False, is_vllm=False):
 
-    if is_LLM:
-        return Time_R1_socket(configs) if model_name.startwith("Time-R1") else LLM_Socket(configs)
+    if is_LLM_API:
+        return LLM_API_Socket(configs)
+    
+    elif is_vllm:
+        return vllm_Socket(configs)
 
     elif is_FM:
         configs['hist_len'] = all_args.input_len

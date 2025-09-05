@@ -113,7 +113,10 @@ class Experiment(Exp_Basic):
         Returns:
             torch.nn.Module: Initialized LLM model configured for time series forecasting
         """
-        model = model_init(self.args.model, self.args.model_config, self.args, is_LLM=True)
+        if self.args.eval_mode == 'local':
+            model = model_init(self.args.model, self.args.model_config, self.args, is_vllm=True)
+        else:
+            model = model_init(self.args.model, self.args.model_config, self.args, is_LLM_API=True)
         return model
 
     def _get_data(self, flag, return_type='loader'):

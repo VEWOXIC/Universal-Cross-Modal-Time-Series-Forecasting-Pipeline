@@ -6,6 +6,8 @@ python -u run_llm.py \
     --input_len 360 \
     --output_len 24 \
     --batch_size 1 \
+    --hf_mirror True \
+    --eval_mode local \
     --filtered_samples "sample_indexes/Canada_photovoltaics_plants_sample_day.json" # | tee -a ./logs/Time-R1.log
 
 python -u run_llm.py \

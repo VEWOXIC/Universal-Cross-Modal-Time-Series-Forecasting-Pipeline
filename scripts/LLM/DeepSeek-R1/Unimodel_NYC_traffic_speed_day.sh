@@ -1,4 +1,4 @@
-python -u llm_run.py \
+python -u run_llm.py \
     --model 'deepseek-r1-250120' \
     --model_config './model_configs/LLM/Unimodel/DeepSeek-R1.yaml' \
     --data NYC_traffic_speed \

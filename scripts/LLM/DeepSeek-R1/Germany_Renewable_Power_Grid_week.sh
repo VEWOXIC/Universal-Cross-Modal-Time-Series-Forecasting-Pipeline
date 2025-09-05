@@ -1,4 +1,4 @@
-python -u llm_run.py \
+python -u run_llm.py \
     --model 'deepseek-r1-250120' \
     --model_config './model_configs/LLM/DeepSeek-R1.yaml' \
     --data Germany_Renewable_Power_Grid \
