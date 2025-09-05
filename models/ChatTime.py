@@ -118,7 +118,7 @@ class Model(nn.Module):
         """
         return batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
 
-    def forward(self, x, batch_y_hetero, hetero_general, hetero_channel):
+    def forward(self, x, batch_y_hetero, hetero_general, hetero_channel, **kwargs):
         """
         Perform forward pass for time series forecasting using language model.
         

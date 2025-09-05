@@ -25,8 +25,7 @@ class Universal_Dataset(Dataset):
     
     This dataset class handles both traditional time series data and heterogeneous cross-modal
     information (text, events, etc.) for enhanced forecasting. It supports multiple task types
-    including standard time series forecasting (TSF), text-guided forecasting (TGTSF), and 
-    multi-modal forecasting (MTSF).
+    including standard time series forecasting (TSF), text-guided forecasting (TGTSF).
     
     Args:
         root_path (str): Root directory path containing data files
@@ -42,7 +41,7 @@ class Universal_Dataset(Dataset):
         hetero_data_getter (callable, optional): Function to retrieve heterogeneous data
         preload_hetero (bool): Whether to preload all heterogeneous data into memory
         hetero_stride (int): Stride for heterogeneous data alignment
-        task (str, optional): Task type ('TSF', 'TGTSF', 'MTSF', 'Reasoning')
+        task (str, optional): Task type ('TSF', 'TGTSF', 'Reasoning')
         custom_input (str, optional): Custom input specification overriding task defaults
         timezone (str, optional): Timezone for timestamp conversion
         downsample (int, optional): Downsampling factor for data reduction
@@ -111,7 +110,6 @@ class Universal_Dataset(Dataset):
         Different tasks require different input components:
         - TSF: Basic time series forecasting (seq_x, seq_y, x_time, y_time)
         - TGTSF: Text-guided forecasting (adds future heterogeneous data)
-        - MTSF: Multi-modal forecasting (adds historical heterogeneous data)
         - Reasoning/all: Full multi-modal input with all components
         
         Sets self.custom_input to list of required input component names.
@@ -129,8 +127,6 @@ class Universal_Dataset(Dataset):
                 self.custom_input = ['seq_x', 'seq_y', 'x_time', 'y_time']
             elif self.task == 'TGTSF':
                 self.custom_input = ['seq_x', 'seq_y', 'x_time', 'y_time', 'hetero_y_time', 'y_hetero', 'hetero_general', 'hetero_channel']
-            elif self.task == 'MTSF':
-                self.custom_input = ['seq_x', 'seq_y', 'x_time', 'y_time', 'hetero_x_time', 'x_hetero', 'hetero_general', 'hetero_channel']
             elif self.task == 'Reasoning' or 'all':
                 self.custom_input = ['seq_x', 'seq_y', 'x_time', 'y_time', 'hetero_x_time', 'x_hetero', 'hetero_y_time', 'y_hetero', 'hetero_general', 'hetero_channel']
             else:

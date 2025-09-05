@@ -34,12 +34,10 @@ def evaluate_full_dataset(loader, model, config, device, indexes, channel_wise):
             if config.task == 'TSF':
                 prediction = model(x=batch_x)
             elif config.task == 'TGTSF':
+                x_hetero = torch.tensor(x_hetero).to(device)
                 y_hetero = torch.tensor(y_hetero).to(device)
                 hetero_channel = torch.tensor(hetero_channel).to(device)
-                prediction = model(x=batch_x, news=y_hetero, channel_description=hetero_channel)
-            elif config.task == 'MTSF':
-                x_hetero = torch.tensor(x_hetero).to(device)
-                prediction = model(x=batch_x, historical_events=x_hetero)
+                prediction = model(x=batch_x, historical_events=x_hetero, news=y_hetero, channel_description=hetero_channel)
             else:
                 # todo
                 pass
@@ -86,7 +84,7 @@ def main():
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
     parser.add_argument('--batch_size', type=int, default=128, help="Batch size for testing")
     parser.add_argument('--data_config', type=str, default=None, help="Path to the data configuration YAML file (optional)")
-    parser.add_argument('--task', type=str, default="TSF", choices=["TSF", "TGTSF", "MTSF"], help="Task type: Time Series Forecasting or Text-Grounded TSF")
+    parser.add_argument('--task', type=str, default="TSF", choices=["TSF", "TGTSF"], help="Task type: Time Series Forecasting or Text-Grounded TSF")
     parser.add_argument('--filtered_samples', type=str, default=None, help='Path to a JSON file containing filtered sample indexes for evaluation')
     parser.add_argument('--device', type=str, default="0", help="Device to run the model on")
     parser.add_argument('--channel_wise', type=bool, default=False, help='Channel wise testing')
