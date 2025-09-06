@@ -23,15 +23,12 @@ formatter: '{i}.parquet'
 sampling_rate: 5min  # 1h
 base_T: 288  # 24
 hetero_info:
-  hetero_type: all_for_one  # all_for_one, each_subset
-  sampling_rate: 1day
-  root_path: ./data/Bear_room/hetero/weather/weather_report/formal_report
-  formatter: wm_messages_v1.json
+  hetero_type: each_subset  # all_for_one, each_subset
+  root_path: ./data/Bear_room/hetero/room/report_embedding/formal_report
+  # root_path: ./data/Bear_room/hetero/weather/report_embedding/formal_report
+  formatter: all.pkl  # all.pkl  flow.pkl  temperature.pkl  occupy.pkl
+  # formatter: wm_messages_v1.pkl
   matching: single
-  postemb: True
-  postemb_model: /bert-base-uncased
-  postemb_max_len: 16
-  postemb_d: 768
-  postemb_batch_size: 1500
-  input_format: json
-  static_path: static_info.json
+  # matching: backward
+  input_format: embedding
+  static_path: static_info_embeddings.pkl

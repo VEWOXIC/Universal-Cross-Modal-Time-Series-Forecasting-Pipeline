@@ -23,10 +23,10 @@ formatter: '{i}.parquet'
 sampling_rate: 5min  # 1h
 base_T: 288  # 24
 hetero_info:
-  hetero_type: all_for_one  # all_for_one, each_subset
+  hetero_type: each_subset  # all_for_one, each_subset
   sampling_rate: 1day
-  root_path: ./data/Bear_room/hetero/weather/weather_report/formal_report
-  formatter: wm_messages_v1.json
+  root_path: ./data/Bear_room/hetero/room/room_report/formal_report
+  formatter: all.json
   matching: single
   postemb: True
   postemb_model: /bert-base-uncased
