@@ -7,7 +7,7 @@ python -u criterias_lightning.py \
     --input_len 288 \
     --output_len $output_len \
     --version "ligntning_20250809_0?" \
-    --decive 4 \
-    --task "TGTSF" | tee -a ./logs/zero_shot_weather.log
+    --device 1 \
+    --task "TGTSF" | tee -a ./logs/zero_shot_weather2.log
 
 done

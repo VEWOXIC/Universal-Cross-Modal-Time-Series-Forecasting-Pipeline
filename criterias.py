@@ -28,15 +28,11 @@ def evaluate_full_dataset(loader, model, config, device, indexes, channel_wise):
         with torch.no_grad():
             batch_x, batch_y, _, _, x_hetero, y_hetero, _, _, _, hetero_channel = iter_data
 
-            batch_x = torch.tensor(batch_x).to(device)
-            batch_y = torch.tensor(batch_y).to(device)
+            batch_x, batch_y, _, _, x_hetero, y_hetero, _, _, _, hetero_channel = model.move_to_device(batch_x, batch_y, _, _, x_hetero, y_hetero, _, _, _, hetero_channel, device)
             
             if config.task == 'TSF':
                 prediction = model(x=batch_x)
             elif config.task == 'TGTSF':
-                x_hetero = torch.tensor(x_hetero).to(device)
-                y_hetero = torch.tensor(y_hetero).to(device)
-                hetero_channel = torch.tensor(hetero_channel).to(device)
                 prediction = model(x=batch_x, historical_events=x_hetero, news=y_hetero, channel_description=hetero_channel)
             else:
                 # todo

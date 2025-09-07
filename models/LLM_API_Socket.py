@@ -139,8 +139,23 @@ class LLM_API_Socket():
 
         x_table, x_dy_table, channel_info, dataset_info, y_timestamp, y_dy_table, y_table = self.process_instance(data_instance)
 
+        num_channels = 1
+        if x_table and isinstance(x_table[0][1], (list, tuple)):
+            num_channels = len(x_table[0][1])
+
+        y_timestamp_with_placeholders = []
+        for i in range(len(y_timestamp)):
+            ts = y_timestamp[i]
+            if num_channels == 1:
+                placeholders = f'<your_prediction_value[{i}]>'
+            else:
+                placeholders = [f'<your_prediction_value[{i}][{j}]>' for j in range(num_channels)]
+            y_timestamp_with_placeholders.append([ts, placeholders])
+
+        # y_timestamp = [[y_timestamp[i], f'<your_prediction_value[{i}]>'] for i in range(len(y_timestamp))]
+        y_timestamp = y_timestamp_with_placeholders
+        
         system_prompt=self.system_prompt.format(dataset_info=dataset_info)
-        y_timestamp = [[y_timestamp[i], f'<your_prediction_value[{i}]>'] for i in range(len(y_timestamp))]
         first_prompt=self.first_prompt.format(channel_info=channel_info, x_table=x_table, x_dy_table=x_dy_table, y_dy_table=y_dy_table, y_timestamp=y_timestamp)
         retry_prompt=self.retry_prompt.format(y_timestamp=y_timestamp)
 
