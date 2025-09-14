@@ -119,7 +119,7 @@ class Experiment(Exp_Basic):
                 if self.args.task == 'TSF':
                     channel_output = self.model.forward(x=channel_x)  # channel_output: [batch_size, output_len, 1]
                 elif self.args.task == 'TGTSF':
-                    channel_output = self.model.forward(x=channel_x, batch_y_hetero=batch_y_hetero, hetero_general=hetero_general, hetero_channel=hetero_channel)
+                    channel_output = self.model.forward(x=channel_x, batch_x_hetero=batch_x_hetero, batch_y_hetero=batch_y_hetero, hetero_general=hetero_general, hetero_channel=hetero_channel)
                 else:
                     raise ValueError(f"Unsupported task type: {self.args.task}")
                 
@@ -131,7 +131,7 @@ class Experiment(Exp_Basic):
                     return None, None
                 else:
                     channel_output = channel_output.unsqueeze(-1)
-                    print(f"Channel {c} output shape: {channel_output}")
+                    print(f"Channel {c} output shape: {channel_output.shape}")
                 
                 outputs.append(channel_output)
             
@@ -139,7 +139,7 @@ class Experiment(Exp_Basic):
         
         else:
             if self.args.task == 'TSF':
-                final_output = self.model.forward(x = batch_x)
+                final_output = self.model.forward(x=batch_x)
             elif self.args.task == 'TGTSF':
                 final_output = self.model.forward(x=channel_x, batch_y_hetero=batch_y_hetero, hetero_general=hetero_general, hetero_channel=hetero_channel)
             else:
@@ -151,6 +151,8 @@ class Experiment(Exp_Basic):
             elif torch.isnan(channel_output).any():
                 print(f"[ Warning ]: NaN detected in model output")
                 return None, None
+            else:
+                print(f"Model output shape: {final_output.shape}")
 
         gt = batch_y  # batch_y: [batch_size, output_len, num_channels]
 
