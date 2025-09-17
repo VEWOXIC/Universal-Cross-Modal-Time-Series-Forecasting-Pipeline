@@ -6,3 +6,7 @@ After the selection process, You need to return the result in the following json
 {
     room selected: [room_1, room_2, ...]
 }
+Finally, you need to randomly select another 10 rooms from the ones that were not chosen just now, and still return them in the required format: 
+{
+    room selected: [room_1, room_2, ...]
+}
