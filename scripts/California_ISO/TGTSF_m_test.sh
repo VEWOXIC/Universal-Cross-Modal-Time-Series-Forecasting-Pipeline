@@ -8,6 +8,6 @@ python -u criterias_lightning.py \
     --version 'latest' \
     --input_len 4320 \
     --output_len $output_len \
-    --batch_size 512 \
+    --batch_size 64 \
     --device "0" | tee -a ./logs/test_m_iso.log
 done

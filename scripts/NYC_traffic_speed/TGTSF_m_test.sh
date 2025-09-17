@@ -2,7 +2,7 @@ for output_len in 288 2016  # 4032 8640
 do
 python -u criterias_lightning.py \
     --data 'NYC_traffic_speed' \
-    --data_config './data_configs/California_ISO/fullCAISO_hetero_TGTSF.yaml' \
+    --data_config './data_configs/NYC_traffic_speed/fullNYCTS_hetero_TGTSF.yaml' \
     --baseline_model 'TGTSF' \
     --task 'TGTSF' \
     --version 'latest' \

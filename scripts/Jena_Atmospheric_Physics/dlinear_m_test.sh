@@ -7,6 +7,6 @@ python -u criterias_lightning.py \
     --version 'latest' \
     --input_len 2160 \
     --output_len $output_len \
-    --batch_size 512 \
+    --batch_size 128 \
     --device "0" | tee -a ./logs/test_m_jena.log
 done
