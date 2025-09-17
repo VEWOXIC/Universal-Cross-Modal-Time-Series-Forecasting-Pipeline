@@ -27,7 +27,18 @@ def run_test(loader, model, config, device, indexes, channel_wise):
             continue
         with torch.no_grad():
             batch_x, batch_y, _, _, x_hetero, y_hetero, _, _, _, hetero_channel = iter_data
-            batch_x, batch_y, _, _, x_hetero, y_hetero, _, _, _, hetero_channel = model.move_to_device(batch_x, batch_y, _, _, x_hetero, y_hetero, _, _, _, hetero_channel, device)
+
+            if hasattr(model, 'move_to_device'):
+                batch_x, batch_y, _, _, x_hetero, y_hetero, _, _, _, hetero_channel = model.move_to_device(batch_x, batch_y, _, _, x_hetero, y_hetero, _, _, _, hetero_channel, device)
+            else:
+                batch_x = batch_x.float().to(device)
+                batch_y = batch_y.float().to(device)
+                # if x_hetero is not None:
+                #     x_hetero = x_hetero.float().to(device)
+                # if y_hetero is not None:
+                #     y_hetero = y_hetero.float().to(device)
+                # if hetero_channel is not None:
+                #     hetero_channel = hetero_channel.to(device)
 
             prediction = model(x=batch_x) if config.task == 'TSF' else model(x=batch_x, historical_events=x_hetero, news=y_hetero, channel_description=hetero_channel)
             prediction = prediction[:, -config.output_len:, :]  # [B, L, C]
