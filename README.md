@@ -6,6 +6,8 @@
 
 </div>
 
+[This branch is checked by copilot and manually to ensure no author infomration is disclosed. ]
+
 A comprehensive, flexible and commonly-used DLinear-like framework for time series forecasting with support for both PyTorch and PyTorch Lightning. Easy for time series forecasting model development and comparison.
 
 This framework supports various traditional time series models, text-embedding based cross-modal forecasting as well as language model-based reasoning approaches.
