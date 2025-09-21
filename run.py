@@ -55,7 +55,7 @@ args = parser.parse_args()
 
 # Set environment variables for HuggingFace
 if args.hf_mirror:
-    os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+    os.environ['HF_ENDPOINT'] = 'https://huggingface.co'
 if args.hf_offline:
     os.environ['TRANSFORMERS_OFFLINE'] = '1'
     os.environ['HF_DATASETS_OFFLINE'] = '1'

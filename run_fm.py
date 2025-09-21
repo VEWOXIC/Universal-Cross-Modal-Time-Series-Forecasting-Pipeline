@@ -53,7 +53,7 @@ args = parser.parse_args()
 
 # Set environment variables for HuggingFace
 if args.hf_mirror:
-    os.environ['HF_ENDPOINT'] = 'https://hf-mirror.com'
+    os.environ['HF_ENDPOINT'] = 'https://huggingface.co'
 
 # preload the yamls
 with open(args.model_config, 'r') as f:
