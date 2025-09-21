@@ -1,5 +1,6 @@
 from vllm import LLM, SamplingParams
 import re
+import json
 
 class vllm_Socket():
     def __init__(self, configs):
@@ -51,6 +52,51 @@ class vllm_Socket():
         else:
             return None, None
     
+    def _format_result(self, answer_content: list, data_instance: tuple) -> dict:
+        x_ts = data_instance[0].squeeze().tolist()
+        y_ts = data_instance[1].squeeze().tolist()
+        x_timestamp = data_instance[2].tolist()
+        y_timestamp = data_instance[3].tolist()
+        x_dy = data_instance[4]
+        y_dy = data_instance[5]
+        hetero_x_time = data_instance[6]
+        hetero_y_time = data_instance[7]
+
+        try:
+            if answer_content:
+                pred_formatted = [[ts, answer_content[i]] for i, ts in enumerate(y_timestamp)]
+            else:
+                raise ValueError("answer_content is empty after inference.")
+        except Exception:
+            pred_formatted = [[ts, -1] for ts in y_timestamp]
+            raise ValueError("Failed to format the prediction results.")
+
+        x_table_formatted = [(x_timestamp[i], x_ts[i]) for i in range(len(x_ts))]
+        x_dy_table_formatted = [(hetero_x_time[i], x_dy[i]) for i in range(len(x_dy))]
+        y_dy_table_formatted = [(hetero_y_time[i], y_dy[i]) for i in range(len(y_dy))]
+        y_table_formatted = [(y_timestamp[i], y_ts[i]) for i in range(len(y_ts))] # Ground truth
+
+        num_channels = 1
+        if x_ts and isinstance(x_ts[0], (list, tuple)):
+            num_channels = len(x_ts[0])
+            
+        y_timestamp_with_placeholders = []
+        for i, ts in enumerate(y_timestamp):
+            if num_channels == 1:
+                placeholders = f'<your_prediction_value[{i}]>'
+            else:
+                placeholders = [f'<your_prediction_value[{i}][{j}]>' for j in range(num_channels)]
+            y_timestamp_with_placeholders.append([ts, placeholders])
+
+        return {
+            'pred': pred_formatted, 
+            'x_table': x_table_formatted,
+            'x_dy_table': x_dy_table_formatted,
+            'y_timestamp': y_timestamp_with_placeholders,
+            'y_dy_table': y_dy_table_formatted,
+            'y_table': y_table_formatted,
+        }
+
     def __call__(self, data_instance):
         retry = self.retry  # create a local copy to ensure self.retry remains unchanged
         # instance: ts_x, ts_y, tm_x, tm_y, (dy_tm_x, general, channel, [dy_x]), (dy_tm_y, general, channel, [dy_y])
@@ -83,27 +129,17 @@ class vllm_Socket():
                     generated_text = outputs[0].outputs[0].text
                     
                     think_content, answer_content = self.parse_model_output(generated_text)
-                    print(type(answer_content))
+                    
                     if think_content is None or answer_content is None:
                         raise AssertionError("[Warning]: Failed to parse the output according to the format")
                     
+                    answer_content = eval(answer_content)  # convert string representation of list to actual list
+
                     break
                 except:
                     retry -= 1
                     pass
         
-        result = {'pred': answer_content, 
-                'x_table': x_ts,
-                'x_dy_table': x_dy,
-                'y_timestamp': y_timestamp,
-                'y_dy_table': y_dy,
-                'y_table': y_ts,}
+        result = self._format_result(answer_content, data_instance)
         
         return result, first_prompt
-
-
-
-
-        
-    
-
