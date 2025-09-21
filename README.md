@@ -2,7 +2,6 @@
 
 <div align="center">
 
-[<img src="https://devin.ai/assets/deepwiki-badge.png" alt="Ask DeepWiki.com" height="20"/>](https://deepwiki.com/VEWOXIC/Universal-Cross-Modal-Time-Series-Forecasting-Pipeline)
 [<img alt="Static Badge" src="https://img.shields.io/badge/Check_Tutorial-aaa?logo=https%3A%2F%2Fcode2tutorial.com%2F_next%2Fimage%3Furl%3D%252Ficon.png%26w%3D32%26q%3D75&label=Code2Tutorial&link=https%3A%2F%2Fcode2tutorial.com%2Ftutorial%2Fb08f8f15-cd02-475e-a4ee-17e0b775ae81%2Findex.md">](https://code2tutorial.com/tutorial/b08f8f15-cd02-475e-a4ee-17e0b775ae81/index.md)
 
 </div>
@@ -11,7 +10,7 @@ A comprehensive, flexible and commonly-used DLinear-like framework for time seri
 
 This framework supports various traditional time series models, text-embedding based cross-modal forecasting as well as language model-based reasoning approaches.
 
-Compatable Datasets see: https://huggingface.co/collections/VEWOXIC/wiats-weather-intervention-aware-time-series-benchmark-6805e446a4dd84280a40a699
+Compatable Datasets see: [huggingface link deleted for double blind]
 
 ## Table of Contents
 
@@ -131,7 +130,7 @@ python run_lightning.py --model DLinear --data_config data_configs/fullsolar.yam
 
 Apart from the original time series dataset for TSF, e.g. ETT. We also support the following multimodal datasets:
 
-- [WIATS: Weather Intervention-Aware Time Series Benchmark](https://huggingface.co/collections/VEWOXIC/wiats-weather-intervention-aware-time-series-benchmark-6805e446a4dd84280a40a699)
+- WIATS: Weather Intervention-Aware Time Series Benchmark (link removed for double blind)
 
 
 ## Pipeline Components
