@@ -11,7 +11,7 @@ A comprehensive, flexible and commonly-used DLinear-like framework for time seri
 
 This framework supports various traditional time series models, text-embedding based cross-modal forecasting as well as language model-based reasoning approaches.
 
-Compatable Datasets see: https://huggingface.co/collections/VEWOXIC/wiats-weather-intervention-aware-time-series-benchmark-6805e446a4dd84280a40a699
+Compatable Datasets see: https://huggingface.co/collections/wxcai/fidel-ts-68ef3c7813c4187e2c88dedd
 
 ## Table of Contents
 
