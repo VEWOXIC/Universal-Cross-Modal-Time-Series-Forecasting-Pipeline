@@ -169,6 +169,7 @@ class LLM_API_Socket():
         messages = []
         messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": first_prompt})
+        # print(messages)
 
         if self.force_retry:
             for i in range(retry):
