@@ -7,10 +7,9 @@ import numpy as np
 
 # Model names (using \n to wrap long names for better fit in a square plot)
 models = [
-    "Dlinear", "FITS", "PatchTST", "iTrans.", 
-    "GPT4TS", "GPT4MTS", "FIATS", 
-    "Chronos", "TimeMoE", "Sundial", "Chattime", 
-    "Qwen 2.5&3 14B", "Deepseek R1"
+    "FITS", "Dlinear", "PatchTST", "iTrans.", "FIATS", "GPT4TS", "GPT4MTS",
+    "TimeMoE", "Sundial", "Chronos", 
+    "Chattime", "Qwen 2.5&3", "Deepseek R1"
 ]
 
 # Helper function: Parse values like '205M', '7B' into integers
@@ -29,17 +28,17 @@ def parse_param(value):
 
 # Raw Data: Total Params
 total_params_raw = [
-    17328, 8736, 34475, 248728,
-    82755096, 84720410, 11888134,
-    "205M", "50M", "128M", "7B",
+    8736, 17328, 34475, 248728, 11888134,
+    82755096, 84720410, 
+    "50M", "128M", "205M", "7B",
     "14B", "671B"
 ]
 
 # Raw Data: Trainable Params
 trainable_params_raw = [
-    17328, 8736, 34472, 248728,
-    1648920, 3614234, 11888134,
-    "205M", "50M", "128M", "7B",
+    8736, 17328, 34472, 248728, 11888134,
+    1648920, 3614234, 
+    "50M", "128M", "205M", "7B",
     "14B", "671B"
 ]
 
