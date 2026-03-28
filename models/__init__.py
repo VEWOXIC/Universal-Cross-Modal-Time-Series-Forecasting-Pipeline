@@ -40,4 +40,10 @@ def model_init(model_name, configs, all_args, is_LLM_API=False, is_FM=False, is_
         
         module = importlib.import_module(f'models.{model_name}')
         model_class = getattr(module, 'Model')
+
+        # print model parameters
+        total_params = sum(p.numel() for p in model_class(configs).parameters())
+        trainable_params = sum(p.numel() for p in model_class(configs).parameters() if p.requires_grad)
+        print(f'Model {model_name} - Total parameters: {total_params}, Trainable parameters: {trainable_params}')
+
         return model_class(configs)

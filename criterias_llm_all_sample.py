@@ -154,35 +154,35 @@ def MSE(pred, true):
 # }
 
 DATASET_STATS = {
-    '104': {'mean': [74.87043802, 81.47070405, 42.7860227], 'var': [7.6689814, 4530902.9, 3580.4746]},
-    '107': {'mean': [74.31539696, 124.50463708, 42.7860227], 'var': [1.3707693, 249206530.0, 3580.4746]},
-    '108': {'mean': [74.31539696, 75.91645883, 42.7860227], 'var': [1.3707693, 166031580.0, 3580.4746]},
-    '120': {'mean': [70.28496277, 161.37595028, 42.7860227], 'var': [2.290510, 611820460.0, 3580.4746]},
-    '122': {'mean': [73.7861576, 249.87310875, 42.7860227], 'var': [17.28867, 4417945034.65, 3580.4746]},
-    '208': {'mean': [71.46610966, 8.82951875, 42.7860227], 'var': [11.98018, 555561.7, 3580.4746]},
-    '216': {'mean': [72.57323202, 145.18048473, 42.7860227], 'var': [39.28136, 496228300.0, 3580.4746]},
-    '229': {'mean': [75.22957152, 246.01946404, 42.7860227], 'var': [7.346140, 1359323200.0, 3580.4746]},
-    '248': {'mean': [72.66964318, 110.56915087, 42.7860227], 'var': [94.82144, 350000030.0, 3580.4746]},
-    '252': {'mean': [75.41496926, 37.59153, 42.7860227], 'var': [2.198086, 11584147.0, 3580.4746]},
-    '261': {'mean': [74.08142949, 12.42677624, 42.7860227], 'var': [2.271196, 3186.012, 3580.4746]},
-    '281': {'mean': [71.91093504, 38.5409267, 42.7860227], 'var': [0.899295, 1489458.7, 3580.4746]},
-    '288': {'mean': [71.06386965, 38.5409267, 42.7860227], 'var': [4.526130, 1489458.7, 3580.4746]},
-    '304': {'mean': [72.96783179, 289.85388525, 42.7860227], 'var': [36.05340, 6237048300.0, 3580.4746]},
-    '317': {'mean': [70.33991381, 107.19880949, 42.7860227], 'var': [31.61135, 3191663.7, 3580.4746]},
-    '329': {'mean': [73.67290126, 117.87262247, 42.7860227], 'var': [42.13131, 141818810.0, 3580.4746]},
-    '345': {'mean': [72.7750941, 64.07975287, 42.7860227], 'var': [1.932372, 15358872.9, 3580.4746]},
-    '348': {'mean': [72.50058047, 149.52919126, 42.7860227], 'var': [15.30383, 386415050.0, 3580.4746]},
-    '362': {'mean': [72.10505718, 141.86288298, 42.7860227], 'var': [12.82583, 565314090.0, 3580.4746]},
-    '380': {'mean': [71.69537488, 42.43499561, 42.7860227], 'var': [6.116135, 2606000.8, 3580.4746]},
-    '387': {'mean': [71.54038859, 244.56338267, 42.7860227], 'var': [6.912201, 4069300100.0, 3580.4746]},
-    '403': {'mean': [75.75371487, 214.78114009, 42.7860227], 'var': [25.91478, 647121220.0, 3580.4746]},
-    '417': {'mean': [74.41427583, 76.28607982, 42.7860227], 'var': [7.253939, 286851960.0, 3580.4746]},
-    '428': {'mean': [73.43179572, 174.81978503, 42.7860227], 'var': [12.53826, 826228000.0, 3580.4746]},
-    '445': {'mean': [72.5951395, 107.44854391, 42.7860227], 'var': [0.924836, 109397330.0, 3580.4746]},
-    '450': {'mean': [73.5846345, 74.92730915, 42.7860227], 'var': [6.728237, 16245163.0, 3580.4746]},
-    '461': {'mean': [73.45090002, 89.47326018, 42.7860227], 'var': [6.149853, 51703896.0, 3580.4746]},
-    '470': {'mean': [76.5128831, 168.68677774, 42.7860227], 'var': [4.161808, 1063878150.0, 3580.4746]},
-    '484': {'mean': [71.54521512, 176.71976856, 42.7860227], 'var': [2.678485, 412713840.0, 3580.4746]},
+    '104': {'mean': [74.87043802, 81.47070405, 42.7860227], 'var': [2.76928869, 2128.59212413, 59.83707021]},
+    '107': {'mean': [74.31539696, 124.50463708, 42.7860227], 'var': [1.17079854e+00, 1.57862936e+04, 5.98370702e+01]},
+    '108': {'mean': [74.31539696, 75.91645883, 42.7860227], 'var': [1.17079854e+00, 1.28853223e+04, 5.98370702e+01]},
+    '120': {'mean': [70.28496277, 161.37595028, 42.7860227], 'var': [1.51343986e+00, 2.47349846e+04, 5.98370702e+01]},
+    '122': {'mean': [73.7861576, 249.87310875, 42.7860227], 'var': [4.15796459e+00, 6.64676216e+04, 5.98370702e+01]},
+    '208': {'mean': [71.46610966, 8.82951875, 42.7860227], 'var': [3.46123878, 745.36065024, 59.83707021]},
+    '216': {'mean': [72.57323202, 145.18048473, 42.7860227], 'var': [6.26748421e+00, 2.22762181e+04, 5.98370702e+01]},
+    '229': {'mean': [75.22957152, 246.01946404, 42.7860227], 'var': [2.71037640e+00, 3.68689867e+04, 5.98370702e+01]},
+    '248': {'mean': [72.66964318, 110.56915087, 42.7860227], 'var': [9.73763059e+00, 1.87081697e+04, 5.98370702e+01]},
+    '252': {'mean': [75.41496926, 37.59153, 42.7860227], 'var': [1.48259438e+00, 3.40354917e+03, 5.98370702e+01]},
+    '261': {'mean': [74.08142949, 12.42677624, 42.7860227], 'var': [1.50704897, 56.44477819, 59.83707021]},
+    '281': {'mean': [71.91093504, 38.5409267, 42.7860227], 'var': [9.48311699e-01, 1.22043381e+03, 5.98370702e+01]},
+    '288': {'mean': [71.06386965, 38.5409267, 42.7860227], 'var': [2.12747091, 1220.43380655, 59.83707021]},
+    '304': {'mean': [72.96783179, 289.85388525, 42.7860227], 'var': [6.00444747e+00, 7.89749854e+04, 5.98370702e+01]},
+    '317': {'mean': [70.33991381, 107.19880949, 42.7860227], 'var': [5.62239624, 1786.52221793, 59.83707021]},
+    '329': {'mean': [73.67290126, 117.87262247, 42.7860227], 'var': [6.49086375e+00, 1.19087724e+04, 5.98370702e+01]},
+    '345': {'mean': [72.7750941, 64.07975287, 42.7860227], 'var': [1.39009785e+00, 3.91903523e+03, 5.98370702e+01]},
+    '348': {'mean': [72.50058047, 149.52919126, 42.7860227], 'var': [3.91201326e+00, 1.96574734e+04, 5.98370702e+01]},
+    '362': {'mean': [72.10505718, 141.86288298, 42.7860227], 'var': [3.58131836e+00, 2.37763293e+04, 5.98370702e+01]},
+    '380': {'mean': [71.69537488, 42.43499561, 42.7860227], 'var': [2.47308191, 1614.30548851, 59.83707021]},
+    '387': {'mean': [71.54038859, 244.56338267, 42.7860227], 'var': [2.62910630e+00, 6.37910585e+04, 5.98370702e+01]},
+    '403': {'mean': [75.75371487, 214.78114009, 42.7860227], 'var': [5.09065605e+00, 2.54385768e+04, 5.98370702e+01]},
+    '417': {'mean': [74.41427583, 76.28607982, 42.7860227], 'var': [2.69331307e+00, 1.69366971e+04, 5.98370702e+01]},
+    '428': {'mean': [73.43179572, 174.81978503, 42.7860227], 'var': [3.54094101e+00, 2.87438421e+04, 5.98370702e+01]},
+    '445': {'mean': [72.5951395, 107.44854391, 42.7860227], 'var': [9.61684072e-01, 1.04593173e+04, 5.98370702e+01]},
+    '450': {'mean': [73.5846345, 74.92730915, 42.7860227], 'var': [2.59388493e+00, 4.03052537e+03, 5.98370702e+01]},
+    '461': {'mean': [73.45090002, 89.47326018, 42.7860227], 'var': [2.47988977e+00, 7.19054268e+03, 5.98370702e+01]},
+    '470': {'mean': [76.5128831, 168.68677774, 42.7860227], 'var': [2.04005106e+00, 3.26171413e+04, 5.98370702e+01]},
+    '484': {'mean': [71.54521512, 176.71976856, 42.7860227], 'var': [1.63660674e+00, 2.03153575e+04, 5.98370702e+01]},
 }
 
 
@@ -196,7 +196,7 @@ def standardize(values, mean, var):
     return standardized_values.tolist()
 
 
-def evaluate_all_samples(ckpt_base, ckpt_id, data_id, train_mean, train_var, include_llm_failure):
+def evaluate_all_samples(ckpt_id, data_id, train_mean, train_var, include_llm_failure):
     """
     Evaluate every JSON file in the given data_id directory and return a detailed list of results for each file.
     
@@ -204,7 +204,7 @@ def evaluate_all_samples(ckpt_base, ckpt_id, data_id, train_mean, train_var, inc
     - file_results (list): A list of dictionaries, where each dictionary contains a file's 'filename', 'mae', 'mse', 'points'.
     - mismatch (int): The number of files with format mismatches.
     """
-    json_dir = os.path.join(ckpt_base, ckpt_id, data_id)
+    json_dir = os.path.join(ckpt_id, data_id)
     if not os.path.isdir(json_dir):
         return [], 0
 
@@ -240,16 +240,26 @@ def evaluate_all_samples(ckpt_base, ckpt_id, data_id, train_mean, train_var, inc
                 
             for true_step, pred_step in zip(true_values, pred_values):
                 if is_multivariate:
+                    try:
+                        # convert to float
+                        true_step = [float(x) for x in true_step]
+                        pred_step = [float(x) for x in pred_step]
+                    except (TypeError, ValueError) as e:
+                        print(f"Warning: Skipping time step in file {filename} due to conversion error: {e}")
+                        continue
+                    
                     if not include_llm_failure and -1.0 in pred_step:
                         continue
                     if len(true_step) != len(train_mean) or len(pred_step) != len(train_mean):
                         # Dimension mismatch is considered a file-level error, skip the entire file
-                        mismatch_count +=1
+                        mismatch_count += 1
                         file_point_count = 0 # Invalidate this file
                         break
                 else:
                     if not include_llm_failure and pred_step == -1.0:
                         continue
+                    
+                    # convert to float
                     true_step = [float(true_step)]
                     pred_step = [float(pred_step)]
                     
@@ -302,7 +312,6 @@ def evaluate_full_dataset(args):
         stats = DATASET_STATS[data_id]
         
         file_results, mismatch = evaluate_all_samples(
-            args.ckpt_base, 
             args.ckpt_id, 
             data_id, 
             stats['mean'], 
@@ -358,13 +367,42 @@ def main():
     parser = argparse.ArgumentParser(description='Evaluate LLM time series predictions from JSON files.')
     
     parser.add_argument('--ckpt_base', type=str, default='checkpoints', help='Base directory for checkpoints.')
-    parser.add_argument('--ckpt_id', type=str, required=True, help='ID of the checkpoint folder (e.g., the name of a model run).')
-
+    parser.add_argument('--model', type=str, default="qwen3-14b", help="Model name (e.g., 'Deepseek-R1', 'Qwen2.5-14B')")
+    parser.add_argument('--data', type=str, default="Bear_room", help="Dataset name used for training (e.g., 'ETTm1')")
+    parser.add_argument('--version', type=str, default="oldest", help="Model version (e.g., 'latest' 'oldest' or a specific date like '2023-10-26')")
+    parser.add_argument('--input_len', type=int, default=288, help="Input sequence length")
+    parser.add_argument('--output_len', type=int, default=12, help="Output sequence length (prediction horizon)")
+    
     parser.add_argument('--include_llm_failure', action='store_true', help='Include samples where LLM prediction failed in the evaluation.')
-
     parser.add_argument('--detect_anomaly', action='store_true', help='Print detailed loss for each subset (JSON file) to locate outliers.')
     
     args = parser.parse_args()
+
+    # --- Find and Load Checkpoint ---
+    ckpt_pattern = f'_{args.model}_{args.data}_{args.output_len}_{args.input_len}'
+    
+    if args.version == 'latest':
+        ckpt_paths = [os.path.join(args.ckpt_base, d) for d in os.listdir(args.ckpt_base) if ckpt_pattern in d]
+        if not ckpt_paths:
+            raise FileNotFoundError(f"No checkpoint found with pattern: *{ckpt_pattern}")
+        ckpt_paths.sort()
+        ckpt_path = ckpt_paths[-1]
+    elif args.version == 'oldest':
+        ckpt_paths = [os.path.join(args.ckpt_base, d) for d in os.listdir(args.ckpt_base) if ckpt_pattern in d]
+        if not ckpt_paths:
+            raise FileNotFoundError(f"No checkpoint found with pattern: *{ckpt_pattern}")
+        ckpt_paths.sort()
+        ckpt_path = ckpt_paths[0]
+    else:
+        pattern = os.path.join(args.ckpt_base, args.version + ckpt_pattern)
+        ckpt_paths = glob.glob(pattern)
+        if not ckpt_paths:
+            raise FileNotFoundError(f"No checkpoint found for pattern: {pattern}")
+        ckpt_paths.sort()
+        ckpt_path = ckpt_paths[-1]
+
+    args.ckpt_id = ckpt_path
+
     evaluate_full_dataset(args)
 
 if __name__ == '__main__':

@@ -169,6 +169,10 @@ class Model(nn.Module):
         prediction_list = []
         remaining = self.pred_len
 
+        if type(hetero_channel) == dict:
+            empty_list = []
+            empty_list.append(hetero_channel)
+            hetero_channel = empty_list
         context = \
             hetero_general + hetero_channel + batch_y_hetero \
                 if batch_y_hetero is not None and hetero_general is not None and hetero_channel is not None \

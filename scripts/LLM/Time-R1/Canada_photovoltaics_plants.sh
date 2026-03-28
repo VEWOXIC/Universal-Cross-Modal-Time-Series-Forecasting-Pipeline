@@ -18,4 +18,6 @@ python -u run_llm.py \
     --input_len 360 \
     --output_len 168 \
     --batch_size 1 \
-    --filtered_samples "sample_indexes/Canada_photovoltaics_plants_sample_week.json" # | tee -a ./logs/Time-R1.log
+    --hf_mirror True \
+    --eval_mode local \
+    --filtered_samples "sample_indexes/Canada_photovoltaics_plants_sample_day.json" # | tee -a ./logs/Time-R1.log
