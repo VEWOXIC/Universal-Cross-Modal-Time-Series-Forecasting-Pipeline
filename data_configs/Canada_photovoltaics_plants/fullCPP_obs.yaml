@@ -1,0 +1,20 @@
+root_path: ./data/Canada_photovoltaics_plants/time_series
+spliter: timestamp
+# spliter: ratio
+split_info: # "7:1:2"
+  - '2021-01-01'
+  - '2022-01-01'
+timestamp_col: date
+target: all
+  # - kWh
+id_info: id_info_imputed.json
+id: # all
+- '314106'
+- '164440'
+- '355827'
+- '331901'
+- '577650'
+- '570079'
+formatter: 'id_{i}.parquet'
+sampling_rate: 1h
+base_T: 24

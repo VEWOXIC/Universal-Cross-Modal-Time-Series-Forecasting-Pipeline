@@ -78,7 +78,7 @@ def main():
     # --- Checkpoint and Model Config ---
     parser.add_argument('--model', type=str, default="DLinear", help="Model name (e.g., 'DLinear', 'PatchTST')")
     parser.add_argument('--data', type=str, default="ETTm1", help="Dataset name used for training (e.g., 'ETTm1')")
-    parser.add_argument('--version', type=str, default="latest", help="Model version (e.g., 'latest' 'oldest' or a specific date like '2023-10-26')")
+    parser.add_argument('--version', type=str, default="oldest", help="Model version (e.g., 'latest' 'oldest' or a specific date like '2023-10-26')")
     parser.add_argument('--input_len', type=int, default=360, help="Input sequence length")
     parser.add_argument('--output_len', type=int, default=24, help="Output sequence length (prediction horizon)")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")

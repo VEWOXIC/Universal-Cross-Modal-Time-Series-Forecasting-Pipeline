@@ -1,0 +1,24 @@
+root_path: ./data/Germany_Renewable_Power_Grid/impute_data
+spliter: timestamp
+# spliter: ratio
+split_info: # "7:1:2"
+  - '2015-01-01' # discard data before 2015
+  - '2021-01-01'
+  - '2022-01-01'
+  - '2025-02-26' # fit the requirements in data_helper.py
+timestamp_col: time
+target: all
+  # - power
+id_info: id_info.json
+id: # all
+- 'solar_50Hertz'
+- 'wind_50Hertz'
+- 'solar_TenneT'
+- 'wind_TenneT'
+- 'solar_Amprion'
+- 'wind_Amprion'
+formatter: '{i}.parquet'
+downsample: 4
+sampling_rate: 1h
+base_T: 24
+time_zone: Europe/Berlin
