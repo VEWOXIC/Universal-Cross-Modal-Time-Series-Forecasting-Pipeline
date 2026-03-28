@@ -1,4 +1,4 @@
-model: deepseek-r1-250120
+model: deepseek-r1-0528
 system_prompt: prompt_templates/general_template_MM/system.template
 first_prompt: prompt_templates/general_template_MM/firstattempt.template
 retry_prompt: prompt_templates/general_template_MM/retry.template

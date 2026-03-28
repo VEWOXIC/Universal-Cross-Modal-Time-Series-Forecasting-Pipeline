@@ -6,7 +6,7 @@ python -u run_llm.py \
     --input_len 360 \
     --output_len 168 \
     --checkpoints ./checkpoints \
-    --filtered_samples ./sample_indexes/Germany_Renewable_Power_Grid_sample_week.json | tee -a ./logs/DS_Germany_week.log
+    --filtered_samples ./sample_random_indexes/Germany_Renewable_Power_Grid_sample_week.json | tee -a ./logs/umLLM.log
     # --sample_step 12 \
     # --no_parallel
     

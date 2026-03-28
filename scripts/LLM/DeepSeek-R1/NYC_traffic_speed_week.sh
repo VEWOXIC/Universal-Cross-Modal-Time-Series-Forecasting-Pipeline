@@ -6,7 +6,6 @@ python -u run_llm.py \
     --input_len 360 \
     --output_len 168 \
     --checkpoints ./checkpoints \
-    --filtered_samples ./sample_indexes/NYC_traffic_speed_sample_week.json | tee -a ./logs/DS_uni_Traffic_week.log
-    # --sample_step 12 \
+    --filtered_samples ./sample_random_indexes/NYC_traffic_speed_sample_week.json | tee -a ./logs/mmLLM.log
     # --no_parallel
     
