@@ -28,7 +28,11 @@ def evaluate_full_dataset(loader, model, config, device, indexes, channel_wise):
         with torch.no_grad():
             batch_x, batch_y, _, _, x_hetero, y_hetero, _, _, _, hetero_channel = iter_data
 
-            batch_x, batch_y, _, _, x_hetero, y_hetero, _, _, _, hetero_channel = model.move_to_device(batch_x, batch_y, _, _, x_hetero, y_hetero, _, _, _, hetero_channel, device)
+            batch_x = batch_x.to(device)
+            batch_y = batch_y.to(device)
+            x_hetero = x_hetero.to(device) if x_hetero is not None else None
+            y_hetero = y_hetero.to(device) if y_hetero is not None else None
+            hetero_channel = hetero_channel.to(device) if hetero_channel is not None else None
             
             if config.task == 'TSF':
                 prediction = model(x=batch_x)

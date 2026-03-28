@@ -15,6 +15,7 @@ from data_provider.data_factory import Data_Provider
 
 from utils.tools import general_move_to_device
 
+from utils.metrics import MAE
 
 class Experiment(Exp_Basic):
     """
@@ -173,7 +174,8 @@ class Experiment(Exp_Basic):
         criterion = self._select_criterion()
         loaders = self._get_data(flag='test')
 
-        overall_running_loss = 0.0
+        overall_running_loss = 0.0  # MSE
+        overall_running_mae = 0.0   # MAE
         overall_total_samples = 0
         overall_error = 0
 
@@ -184,7 +186,8 @@ class Experiment(Exp_Basic):
         self.model.eval()
 
         for info, loader in loaders.items():
-            info_running_loss = 0.0
+            info_running_loss = 0.0  # MSE
+            info_running_mae = 0.0   # MAE
             info_total_samples = 0
             info_error = 0
             
@@ -206,12 +209,22 @@ class Experiment(Exp_Basic):
                             continue
                         
                         current_batch_size = gt.size(0)
+                        
+                        # Calculate MSE
                         loss = criterion(output, gt)
-
                         info_running_loss += loss.item() * current_batch_size
+                        
+                        # Calculate MAE
+                        # Convert tensors to numpy for MAE calculation
+                        output_np = output.cpu().detach().numpy()
+                        gt_np = gt.cpu().detach().numpy()
+                        mae_value = MAE(output_np, gt_np)
+                        info_running_mae += mae_value * current_batch_size
+                        
                         info_total_samples += current_batch_size
                         
                         overall_running_loss += loss.item() * current_batch_size
+                        overall_running_mae += mae_value * current_batch_size
                         overall_total_samples += current_batch_size
                     
                     elif self.args.filtered_samples is None:
@@ -227,39 +240,60 @@ class Experiment(Exp_Basic):
                             continue
                         
                         current_batch_size = gt.size(0)
+                        
+                        # Calculate MSE
                         loss = criterion(output, gt)
-
                         info_running_loss += loss.item() * current_batch_size
+                        
+                        # Calculate MAE
+                        # Convert tensors to numpy for MAE calculation
+                        output_np = output.cpu().detach().numpy()
+                        gt_np = gt.cpu().detach().numpy()
+                        mae_value = MAE(output_np, gt_np)
+                        info_running_mae += mae_value * current_batch_size
+                        
                         info_total_samples += current_batch_size
                         
                         overall_running_loss += loss.item() * current_batch_size
+                        overall_running_mae += mae_value * current_batch_size
                         overall_total_samples += current_batch_size
             
             if info_total_samples > 0:
                 info_epoch_loss = info_running_loss / info_total_samples
-                print(f"Test loss for {info}: {info_epoch_loss:.7f}")
+                info_epoch_mae = info_running_mae / info_total_samples
+                print(f"Test loss for {info}: MSE = {info_epoch_loss:.7f}, MAE = {info_epoch_mae:.7f}")
             else:
                 print(f"Test loss for {info}: N/A (no samples processed)")
                 info_epoch_loss = None
+                info_epoch_mae = None
 
             print(f"Total Errors: {info_error}")
             
-            # Save metrics
+            # Save metrics (now storing both MSE and MAE)
             try:
                 with open(os.path.join(path, all_metrics_filename), 'r') as f:
                     existing_data = json.load(f)
             except FileNotFoundError:
                 existing_data = {}
 
-            existing_data.update({info: info_epoch_loss})
+            # Store both metrics for each info
+            if info not in existing_data:
+                existing_data[info] = {}
+            existing_data[info]['MSE'] = info_epoch_loss
+            existing_data[info]['MAE'] = info_epoch_mae
+            
             with open(os.path.join(path, all_metrics_filename), 'w') as f:
                 json.dump(existing_data, f, indent=4)
 
         total_epoch_loss = overall_running_loss / overall_total_samples if overall_total_samples > 0 else 0.0
-        print(f"Overall test loss: {total_epoch_loss:.7f}")
+        total_epoch_mae = overall_running_mae / overall_total_samples if overall_total_samples > 0 else 0.0
+        print(f"Overall test results: MSE = {total_epoch_loss:.7f}, MAE = {total_epoch_mae:.7f}")
 
-        # Save results
-        final_result = {"final_res": total_epoch_loss}
+        # Save results (now storing both MSE and MAE)
+        final_result = {
+            "final_MSE": total_epoch_loss,
+            "final_MAE": total_epoch_mae
+        }
         with open(os.path.join(path, final_filename), 'w') as f:
             json.dump(final_result, f, indent=4)
         print(f"Saved final result to {final_filename}")
