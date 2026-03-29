@@ -1,6 +1,6 @@
 python -u run_llm.py \
     --model 'deepseek-r1-250120' \
-    --model_config './model_configs/LLM/DeepSeek-R1.yaml' \
+    --model_config './model_configs/LLM/UniModal/DeepSeek-R1.yaml' \
     --data Germany_Renewable_Power_Grid \
     --data_config './data_configs/Germany_Renewable_Power_Grid/fullGRPG_hetero_LLM.yaml' \
     --input_len 360 \

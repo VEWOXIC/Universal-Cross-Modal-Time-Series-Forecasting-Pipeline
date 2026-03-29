@@ -1,6 +1,6 @@
 python -u run_llm.py \
     --model 'deepseek-r1-250120' \
-    --model_config './model_configs/LLM/DeepSeek-R1.yaml' \
+    --model_config './model_configs/LLM/UniModal/DeepSeek-R1.yaml' \
     --data NYC_traffic_speed \
     --data_config './data_configs/NYC_traffic_speed/fullNYCTS_hetero_LLM.yaml' \
     --input_len 360 \

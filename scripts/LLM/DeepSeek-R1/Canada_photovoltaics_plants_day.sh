@@ -1,6 +1,6 @@
 python -u run_llm.py \
     --model 'deepseek-r1-250120' \
-    --model_config './model_configs/LLM/DeepSeek-R1.yaml' \
+    --model_config './model_configs/LLM/MultiModal/DeepSeek-R1.yaml' \
     --data Canada_photovoltaics_plants \
     --data_config './data_configs/Canada_photovoltaics_plants/fullCPP_hetero_LLM.yaml' \
     --input_len 360 \
