@@ -342,7 +342,8 @@ class Heterogeneous_Dataset(Dataset):
         postemb_batch_size (int): Batch size for embedding generation
         postemb_handle_downtime (str, optional): Strategy for handling data gaps
         device (str): Computing device ('cpu' or cuda device id)
-    
+        text_ablation (str, optional): Ablation mode for text modality - None (normal), 'random' (random non-aligned text), 'zero' (all text vectors set to zero)
+
     Example:
         ```python
         hetero_dataset = Heterogeneous_Dataset(
@@ -354,7 +355,7 @@ class Heterogeneous_Dataset(Dataset):
         )
         ```
     """
-    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json', timezone=None, noise = 0.0, hetero_type='all_for_one', id_list=None, postemb=None, postemb_model=None, postemb_max_len=None, postemb_d=None, postemb_batch_size=200, postemb_handle_downtime=None, device='cpu'):
+    def __init__(self, root_path, formatter, id_info, static_path=None, matching='nearest', output_format='json', timezone=None, noise = 0.0, hetero_type='all_for_one', id_list=None, postemb=None, postemb_model=None, postemb_max_len=None, postemb_d=None, postemb_batch_size=200, postemb_handle_downtime=None, device='cpu', text_ablation="None"):
         super().__init__()
 
         self.hetero_type = hetero_type
@@ -368,6 +369,8 @@ class Heterogeneous_Dataset(Dataset):
         self.postemb_d = int(postemb_d) if postemb_d is not None else postemb_d
         self.postemb_batch_size = int(postemb_batch_size) if postemb_batch_size is not None else postemb_batch_size
         self.postemb_handle_downtime = postemb_handle_downtime
+        assert text_ablation in [None, 'random', 'zero'], "text_ablation should be one of [None, 'random', 'zero']"
+        self.text_ablation = text_ablation
 
         self.tokenizer = AutoTokenizer.from_pretrained(self.postemb_model) if postemb is not None else None
         self.model = AutoModel.from_pretrained(self.postemb_model).to(self.device) if postemb is not None else None
@@ -644,11 +647,18 @@ class Heterogeneous_Dataset(Dataset):
         return partial(self.get_hetero_data, downtime_ranges, general_info, channel_info, downtime_prompt, id)
             
 
-    def time_matcher(self, timestamps, id=None):
+    def time_matcher(self, timestamps, id=None, random_text=False):
         # Convert timestamps to datetime
         timestamps = pd.to_datetime(timestamps.astype(str))
 
         id_specific_df = self.dynamic_data[id] if self.hetero_type == 'each_subset' else self.dynamic_data
+
+        # For random text ablation, return random times from available times
+        if random_text:
+            available_times = id_specific_df.index
+            num_samples = len(timestamps)
+            random_indices = np.random.choice(len(available_times), size=num_samples, replace=True)
+            return available_times[random_indices]
 
         # Match times using vectorized operations on the correct DataFrame
         matched_indices = id_specific_df.index.searchsorted(timestamps)
@@ -687,19 +697,28 @@ class Heterogeneous_Dataset(Dataset):
     def get_hetero_data(self, downtime_ranges, general_info, channel_info, downtime_prompt, id, timestamp):
 
         if self.hetero_type == 'all_for_one':
-            # Match times
-            matched_times = self.time_matcher(timestamp)
+            # Match times (use random for random text ablation)
+            use_random_text = (self.text_ablation == 'random')
+            matched_times = self.time_matcher(timestamp, random_text=use_random_text)
 
             # Check downtime
             if len(downtime_ranges) == 0:
                 is_downtime = np.zeros(len(matched_times), dtype=bool)
-            else:  
+            else:
                 is_downtime = self.downtime_checker(matched_times, downtime_ranges)
+
+            # For zero text ablation, use zero embeddings
+            use_zero_text = (self.text_ablation == 'zero')
 
             if self.output_format == 'embedding':
                 matched_dynamic = self.dynamic_data.loc[matched_times]['time'].values
-                output_dynamic_ = np.array([self.embeddings[time] for time in matched_dynamic], dtype=np.float32)
-                downtime_data_ = np.array([downtime_prompt if is_down else np.zeros((1, downtime_prompt.shape[-1])) 
+                if use_zero_text:
+                    # Get shape from a real embedding to create correct-sized zero array
+                    sample_emb = self.embeddings[matched_dynamic[0]]
+                    output_dynamic_ = np.zeros((len(matched_dynamic), *sample_emb.shape), dtype=np.float32)
+                else:
+                    output_dynamic_ = np.array([self.embeddings[time] for time in matched_dynamic], dtype=np.float32)
+                downtime_data_ = np.array([downtime_prompt if is_down else np.zeros((1, downtime_prompt.shape[-1]))
                                         for is_down in is_downtime], dtype=np.float32)
                 # output_dynamic = np.concatenate([output_dynamic_, downtime_data_], axis=1)
                 output_dynamic = np.empty((len(matched_dynamic), output_dynamic_.shape[1] + downtime_data_.shape[1], downtime_prompt.shape[-1]), dtype=np.float32)
@@ -721,6 +740,10 @@ class Heterogeneous_Dataset(Dataset):
                             concatenated_row = ' '.join(str(x) for x in row_data.values) + " " + downtime_prompt
                             embedding_add_downtime = self.convert_plain_text_to_embeddings(concatenated_row)
                             matched_embed.iloc[i, matched_embed.columns.get_loc('embeddings')] = embedding_add_downtime
+                    # Apply zero text ablation
+                    if use_zero_text:
+                        for i in range(len(matched_embed)):
+                            matched_embed.iloc[i, matched_embed.columns.get_loc('embeddings')] = torch.zeros(self.postemb_d)
                     matched_embed = matched_embed.to_dict(orient='records')
                     output_dynamic = torch.stack([matched_df['embeddings'] for matched_df in matched_embed], dim=0)
                     # handling different length
@@ -737,7 +760,7 @@ class Heterogeneous_Dataset(Dataset):
                     # remove the time from the dicts
                     for record in matched_dynamic:
                         record.pop('time', None)
-                    
+
                     if self.output_format == 'dict':
                         output_dynamic = matched_dynamic
                     elif self.output_format == 'json':
@@ -751,21 +774,29 @@ class Heterogeneous_Dataset(Dataset):
             return matched_times, general_info, channel_info, output_dynamic
 
         elif self.hetero_type == 'each_subset':
-            # Match times using the correct id
-            matched_times = self.time_matcher(timestamp, id)
+            # Match times using the correct id (use random for random text ablation)
+            use_random_text = (self.text_ablation == 'random')
+            matched_times = self.time_matcher(timestamp, id, random_text=use_random_text)
 
             if len(downtime_ranges) == 0:
                 is_downtime = np.zeros(len(matched_times), dtype=bool)
-            else:  
+            else:
                 is_downtime = self.downtime_checker(matched_times, downtime_ranges)
+
+            # For zero text ablation, use zero embeddings
+            use_zero_text = (self.text_ablation == 'zero')
 
             if self.output_format == 'embedding':
                 # Get the matched dynamic data for the specific subset id
                 matched_dynamic = self.dynamic_data[id].loc[matched_times]['time'].values
                 id_specific_embeddings = self.embeddings[id]
-                output_dynamic_ = np.array([id_specific_embeddings[time] for time in matched_dynamic], dtype=np.float32)
+                if use_zero_text:
+                    sample_emb = id_specific_embeddings[matched_dynamic[0]]
+                    output_dynamic_ = np.zeros((len(matched_dynamic), *sample_emb.shape), dtype=np.float32)
+                else:
+                    output_dynamic_ = np.array([id_specific_embeddings[time] for time in matched_dynamic], dtype=np.float32)
 
-                downtime_data_ = np.array([downtime_prompt if is_down else np.zeros((1, downtime_prompt.shape[-1])) 
+                downtime_data_ = np.array([downtime_prompt if is_down else np.zeros((1, downtime_prompt.shape[-1]))
                                         for is_down in is_downtime], dtype=np.float32)
                 output_dynamic = np.empty((len(matched_dynamic), output_dynamic_.shape[1] + downtime_data_.shape[1], downtime_prompt.shape[-1]), dtype=np.float32)
                 output_dynamic[:, :output_dynamic_.shape[1],:] = output_dynamic_
@@ -785,6 +816,10 @@ class Heterogeneous_Dataset(Dataset):
                             concatenated_row = ' '.join(str(x) for x in row_data.values) + " " + downtime_prompt
                             embedding_add_downtime = self.convert_plain_text_to_embeddings(concatenated_row)
                             matched_embed.iloc[i, matched_embed.columns.get_loc('embeddings')] = embedding_add_downtime
+                    # Apply zero text ablation
+                    if use_zero_text:
+                        for i in range(len(matched_embed)):
+                            matched_embed.iloc[i, matched_embed.columns.get_loc('embeddings')] = torch.zeros(self.postemb_d)
                     matched_embed = matched_embed.to_dict(orient='records')
                     output_dynamic = torch.stack([matched_df['embeddings'] for matched_df in matched_embed], dim=0)
                     # handling different length
@@ -801,7 +836,7 @@ class Heterogeneous_Dataset(Dataset):
                     # remove the time from the dicts
                     for record in matched_dynamic:
                         record.pop('time', None)
-                    
+
                     if self.output_format == 'dict':
                         output_dynamic = matched_dynamic
                     elif self.output_format == 'json':
@@ -813,6 +848,6 @@ class Heterogeneous_Dataset(Dataset):
 
             matched_times = matched_times.strftime('%Y%m%d%H%M%S').tolist()
             return matched_times, general_info, channel_info, output_dynamic
-        
+
         else:
             raise NotImplementedError('Only all_for_one and each_subset hetero type are supported, implement more if needed')
