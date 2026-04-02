@@ -10,11 +10,11 @@ target: all
 id_info: id_info_imputed.json
 id: # all
 - '314106'
-- '164440'
-- '355827'
-- '331901'
-- '577650'
-- '570079'
+# - '164440'
+# - '355827'
+# - '331901'
+# - '577650'
+# - '570079'
 formatter: 'id_{i}.parquet'
 sampling_rate: 1h
 base_T: 24

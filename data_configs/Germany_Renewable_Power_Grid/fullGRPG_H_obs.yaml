@@ -12,11 +12,11 @@ target: all
 id_info: id_info.json
 id: # all
 - 'solar_50Hertz'
-- 'wind_50Hertz'
-- 'solar_TenneT'
-- 'wind_TenneT'
-- 'solar_Amprion'
-- 'wind_Amprion'
+# - 'wind_50Hertz'
+# - 'solar_TenneT'
+# - 'wind_TenneT'
+# - 'solar_Amprion'
+# - 'wind_Amprion'
 formatter: '{i}.parquet'
 downsample: 4
 sampling_rate: 1h
