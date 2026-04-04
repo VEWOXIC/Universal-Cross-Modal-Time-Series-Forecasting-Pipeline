@@ -50,26 +50,31 @@ class Model(nn.Module):
         # unique_id: Unique identifier for each time series (string)
         # ds: Date column (datetime format)
         # y: Target variable for forecasting (float format)
+        try:
+            y_values = x.detach().cpu().numpy().flatten()
+            ds_values = timestamp_x.detach().cpu().numpy().flatten()
+            
+            ds_str = ds_values.astype(str)
+            ds_datetime = pd.to_datetime(ds_str, format='%Y%m%d%H%M%S')
+            
+            # 3. 构建 DataFrame
+            df = pd.DataFrame({
+                'unique_id': self.name,
+                'ds': ds_datetime,
+                'y': y_values
+            })
 
-        y_values = x.detach().cpu().numpy().flatten()
-        ds_values = timestamp_x.detach().cpu().numpy().flatten()
-        
-        ds_str = ds_values.astype(str)
-        ds_datetime = pd.to_datetime(ds_str, format='%Y%m%d%H%M%S')
-        
-        # 3. 构建 DataFrame
-        df = pd.DataFrame({
-            'unique_id': self.name,
-            'ds': ds_datetime,
-            'y': y_values
-        })
+            # print(df)
 
-        # print(df)
+            result = self.agent.forecast(df=df, freq='H', h=self.pred_len, seasonality=self.base_T)
+            result_df = result.fcst_df
 
-        result = self.agent.forecast(df=df, freq='H', h=self.pred_len, seasonality=self.base_T)
-        result_df = result.fcst_df
+            y_values = result_df.iloc[:, 2].values
+            y_tensor = torch.tensor(y_values, dtype=torch.float32).unsqueeze(0)
 
-        y_values = result_df.iloc[:, 2].values
-        y_tensor = torch.tensor(y_values, dtype=torch.float32).unsqueeze(0)
+            return y_tensor
 
-        return y_tensor
+        except Exception as e:
+            print(f"Error in TimeCopilot forward pass: {e}")
+            # Return a tensor of zeros with the expected shape in case of error
+            return None

@@ -16,4 +16,4 @@ python -u run_agent.py \
     --input_len 360 \
     --output_len 168 \
     --batch_size 1 \
-    --filtered_samples "sample_indexes/Canada_photovoltaics_plants_sample_week.json" \ | tee -a ./logs/test_agent_on_samples.log
+    --filtered_samples "sample_indexes/Canada_photovoltaics_plants_sample_week.json" | tee -a ./logs/test_agent_on_samples_3.log

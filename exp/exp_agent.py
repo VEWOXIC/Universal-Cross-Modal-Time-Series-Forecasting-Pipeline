@@ -192,15 +192,16 @@ class Experiment(Exp_Basic):
                         output, gt = self._forward_step(iter_data)
 
                         if output is None and gt is None:
-                            print(f"[ Warning ]: Model returned None for sample {i}. Skipping this sample.")
                             info_error += 1
                             overall_error += 1
+                            print(f"[ Warning ]: Model returned None for sample {i}. Skipping this sample. Overall error {overall_error}")
                             continue
                         
                         current_batch_size = gt.size(0)
                         
                         # Calculate MSE
                         loss = MSE(output, gt)
+                        print(f"Current MSE: {loss}")
                         info_running_loss += loss.item() * current_batch_size
                         mae_value = MAE(output, gt)
                         info_running_mae += mae_value * current_batch_size
@@ -218,15 +219,16 @@ class Experiment(Exp_Basic):
                         output, gt = self._forward_step(iter_data)
 
                         if output is None and gt is None:
-                            print(f"[ Warning ]: Model returned None for sample {i}. Skipping this sample.")
                             info_error += 1
                             overall_error += 1
+                            print(f"[ Warning ]: Model returned None for sample {i}. Skipping this sample. Overall error {overall_error}")
                             continue
                         
                         current_batch_size = gt.size(0)
                         
                         # Calculate MSE
                         loss = MSE(output, gt)
+                        print(f"Current MSE: {loss}")
                         info_running_loss += loss.item() * current_batch_size
                         mae_value = MAE(output, gt)
                         info_running_mae += mae_value * current_batch_size
