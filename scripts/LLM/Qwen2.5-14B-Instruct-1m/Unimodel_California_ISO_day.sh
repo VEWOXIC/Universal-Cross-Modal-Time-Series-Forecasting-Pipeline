@@ -1,6 +1,6 @@
-python -u llm_run.py \
+python -u run_llm.py \
     --model 'qwen2.5-14b-instruct-1m' \
-    --model_config './model_configs/LLM/Unimodel/Qwen2.5-14B-Instruct-1m.yaml' \
+    --model_config './model_configs/LLM/UniModal/Qwen2.5-14B-Instruct-1m.yaml' \
     --data California_ISO \
     --data_config './data_configs/California_ISO/fullCAISO_hetero_LLM.yaml' \
     --input_len 360 \

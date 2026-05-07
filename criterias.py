@@ -28,18 +28,16 @@ def evaluate_full_dataset(loader, model, config, device, indexes, channel_wise):
         with torch.no_grad():
             batch_x, batch_y, _, _, x_hetero, y_hetero, _, _, _, hetero_channel = iter_data
 
-            batch_x = torch.tensor(batch_x).to(device)
-            batch_y = torch.tensor(batch_y).to(device)
+            batch_x = batch_x.to(device)
+            batch_y = batch_y.to(device)
+            x_hetero = x_hetero.to(device) if x_hetero is not None else None
+            y_hetero = y_hetero.to(device) if y_hetero is not None else None
+            hetero_channel = hetero_channel.to(device) if hetero_channel is not None else None
             
             if config.task == 'TSF':
                 prediction = model(x=batch_x)
             elif config.task == 'TGTSF':
-                y_hetero = torch.tensor(y_hetero).to(device)
-                hetero_channel = torch.tensor(hetero_channel).to(device)
-                prediction = model(x=batch_x, news=y_hetero, channel_description=hetero_channel)
-            elif config.task == 'MTSF':
-                x_hetero = torch.tensor(x_hetero).to(device)
-                prediction = model(x=batch_x, historical_events=x_hetero)
+                prediction = model(x=batch_x, historical_events=x_hetero, news=y_hetero, channel_description=hetero_channel)
             else:
                 # todo
                 pass
@@ -80,13 +78,13 @@ def main():
     # --- Checkpoint and Model Config ---
     parser.add_argument('--model', type=str, default="DLinear", help="Model name (e.g., 'DLinear', 'PatchTST')")
     parser.add_argument('--data', type=str, default="ETTm1", help="Dataset name used for training (e.g., 'ETTm1')")
-    parser.add_argument('--version', type=str, default="latest", help="Model version (e.g., 'latest' 'oldest' or a specific date like '2023-10-26')")
+    parser.add_argument('--version', type=str, default="oldest", help="Model version (e.g., 'latest' 'oldest' or a specific date like '2023-10-26')")
     parser.add_argument('--input_len', type=int, default=360, help="Input sequence length")
     parser.add_argument('--output_len', type=int, default=24, help="Output sequence length (prediction horizon)")
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
     parser.add_argument('--batch_size', type=int, default=128, help="Batch size for testing")
     parser.add_argument('--data_config', type=str, default=None, help="Path to the data configuration YAML file (optional)")
-    parser.add_argument('--task', type=str, default="TSF", choices=["TSF", "TGTSF", "MTSF"], help="Task type: Time Series Forecasting or Text-Grounded TSF")
+    parser.add_argument('--task', type=str, default="TSF", choices=["TSF", "TGTSF"], help="Task type: Time Series Forecasting or Text-Grounded TSF")
     parser.add_argument('--filtered_samples', type=str, default=None, help='Path to a JSON file containing filtered sample indexes for evaluation')
     parser.add_argument('--device', type=str, default="0", help="Device to run the model on")
     parser.add_argument('--channel_wise', type=bool, default=False, help='Channel wise testing')

@@ -1,5 +1,6 @@
 python -u criterias_lightning.py \
     --data 'NYC_traffic_speed' \
+    --data_config "./data_configs/NYC_traffic_speed/fullNYCTS_hetero_TGTSF_H.yaml" \
     --baseline_model 'TGTSF' \
     --task 'TGTSF' \
     --version 'latest' \
@@ -7,10 +8,11 @@ python -u criterias_lightning.py \
     --output_len 24 \
     --batch_size 1 \
     --device "3" \
-    --filtered_samples "sample_indexes/NYC_traffic_speed_sample_day.json" | tee -a ./logs/test_IATSF_on_samples.log
+    --filtered_samples "sample_random_indexes/NYC_traffic_speed_sample_day.json" | tee -a ./logs/test_IATSF_on_samples.log
 
 python -u criterias_lightning.py \
     --data 'NYC_traffic_speed' \
+    --data_config "./data_configs/NYC_traffic_speed/fullNYCTS_hetero_TGTSF_H.yaml" \
     --baseline_model 'TGTSF' \
     --task 'TGTSF' \
     --version 'latest' \
@@ -18,4 +20,4 @@ python -u criterias_lightning.py \
     --output_len 168 \
     --batch_size 1 \
     --device "3" \
-    --filtered_samples "sample_indexes/NYC_traffic_speed_sample_week.json" | tee -a ./logs/test_IATSF_on_samples.log
+    --filtered_samples "sample_random_indexes/NYC_traffic_speed_sample_week.json" | tee -a ./logs/test_IATSF_on_samples.log

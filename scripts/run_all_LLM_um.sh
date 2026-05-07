@@ -1,0 +1,6 @@
+bash scripts/LLM/DeepSeek-R1/Unimodal_Canada_photovoltaics_plants_day.sh
+bash scripts/LLM/DeepSeek-R1/Unimodal_Canada_photovoltaics_plants_week.sh
+bash scripts/LLM/DeepSeek-R1/Unimodal_Germany_Renewable_Power_Grid_day.sh
+bash scripts/LLM/DeepSeek-R1/Unimodal_Germany_Renewable_Power_Grid_week.sh
+bash scripts/LLM/DeepSeek-R1/Unimodal_NYC_traffic_speed_day.sh
+bash scripts/LLM/DeepSeek-R1/Unimodal_NYC_traffic_speed_week.sh

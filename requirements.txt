@@ -24,3 +24,4 @@ nvitop
 pyyaml>=6.0
 tensorboard>=2.8.0 
 chronos-forecasting
+timecopilot

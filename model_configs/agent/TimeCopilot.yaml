@@ -1,0 +1,4 @@
+base_url: 
+base_model_name: deepseek-v3.2
+api_key: 
+task: TSF

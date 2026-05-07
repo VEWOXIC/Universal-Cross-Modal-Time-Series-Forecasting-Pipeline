@@ -118,7 +118,7 @@ class Model(nn.Module):
         """
         return batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel
 
-    def forward(self, x, batch_y_hetero, hetero_general, hetero_channel):
+    def forward(self, x, batch_y_hetero=None, hetero_general=None, hetero_channel=None, **kwargs):
         """
         Perform forward pass for time series forecasting using language model.
         
@@ -169,7 +169,15 @@ class Model(nn.Module):
         prediction_list = []
         remaining = self.pred_len
 
-        context = hetero_general + hetero_channel + batch_y_hetero
+        if type(hetero_channel) == dict:
+            empty_list = []
+            empty_list.append(hetero_channel)
+            hetero_channel = empty_list
+        context = \
+            hetero_general + hetero_channel + batch_y_hetero \
+                if batch_y_hetero is not None and hetero_general is not None and hetero_channel is not None \
+                    else None
+            
         # print(context)
 
         while remaining > 0:

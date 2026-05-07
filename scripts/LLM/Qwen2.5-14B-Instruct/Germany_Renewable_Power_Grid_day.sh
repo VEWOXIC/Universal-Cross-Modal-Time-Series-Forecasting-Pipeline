@@ -1,4 +1,4 @@
-python -u llm_run.py \
+python -u run_llm.py \
     --model 'qwen2.5-14b-instruct' \
     --model_config './model_configs/LLM/Qwen2.5-14B-Instruct.yaml' \
     --data Germany_Renewable_Power_Grid \

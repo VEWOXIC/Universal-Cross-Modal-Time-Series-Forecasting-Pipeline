@@ -10,5 +10,5 @@ python -u criterias.py \
     --batch_size 512 \
     --device "4" \
     --channel_wise True \
-    --task "MTSF" | tee -a ./logs/channelwiseablation.log
+    --task "TGTSF" | tee -a ./logs/channelwiseablation.log
 done
