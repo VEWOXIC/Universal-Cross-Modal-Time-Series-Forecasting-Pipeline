@@ -1,17 +1,19 @@
 # Universal Cross-Modal Time Series Forecasting Pipeline
 
-<div align="center">
+<!-- <div align="center">
 
 [<img src="https://devin.ai/assets/deepwiki-badge.png" alt="Ask DeepWiki.com" height="20"/>](https://deepwiki.com/example-org/Universal-Cross-Modal-Time-Series-Forecasting-Pipeline)
 [<img alt="Static Badge" src="https://img.shields.io/badge/Check_Tutorial-aaa?logo=https%3A%2F%2Fcode2tutorial.com%2F_next%2Fimage%3Furl%3D%252Ficon.png%26w%3D32%26q%3D75&label=Code2Tutorial&link=https%3A%2F%2Fcode2tutorial.com%2Ftutorial%2Fb08f8f15-cd02-475e-a4ee-17e0b775ae81%2Findex.md">](https://code2tutorial.com/tutorial/b08f8f15-cd02-475e-a4ee-17e0b775ae81/index.md)
 
-</div>
+</div> -->
+
+[This branch is checked by copilot and manually to ensure no author infomration is disclosed. ]
 
 A comprehensive, flexible and commonly-used DLinear-like framework for time series forecasting with support for both PyTorch and PyTorch Lightning. Easy for time series forecasting model development and comparison.
 
 This framework supports various traditional time series models, text-embedding based cross-modal forecasting as well as language model-based reasoning approaches.
 
-Compatible Datasets: A curated collection of weather-intervention-aware time series benchmarks are available from various data providers.
+Compatable Datasets see: [https://huggingface.co/collections/fidel-ts/fidel-ts]
 
 ## Table of Contents
 
@@ -129,9 +131,7 @@ python run_lightning.py --model DLinear --data_config data_configs/fullsolar.yam
 
 ## Support Datasets
 
-Apart from the original time series dataset for TSF, e.g. ETT. We also support the following multimodal datasets:
-
-- WIATS: Weather Intervention-Aware Time Series Benchmark (available from various data providers)
+Apart from the original time series dataset for TSF, e.g. ETT. We also support the following multimodal datasets (Fidel-TS).
 
 
 ## Pipeline Components
