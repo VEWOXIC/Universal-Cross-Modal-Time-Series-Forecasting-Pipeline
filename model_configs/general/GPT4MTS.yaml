@@ -7,4 +7,4 @@ stride: 3
 revin: True
 d_model: 768
 gpt_layers: 6
-task: all  # MTSF  # MTSF is now available
+task: TGTSF

@@ -1,0 +1,34 @@
+root_path: ./data/Bear_room/time_series
+spliter: timestamp
+# spliter: ratio
+split_info: # "7:1:2"
+  - '2020-06-01'  # Discard the data before 06-01
+  - '2020-09-01'
+  - '2020-10-01'
+  - '2020-10-20'  # Discard the data after 10-20
+timestamp_col: Timestamp
+target: all
+id_info: id_info.json
+id: # all
+  - '110'
+  - '121'
+  - '221'
+  - '254'
+  - '350'
+  - '371'
+  - '423'
+  - '436'
+formatter: '{i}.parquet'
+# downsample: 12
+sampling_rate: 5min  # 1h
+base_T: 288  # 24
+hetero_info:
+  hetero_type: each_subset  # all_for_one, each_subset
+  root_path: ./data/Bear_room/hetero/room/report_embedding/formal_report
+  # root_path: ./data/Bear_room/hetero/weather/report_embedding/formal_report
+  formatter: all.pkl  # all.pkl  flow.pkl  temperature.pkl  occupy.pkl
+  # formatter: wm_messages_v1.pkl
+  matching: single
+  # matching: backward
+  input_format: embedding
+  static_path: static_info_embeddings.pkl

@@ -7,7 +7,7 @@ python -u criterias_lightning.py \
     --output_len 24 \
     --batch_size 1 \
     --device "2" \
-    --filtered_samples "sample_indexes/Germany_Renewable_Power_Grid_sample_day.json" | tee -a ./logs/test_trans_on_samples.log
+    --filtered_samples "sample_random_indexes/Germany_Renewable_Power_Grid_sample_day.json" | tee -a ./logs/test_trans_on_samples.log
 
 python -u criterias_lightning.py \
     --data 'Germany_Renewable_Power_Grid' \
@@ -18,4 +18,4 @@ python -u criterias_lightning.py \
     --output_len 168 \
     --batch_size 1 \
     --device "2" \
-    --filtered_samples "sample_indexes/Germany_Renewable_Power_Grid_sample_week.json" | tee -a ./logs/test_trans_on_samples.log
+    --filtered_samples "sample_random_indexes/Germany_Renewable_Power_Grid_sample_week.json" | tee -a ./logs/test_trans_on_samples.log

@@ -1,0 +1,14 @@
+root_path: ./data/Bear_room/time_series
+spliter: timestamp
+split_info:
+  - '2020-09-01'
+  - '2020-10-01'
+timestamp_col: Timestamp
+target:
+  - Zone Temperature
+id_info: id_info.json
+id: all
+formatter: '{i}.csv'
+sampling_rate: 5min
+base_T: 288
+enforce_contiguous: true

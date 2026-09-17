@@ -16,7 +16,7 @@ base_T: 24
 hetero_info:
   hetero_type: all_for_one
   sampling_rate: 1day
-  root_path: ./data/California_ISO/weather
+  root_path: ./data/California_ISO/weather/merged_general_report
   formatter: merged_general_weather_forecast.json
   matching: single
   input_format: json

@@ -1,4 +1,4 @@
-python -u llm_run.py \
+python -u run_llm.py \
     --model 'qwen3-14b' \
     --model_config './model_configs/LLM/Qwen3-14B.yaml' \
     --data NYC_traffic_speed \

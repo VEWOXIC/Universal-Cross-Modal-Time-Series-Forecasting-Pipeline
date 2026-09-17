@@ -1,4 +1,4 @@
-for output_len in 24 168 336 720
+for output_len in 24 168 #336 720
 do
 python -u run_fm.py \
     --model 'Sundial' \
@@ -8,6 +8,6 @@ python -u run_fm.py \
     --input_len 360 \
     --output_len $output_len \
     --batch_size 1024 \
-    --gpu 3 | tee -a ./logs/FM.log
+    --gpu 0 | tee -a ./logs/FM2.log
     
 done

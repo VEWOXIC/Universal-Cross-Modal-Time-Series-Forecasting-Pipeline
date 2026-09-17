@@ -1,11 +1,13 @@
 model: ustc-zyt/Time-R1
-system_prompt: 
+# system_prompt: 
 first_prompt: prompt_templates/TimeR1_template/time_r1_unimodal.template
 retry_prompt: prompt_templates/TimeR1_template/time_r1_unimodal.template
 merge_system: True
 temperature: 0.6
-base_url: 
-api_key: 
+top_p: 0.95
+max_tokens: 20000
+# base_url: 
+# api_key: 
 retry: 3
 force_retry: False
 queue_len: 2

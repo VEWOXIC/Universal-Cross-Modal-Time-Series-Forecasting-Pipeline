@@ -92,8 +92,8 @@ def run_visualization(args, model, config, device, fullsets):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Time Series Forecasting Model Testing and Visualization")
     
-    parser.add_argument('--data', type=str, default="California_ISO", help="Dataset name")
-    parser.add_argument('--model', type=str, default="TGTSF", help="Model name (e.g., 'PatchTST')")
+    parser.add_argument('--data', type=str, default="Germany_Renewable_Power_Grid", help="Dataset name")
+    parser.add_argument('--model', type=str, default="PatchTST", help="Model name (e.g., 'PatchTST')")
     parser.add_argument('--version', type=str, default="latest", help="Model version (e.g., 'latest' or a specific date like '2023-10-26')")
     parser.add_argument('--input_len', type=int, default=360, help="Input length")
     parser.add_argument('--output_len', type=int, default=168, help="Prediction horizon")
@@ -101,11 +101,11 @@ if __name__ == "__main__":
     parser.add_argument('--checkpoint_base', type=str, default='./checkpoints/', help="Base directory for checkpoints")
     parser.add_argument('--checkpoint_file', type=str, default="best", choices=["last", "best"], help="Specific checkpoint file to load (optional)")
     parser.add_argument('--device', type=str, default="0", help="Device to run the model on")
-    parser.add_argument('--task', type=str, default='TGTSF', choices=['TSF', 'TGTSF'], help="Task type: TSF or TGTSF")
+    parser.add_argument('--task', type=str, default='TSF', choices=['TSF', 'TGTSF'], help="Task type: TSF or TGTSF")
     
     parser.add_argument('--channel_id', type=str, default="all", help="'all' for all channels, or a specific channel number to visualize")
-    parser.add_argument('--vis_subset', type=str, default='demand_Current_demand', help="Name of the data subset to visualize from (e.g., 'test', 'val').")
-    parser.add_argument('--vis_sample_id', type=int, default=100, help="The index of the sample to visualize within the subset.")
+    parser.add_argument('--vis_subset', type=str, default='solar_TransnetBW', help="Name of the data subset to visualize from (e.g., 'test', 'val').")
+    parser.add_argument('--vis_sample_id', type=int, default=1176, help="The index of the sample to visualize within the subset.")
     parser.add_argument('--vis_save_path', type=str, default='./imgs', help="Directory to save visualization images.")
     parser.add_argument('--fig_name', type=str, default='fig.png', help="Name of the figure file to save.")
 

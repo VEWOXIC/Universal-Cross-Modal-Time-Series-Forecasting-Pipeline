@@ -1,6 +1,6 @@
 model: PatchTST
 individual: False
-enc_in: 1
+enc_in: 7
 e_layers: 3
 n_heads: 4
 d_model: 16

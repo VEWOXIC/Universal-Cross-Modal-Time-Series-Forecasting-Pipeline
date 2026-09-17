@@ -99,7 +99,7 @@ class Model(nn.Module):
         # The pipeline's predict method returns a tensor of shape:
         # (batch_size, num_samples, prediction_length)
         forecast = self.pipeline.predict(
-            context=context,
+            inputs=context,
             prediction_length=self.pred_len
         )
         

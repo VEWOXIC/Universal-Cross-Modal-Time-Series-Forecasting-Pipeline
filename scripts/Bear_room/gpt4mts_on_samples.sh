@@ -1,7 +1,7 @@
 python -u criterias.py \
     --data 'Bear_room' \
     --model 'GPT4MTS' \
-    --task 'MTSF' \
+    --task 'TGTSF' \
     --version '08-28-1731' \
     --input_len 288 \
     --output_len 12 \
@@ -12,7 +12,7 @@ python -u criterias.py \
 python -u criterias.py \
     --data 'Bear_room' \
     --model 'GPT4MTS' \
-    --task 'MTSF' \
+    --task 'TGTSF' \
     --version '08-30-2019' \
     --input_len 288 \
     --output_len 144 \

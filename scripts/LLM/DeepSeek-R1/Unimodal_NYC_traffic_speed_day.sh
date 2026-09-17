@@ -1,12 +1,12 @@
-python -u llm_run.py \
+python -u run_llm.py \
     --model 'deepseek-r1-250120' \
-    --model_config './model_configs/LLM/Unimodel/DeepSeek-R1.yaml' \
+    --model_config './model_configs/LLM/UniModal/DeepSeek-R1.yaml' \
     --data NYC_traffic_speed \
     --data_config './data_configs/NYC_traffic_speed/fullNYCTS_hetero_LLM.yaml' \
     --input_len 360 \
     --output_len 24 \
     --checkpoints ./checkpoints \
-    --filtered_samples ./sample_indexes/NYC_traffic_speed_sample_day.json | tee -a ./logs/DS_uni_Traffic_day.log
+    --filtered_samples ./sample_random_indexes/NYC_traffic_speed_sample_day.json | tee -a ./logs/umLLM.log
     # --sample_step 12 \
     # --no_parallel
     

@@ -26,6 +26,28 @@ parser.add_argument('--preload_hetero', default=False, action='store_true', help
 parser.add_argument('--prefetch_factor', type=int, default=2, help='Number of batches to prefetch per worker in dataloader (higher values use more memory)')
 parser.add_argument('--noise', type=float, default=0.0, help='optimizer learning rate')
 parser.add_argument('--downsample', type=int, default=None, help='number of augmented data')
+parser.add_argument(
+    '--shuffle_environment_train',
+    action='store_true',
+    help=(
+        'Shuffle complete environment trajectories between samples in every '
+        'training batch while preserving target histories and labels'
+    ),
+)
+parser.add_argument(
+    '--shuffle_environment_seed',
+    type=int,
+    default=2026,
+    help='Random seed for dynamic training-time environment shuffling',
+)
+parser.add_argument(
+    '--zero_environment_train',
+    action='store_true',
+    help=(
+        'Set historical environment channels to zero during training and '
+        'disable the auxiliary environment loss'
+    ),
+)
 
 # forecasting task
 parser.add_argument('--ahead', type=str, default=None, help='Shorthand for forecast horizon: "day", "week", or "month" (automatically sets input_len and output_len based on sampling_rate)')
@@ -52,6 +74,11 @@ parser.add_argument('--hf_mirror', type=bool, default=False, help='Use Hugging F
 parser.add_argument('--hf_offline', type=bool, default=False, help='Run in offline mode (no internet access for model downloading)')
 
 args = parser.parse_args()
+if args.shuffle_environment_train and args.zero_environment_train:
+    parser.error(
+        '--shuffle_environment_train and --zero_environment_train are '
+        'mutually exclusive'
+    )
 
 # Set environment variables for HuggingFace
 if args.hf_mirror:

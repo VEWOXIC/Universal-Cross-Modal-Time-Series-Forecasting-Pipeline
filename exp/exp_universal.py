@@ -2,6 +2,10 @@ from exp.exp_basic import Exp_Basic
 from models import model_init
 
 from utils.tools import EarlyStopping, adjust_learning_rate, general_move_to_device
+from utils.environment_ablation import (
+    shuffle_environment_batch,
+    zero_environment_batch,
+)
 
 import numpy as np
 import torch
@@ -45,7 +49,14 @@ class Experiment(Exp_Basic):
         ```
     """
     def __init__(self, args):
+        if getattr(args, 'zero_environment_train', False):
+            # With no environment observations, an environment forecasting
+            # auxiliary loss is a different (and ill-posed) learning problem.
+            args.model_config.environment_weight = 0.0
         super(Experiment, self).__init__(args)
+        self.environment_shuffle_generator = torch.Generator().manual_seed(
+            int(getattr(args, 'shuffle_environment_seed', 2026))
+        )
 
     def _build_model(self):
         """
@@ -82,7 +93,24 @@ class Experiment(Exp_Basic):
 
         return data_loader
 
-    def _forward_step(self, iter):
+    def _base_model(self):
+        """Return the underlying model when DataParallel is enabled."""
+        return self.model.module if isinstance(self.model, nn.DataParallel) else self.model
+
+    def _compute_loss(self, output, gt, criterion):
+        """Allow a model to define a backward-compatible structured loss."""
+        model = self._base_model()
+        if hasattr(model, 'compute_loss'):
+            return model.compute_loss(output, gt, criterion)
+        return criterion(output, gt)
+
+    def _forward_step(
+        self,
+        iter,
+        use_future_values=False,
+        shuffle_training_environment=False,
+        zero_training_environment=False,
+    ):
         """
         Executes a single forward pass through the model with cross-modal data handling.
         
@@ -109,13 +137,51 @@ class Experiment(Exp_Basic):
 
         batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel = iter
 
+        if shuffle_training_environment:
+            base_model = self._base_model()
+            if not hasattr(base_model, 'environment_indices'):
+                raise ValueError(
+                    '--shuffle_environment_train requires a model exposing '
+                    'environment_indices'
+                )
+            environment_indices = base_model.environment_indices.detach().cpu().tolist()
+            batch_x, batch_y, _ = shuffle_environment_batch(
+                batch_x,
+                batch_y,
+                environment_indices=environment_indices,
+                generator=self.environment_shuffle_generator,
+            )
+        elif zero_training_environment:
+            base_model = self._base_model()
+            if not hasattr(base_model, 'environment_indices'):
+                raise ValueError(
+                    '--zero_environment_train requires a model exposing '
+                    'environment_indices'
+                )
+            environment_indices = base_model.environment_indices.detach().cpu().tolist()
+            batch_x = zero_environment_batch(
+                batch_x,
+                environment_indices=environment_indices,
+            )
+
         if hasattr(self.model, 'move_to_device'):
             batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel = self.model.move_to_device(batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel, self.device) # move only the ones needed to device according to model's definition to save VRAM
         else:
             # only move batch_x, batch_y to device for TSF models
             batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel = general_move_to_device(batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel, self.device)
 
-        output = self.model(x=batch_x, historical_events =batch_x_hetero, news = batch_y_hetero, dataset_description=hetero_general, channel_description=hetero_channel)
+        forward_kwargs = dict(
+            x=batch_x,
+            historical_events=batch_x_hetero,
+            news=batch_y_hetero,
+            dataset_description=hetero_general,
+            channel_description=hetero_channel,
+        )
+        if use_future_values and getattr(
+            self._base_model(), 'supports_future_values', False
+        ):
+            forward_kwargs['future_values'] = batch_y
+        output = self.model(**forward_kwargs)
 
         output = output[:, -self.args.output_len:, :]
         gt = batch_y
@@ -155,6 +221,38 @@ class Experiment(Exp_Basic):
         train_loader = self._get_data(flag='train')
         vali_loader = self._get_data(flag='val')
         test_loader = self._get_data(flag='test')
+        if getattr(self.args, 'shuffle_environment_train', False):
+            if self.args.batch_size < 2:
+                raise ValueError(
+                    '--shuffle_environment_train requires batch_size >= 2'
+                )
+            if not hasattr(self._base_model(), 'environment_indices'):
+                raise ValueError(
+                    '--shuffle_environment_train requires a model exposing '
+                    'environment_indices'
+                )
+            environment_indices = (
+                self._base_model().environment_indices.detach().cpu().tolist()
+            )
+            print(
+                '[Info] Dynamic training environment shuffle enabled: '
+                f'environment_indices={environment_indices}, '
+                f'seed={self.args.shuffle_environment_seed}'
+            )
+        elif getattr(self.args, 'zero_environment_train', False):
+            if not hasattr(self._base_model(), 'environment_indices'):
+                raise ValueError(
+                    '--zero_environment_train requires a model exposing '
+                    'environment_indices'
+                )
+            environment_indices = (
+                self._base_model().environment_indices.detach().cpu().tolist()
+            )
+            print(
+                '[Info] Zero-environment training enabled: '
+                f'environment_indices={environment_indices}, '
+                'environment_weight=0.0'
+            )
         print(self.model)
         self.data_provider.data_buffer.clear() # release the raw file in buffer
         # self._get_profile(self.model)
@@ -184,6 +282,9 @@ class Experiment(Exp_Basic):
             total_samples = 0
 
             self.model.train()
+            base_model = self._base_model()
+            if hasattr(base_model, 'set_train_epoch'):
+                base_model.set_train_epoch(epoch)
             epoch_time = time.time()
 
             with tqdm(total=len(train_loader), desc=f"Epoch {epoch + 1}/{self.args.train_epochs}", unit='batch') as pbar:
@@ -191,9 +292,18 @@ class Experiment(Exp_Basic):
                     iter_count += 1
                     model_optim.zero_grad()
                         
-                    output, gt = self._forward_step(iter)
+                    output, gt = self._forward_step(
+                        iter,
+                        use_future_values=True,
+                        shuffle_training_environment=getattr(
+                            self.args, 'shuffle_environment_train', False
+                        ),
+                        zero_training_environment=getattr(
+                            self.args, 'zero_environment_train', False
+                        ),
+                    )
 
-                    loss = criterion(output, gt)
+                    loss = self._compute_loss(output, gt, criterion)
 
                     loss.backward()
 
@@ -254,11 +364,16 @@ class Experiment(Exp_Basic):
             with torch.no_grad():
                 for i, iter_data in tqdm(enumerate(loader), total=len(loader), desc=f"Validating..."):
                     
-                    output, gt = self._forward_step(iter_data)
+                    output, gt = self._forward_step(
+                        iter_data,
+                        zero_training_environment=getattr(
+                            self.args, 'zero_environment_train', False
+                        ),
+                    )
 
                     current_batch_size = gt.size(0)
 
-                    loss = criterion(output, gt)
+                    loss = self._compute_loss(output, gt, criterion)
 
                     running_loss += loss.item() * current_batch_size
                     
@@ -284,10 +399,15 @@ class Experiment(Exp_Basic):
             with torch.inference_mode():
                 for i, iter_data in tqdm(enumerate(loader), total=len(loader), desc=f"Testing {info}"):
                     
-                    output, gt = self._forward_step(iter_data)
+                    output, gt = self._forward_step(
+                        iter_data,
+                        zero_training_environment=getattr(
+                            self.args, 'zero_environment_train', False
+                        ),
+                    )
                     
                     current_batch_size = gt.size(0)
-                    loss = criterion(output, gt)
+                    loss = self._compute_loss(output, gt, criterion)
 
                     info_running_loss += loss.item() * current_batch_size
                     info_total_samples += current_batch_size

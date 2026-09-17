@@ -55,6 +55,20 @@ class TimeSeriesLightningModel(pl.LightningModule):
             return nn.MSELoss()
         else:
             return nn.MSELoss()  # Default
+
+    def _base_model(self):
+        return self.model.module if isinstance(self.model, nn.DataParallel) else self.model
+
+    def _compute_loss(self, output, gt):
+        model = self._base_model()
+        if hasattr(model, 'compute_loss'):
+            return model.compute_loss(output, gt, self.criterion)
+        return self.criterion(output, gt)
+
+    def on_train_epoch_start(self):
+        model = self._base_model()
+        if hasattr(model, 'set_train_epoch'):
+            model.set_train_epoch(self.current_epoch)
     
     def forward(self, batch):
         """Forward pass."""
@@ -85,6 +99,8 @@ class TimeSeriesLightningModel(pl.LightningModule):
             forward_kwargs['dataset_description'] = hetero_general
         if 'channel_description' in model_params and 'channel_description' not in forward_kwargs:
             forward_kwargs['channel_description'] = hetero_channel
+        if self.training and getattr(self._base_model(), 'supports_future_values', False):
+            forward_kwargs['future_values'] = batch_y
         
         # Call model with appropriate arguments
         output = self.model(**forward_kwargs)
@@ -95,7 +111,7 @@ class TimeSeriesLightningModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         """Training step."""
         output, gt = self.forward(batch)
-        loss = self.criterion(output, gt)
+        loss = self._compute_loss(output, gt)
         
         # Log metrics
         self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
@@ -105,7 +121,7 @@ class TimeSeriesLightningModel(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         """Validation step."""
         output, gt = self.forward(batch)
-        loss = self.criterion(output, gt)
+        loss = self._compute_loss(output, gt)
         
         # Log metrics
         # Pytorch-Lightning's default on_epoch=True aggregation is a weighted average, which is correct.
@@ -154,7 +170,7 @@ class TimeSeriesLightningModel(pl.LightningModule):
                 # Process each batch
                 for i, batch in tqdm(enumerate(loader), total=len(loader), desc=f"Testing {subset_id}"):
                     output, gt = self.forward(batch)
-                    loss = self.criterion(output, gt)
+                    loss = self._compute_loss(output, gt)
                     
                     # --- MODIFICATION START ---
                     # The criterion calculates the mean loss for the batch. To get the total
@@ -191,7 +207,7 @@ class TimeSeriesLightningModel(pl.LightningModule):
     def test_step(self, batch, batch_idx, dataloader_idx=0):
         """Test step."""
         output, gt = self.forward(batch)
-        loss = self.criterion(output, gt)
+        loss = self._compute_loss(output, gt)
         
         # --- MODIFICATION START ---
         # Instead of appending the mean batch loss, we append the total loss
@@ -358,7 +374,9 @@ def train_lightning_model(args, setting):
             json.dump(info_results, f)
         with open(os.path.join(checkpoint_path, 'test_results_average.json'), 'w') as f:
             # average loss of all subsets
-            json.dump({'average loss of all subsets': np.mean(list(info_results.values()))}, f)
+            avg_test_loss = np.mean(list(info_results.values()))
+            json.dump({'average loss of all subsets': avg_test_loss}, f)
+        print('avaerage loss of all subsets:', avg_test_loss)
     if args.test:
         return
     

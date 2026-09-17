@@ -1,7 +1,7 @@
 python -u criterias.py \
     --data 'California_ISO' \
     --model 'GPT4MTS' \
-    --task 'MTSF' \
+    --task 'TGTSF' \
     --version 'latest' \
     --input_len 360 \
     --output_len 24 \
@@ -12,7 +12,7 @@ python -u criterias.py \
 python -u criterias.py \
     --data 'California_ISO' \
     --model 'GPT4MTS' \
-    --task 'MTSF' \
+    --task 'TGTSF' \
     --version 'latest' \
     --input_len 360 \
     --output_len 168 \

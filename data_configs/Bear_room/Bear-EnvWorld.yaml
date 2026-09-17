@@ -1,0 +1,24 @@
+root_path: ./data/Bear_room/time_series
+spliter: timestamp
+split_info:
+  - '2020-09-01'
+  - '2020-10-01'
+timestamp_col: Timestamp
+
+# Environment variables come first and the target is last, matching
+# model_configs/general/EnvWorld.yaml (target_indices: [-1]).
+target:
+  - Air Temperature
+  - Real Power Mean
+  - Actual Cooling Setpt
+  - Actual Heating Setpt
+  - Actual Damper Position
+  - Actual Supply Flow
+  - Zone Temperature
+
+id_info: id_info.json
+id: all
+formatter: '{i}.csv'
+sampling_rate: 5min
+base_T: 288
+enforce_contiguous: true
