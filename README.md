@@ -12,6 +12,7 @@ A comprehensive, flexible and commonly-used DLinear-like framework for time seri
 This framework supports various traditional time series models, text-embedding based cross-modal forecasting as well as language model-based reasoning approaches.
 
 Compatable Datasets see: [https://huggingface.co/collections/fidel-ts/fidel-ts]
+or: [https://huggingface.co/collections/wxcai/fidel-ts]
 
 ## Table of Contents
 
