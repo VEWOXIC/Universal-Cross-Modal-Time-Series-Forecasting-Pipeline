@@ -137,3 +137,8 @@ lightning_logs
 
 # imgs
 /imgs
+
+# coding agent
+.claude
+.codex
+.workbuddy

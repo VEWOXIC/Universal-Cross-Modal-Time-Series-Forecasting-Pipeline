@@ -1,0 +1,32 @@
+model: EnvWorld
+
+# Total number of numeric columns selected by data_config.target.
+# This example assumes one target plus six environment variables.
+enc_in: 7
+
+# Zero-based positions in data_config.target; negative indices are supported.
+# Every unlisted channel is treated as an environment variable.
+target_indices:
+  - -1
+
+d_model: 96
+n_heads: 4
+d_ff: 192
+history_layers: 2
+world_layers: 2
+target_layers: 2
+dropout: 0.1
+patch_len: 16
+stride: 8
+revin_eps: 1.0e-5
+
+# Joint objective: target_weight * target loss + environment_weight * env loss.
+target_weight: 1.0
+environment_weight: 0.3
+
+# During the first N epochs, blend observed future environments into the target
+# decoder and linearly decay the blend to zero. Set to 0 to disable curriculum.
+curriculum_epochs: 10
+curriculum_max_mix: 0.5
+
+task: TSF

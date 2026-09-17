@@ -50,6 +50,7 @@ parser.add_argument('--hf_mirror', type=bool, default=False, help='Use Hugging F
 
 
 args = parser.parse_args()
+# import pdb;pdb.set_trace()
 
 # Set environment variables for HuggingFace
 if args.hf_mirror:

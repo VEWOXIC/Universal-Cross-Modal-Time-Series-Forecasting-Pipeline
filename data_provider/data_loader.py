@@ -45,6 +45,8 @@ class Universal_Dataset(Dataset):
         custom_input (str, optional): Custom input specification overriding task defaults
         timezone (str, optional): Timezone for timestamp conversion
         downsample (int, optional): Downsampling factor for data reduction
+        enforce_contiguous (bool): Exclude windows that cross timestamp gaps
+        sampling_rate (str, optional): Expected interval used for gap detection
     
     Attributes:
         data: Processed time series data as numpy array
@@ -68,7 +70,8 @@ class Universal_Dataset(Dataset):
     """
     def __init__(self, root_path, flag='train', data_path='ETTh1.csv',
                  seq_len=24, pred_len=24, spliter=ratio_spliter, timestamp_col='date',
-                 target='OT', scale=True, data_buffer=None, hetero_data_getter=None, preload_hetero=False, hetero_stride=1, task=None, custom_input=None, timezone=None, downsample=None):
+                 target='OT', scale=True, data_buffer=None, hetero_data_getter=None, preload_hetero=False, hetero_stride=1, task=None, custom_input=None, timezone=None, downsample=None,
+                 enforce_contiguous=False, sampling_rate=None):
         # size [seq_len, label_len, pred_len]
         # info
         self.seq_len = seq_len
@@ -89,6 +92,9 @@ class Universal_Dataset(Dataset):
         self.hetero_data_getter = (lambda x: x) if hetero_data_getter is None else hetero_data_getter # return the timestamp
         self.timezone = timezone
         self.downsample = downsample
+        self.enforce_contiguous = bool(enforce_contiguous)
+        self.sampling_rate = sampling_rate
+        self.valid_indices = None
 
         self.__read_data__()
         self.preload_hetero = preload_hetero
@@ -196,6 +202,39 @@ class Universal_Dataset(Dataset):
             self.data = self.data[::self.downsample]
             self.timestamp = self.timestamp[::self.downsample]
 
+        if self.enforce_contiguous:
+            self.valid_indices = self._find_contiguous_window_starts()
+
+    def _find_contiguous_window_starts(self):
+        """Return starts whose complete window has no gap or non-finite target."""
+        if self.sampling_rate is None:
+            raise ValueError("sampling_rate is required when enforce_contiguous is enabled")
+        expected_interval = pd.to_timedelta(self.sampling_rate)
+        if self.downsample is not None:
+            expected_interval *= self.downsample
+        timestamps = pd.to_datetime(self.timestamp.astype(str), format='%Y%m%d%H%M%S')
+        finite_rows = np.isfinite(self.data).all(axis=1)
+        window_length = self.seq_len + self.pred_len
+        valid_starts = []
+        run_start = 0 if len(timestamps) > 0 and finite_rows[0] else None
+        for index in range(1, len(timestamps)):
+            if not finite_rows[index]:
+                if run_start is not None:
+                    valid_starts.extend(range(run_start, index - window_length + 1))
+                run_start = None
+            elif run_start is None:
+                run_start = index
+            elif timestamps[index] - timestamps[index - 1] != expected_interval:
+                valid_starts.extend(range(run_start, index - window_length + 1))
+                run_start = index
+        if run_start is not None:
+            valid_starts.extend(range(run_start, len(timestamps) - window_length + 1))
+        print(
+            f"[ info ] Valid contiguous {self.set_type} windows: {len(valid_starts)} "
+            f"of {max(len(self.data) - window_length + 1, 0)}"
+        )
+        return np.asarray(valid_starts, dtype=np.int64)
+
 
     def __preload_hetero__(self):
         """
@@ -233,7 +272,7 @@ class Universal_Dataset(Dataset):
                 - hetero_channel: Channel-specific heterogeneous information
         """
         
-        s_begin = index
+        s_begin = int(self.valid_indices[index]) if self.valid_indices is not None else index
         s_end = s_begin + self.seq_len
         r_begin = s_end
         r_end = r_begin + self.pred_len
@@ -289,7 +328,9 @@ class Universal_Dataset(Dataset):
         Returns:
             int: Number of valid data samples
         """
-        return len(self.data) - self.seq_len - self.pred_len + 1
+        if self.valid_indices is not None:
+            return len(self.valid_indices)
+        return max(len(self.data) - self.seq_len - self.pred_len + 1, 0)
 
     def inverse_transform(self, data):
         """

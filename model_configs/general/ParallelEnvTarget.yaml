@@ -1,0 +1,28 @@
+model: ParallelEnvTarget
+
+# All numeric input channels. Every channel not listed in target_indices is an
+# environment variable. This example matches Bear-EnvWorld.yaml.
+enc_in: 7
+target_indices:
+  - -1
+
+d_model: 128
+n_heads: 4
+d_ff: 256
+history_layers: 2
+decoder_layers: 3
+dropout: 0.1
+
+# Both history and future are represented by overlapping patches.
+patch_len: 12
+stride: 6
+revin_eps: 1.0e-5
+
+# Losses are averaged within each group before weighting, so a large number of
+# environment variables does not overwhelm the target objective.
+target_weight: 1.0
+environment_weight: 0.1
+
+# Only numeric historical/future series are required. Future values are used as
+# labels, never as model inputs.
+task: TSF

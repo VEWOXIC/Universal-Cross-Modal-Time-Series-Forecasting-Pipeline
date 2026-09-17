@@ -42,6 +42,9 @@ def run_test(loader, model, config, device, indexes, channel_wise):
 
             prediction = model(x=batch_x) if config.task == 'TSF' else model(x=batch_x, historical_events=x_hetero, news=y_hetero, channel_description=hetero_channel)
             prediction = prediction[:, -config.output_len:, :]  # [B, L, C]
+            # change
+            prediction = prediction.index_select(2, torch.tensor(6).cuda())
+            batch_y = batch_y.index_select(2, torch.tensor(6).cuda())
 
             if channel_wise:
                 if channel_mse is None:
@@ -118,6 +121,7 @@ if __name__ == "__main__":
         ckpt_path = ckpt_paths[-1]
 
     print(f'[Info] Using checkpoint path: {ckpt_path}')
+    import pdb;pdb.set_trace()
 
 
     results_save_dir = ckpt_path

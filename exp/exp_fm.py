@@ -109,7 +109,7 @@ class Experiment(Exp_Basic):
         else:
             # only move batch_x, batch_y to device for TSF models
             batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel = general_move_to_device(batch_x, batch_y, timestamp_x, timestamp_y, batch_x_hetero, batch_y_hetero, hetero_x_time, hetero_y_time, hetero_general, hetero_channel, self.device)
-        
+        # import pdb;pdb.set_trace()
         if self.args.individual:
             num_channels = batch_x.size(-1)
             outputs = []
@@ -132,7 +132,11 @@ class Experiment(Exp_Basic):
                     return None, None
                 else:
                     channel_output = channel_output.unsqueeze(-1)
+<<<<<<< Updated upstream
                     print(f"Channel {c} output shape: {channel_output.shape}")
+=======
+                    # print(f"Channel {c} output shape: {channel_output}")
+>>>>>>> Stashed changes
                 
                 outputs.append(channel_output)
             
@@ -171,11 +175,18 @@ class Experiment(Exp_Basic):
         final_filename = "final_test_result.json"
         error_filename = "overall_error.json"
         
-        criterion = self._select_criterion()
+        metric_criteria = {
+            "mse": nn.MSELoss(),
+            "mae": nn.L1Loss(),
+        }
         loaders = self._get_data(flag='test')
 
+<<<<<<< Updated upstream
         overall_running_loss = 0.0  # MSE
         overall_running_mae = 0.0   # MAE
+=======
+        overall_running_metrics = {name: 0.0 for name in metric_criteria}
+>>>>>>> Stashed changes
         overall_total_samples = 0
         overall_error = 0
 
@@ -186,8 +197,12 @@ class Experiment(Exp_Basic):
         self.model.eval()
 
         for info, loader in loaders.items():
+<<<<<<< Updated upstream
             info_running_loss = 0.0  # MSE
             info_running_mae = 0.0   # MAE
+=======
+            info_running_metrics = {name: 0.0 for name in metric_criteria}
+>>>>>>> Stashed changes
             info_total_samples = 0
             info_error = 0
             
@@ -196,9 +211,12 @@ class Experiment(Exp_Basic):
 
             with torch.inference_mode():
                 for i, iter_data in tqdm(enumerate(loader), total=len(loader), desc=f"Testing {info}"):
-                    if self.args.filtered_samples is not None and i in filter_index:
+                    if self.args.filtered_samples is not None and i not in filter_index:
+                        continue
 
+                    if self.args.filtered_samples is not None:
                         print(f"[ Info ]: Testing on sample {i}, total: {len(filter_index)}")
+<<<<<<< Updated upstream
 
                         output, gt = self._forward_step(iter_data)
 
@@ -266,6 +284,42 @@ class Experiment(Exp_Basic):
                 print(f"Test loss for {info}: N/A (no samples processed)")
                 info_epoch_loss = None
                 info_epoch_mae = None
+=======
+                    else:
+                        print("[ Info ]: Testing on all samples")
+
+                    output, gt = self._forward_step(iter_data)
+                    # import pdb;pdb.set_trace()
+
+                    if output is None and gt is None:
+                        print(f"[ Warning ]: Model returned None for sample {i}. Skipping this sample.")
+                        info_error += 1
+                        overall_error += 1
+                        continue
+
+                    current_batch_size = gt.size(0)
+                    for metric_name, metric_criterion in metric_criteria.items():
+                        metric_value = metric_criterion(output, gt).item()
+                        weighted_value = metric_value * current_batch_size
+                        info_running_metrics[metric_name] += weighted_value
+                        overall_running_metrics[metric_name] += weighted_value
+
+                    info_total_samples += current_batch_size
+                    overall_total_samples += current_batch_size
+            
+            if info_total_samples > 0:
+                info_metrics = {
+                    name: value / info_total_samples
+                    for name, value in info_running_metrics.items()
+                }
+                print(
+                    f"Test metrics for {info}: "
+                    f"MSE={info_metrics['mse']:.7f}, MAE={info_metrics['mae']:.7f}"
+                )
+            else:
+                print(f"Test metrics for {info}: N/A (no samples processed)")
+                info_metrics = {name: None for name in metric_criteria}
+>>>>>>> Stashed changes
 
             print(f"Total Errors: {info_error}")
             
@@ -276,6 +330,7 @@ class Experiment(Exp_Basic):
             except FileNotFoundError:
                 existing_data = {}
 
+<<<<<<< Updated upstream
             # Store both metrics for each info
             if info not in existing_data:
                 existing_data[info] = {}
@@ -293,6 +348,37 @@ class Experiment(Exp_Basic):
         final_result = {
             "final_MSE": total_epoch_loss,
             "final_MAE": total_epoch_mae
+=======
+            existing_data.update({info: info_metrics})
+            with open(os.path.join(path, all_metrics_filename), 'w') as f:
+                json.dump(existing_data, f, indent=4)
+
+        overall_metrics = {
+            name: value / overall_total_samples if overall_total_samples > 0 else 0.0
+            for name, value in overall_running_metrics.items()
+        }
+        print(
+            "Overall test metrics: "
+            f"MSE={overall_metrics['mse']:.7f}, MAE={overall_metrics['mae']:.7f}"
+        )
+
+        # Save results
+        selected_loss_name = {
+            "l1": "mae",
+            "mae": "mae",
+            "mse": "mse",
+        }.get(self.args.loss.lower())
+        if selected_loss_name not in overall_metrics:
+            raise ValueError(
+                f"Unsupported loss '{self.args.loss}'. Expected one of: "
+                "mse, mae, l1"
+            )
+        final_result = {
+            # Keep the legacy field for consumers that expect a single selected loss.
+            "final_res": overall_metrics[selected_loss_name],
+            "mse": overall_metrics["mse"],
+            "mae": overall_metrics["mae"],
+>>>>>>> Stashed changes
         }
         with open(os.path.join(path, final_filename), 'w') as f:
             json.dump(final_result, f, indent=4)
